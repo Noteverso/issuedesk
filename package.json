@@ -1,0 +1,31 @@
+{
+  "name": "gitissueblog",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:mobile": "pnpm --filter @gitissueblog/mobile start",
+    "dev:desktop": "pnpm --filter @gitissueblog/desktop dev",
+    "build:mobile": "pnpm --filter @gitissueblog/mobile build",
+    "build:desktop": "pnpm --filter @gitissueblog/desktop build",
+    "build:shared": "pnpm --filter @gitissueblog/shared build",
+    "build:github-api": "pnpm --filter @gitissueblog/github-api build",
+    "build:all": "pnpm build:shared && pnpm build:github-api && pnpm build:desktop",
+    "dist:desktop": "pnpm --filter @gitissueblog/desktop dist",
+    "dist:desktop:mac": "pnpm --filter @gitissueblog/desktop dist:mac",
+    "dist:desktop:win": "pnpm --filter @gitissueblog/desktop dist:win",
+    "dist:desktop:linux": "pnpm --filter @gitissueblog/desktop dist:linux",
+    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check",
+    "install:all": "pnpm install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}
