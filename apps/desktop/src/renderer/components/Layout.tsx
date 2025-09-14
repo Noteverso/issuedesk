@@ -45,7 +45,7 @@ export default function Layout({ children }: LayoutProps) {
         <div className="flex items-center justify-between h-16 px-6 border-b border-border">
           <div className="flex items-center space-x-2">
             <Github className="h-6 w-6 text-primary" />
-            <span className="text-lg font-semibold">GitIssueBlog</span>
+            <span className="text-lg font-semibold">IssueDesk</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}

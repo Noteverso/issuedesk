@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { AppConfig } from '@gitissueblog/shared';
+import { AppConfig } from '@issuedesk/shared';
 
 interface ConfigContextType {
   config: AppConfig;

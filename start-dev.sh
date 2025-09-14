@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# GitIssueBlog 开发启动脚本
+# IssueDesk 开发启动脚本
 
-echo "🚀 启动 GitIssueBlog 开发环境..."
+echo "🚀 启动 IssueDesk 开发环境..."
 
 # 检查 pnpm 是否安装
 if ! command -v pnpm &> /dev/null; then

@@ -1,15 +1,21 @@
 import { app, BrowserWindow, Menu, ipcMain, dialog, shell } from 'electron';
 import { join } from 'path';
 import Store from 'electron-store';
-import { GitHubClient } from '@gitissueblog/github-api';
-import { AppConfig } from '@gitissueblog/shared';
+import { GitHubClient } from '@issuedesk/github-api';
+import { AppConfig } from '@issuedesk/shared';
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
 const store = new Store<AppConfig>();
 
 let mainWindow: BrowserWindow;
 
 function createWindow(): void {
+  // Debug: Log preload script path
+  const preloadPath = join(__dirname, 'preload.js');
+  console.log('🔧 Preload script path:', preloadPath);
+  console.log('🔧 isDev:', isDev);
+  console.log('🔧 __dirname:', __dirname);
+  ``
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -19,7 +25,7 @@ function createWindow(): void {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: join(__dirname, 'preload.js'),
+      preload: preloadPath,
     },
     titleBarStyle: 'hiddenInset',
     show: false,
@@ -35,7 +41,17 @@ function createWindow(): void {
 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
+    console.log('🔧 Window ready to show');
     mainWindow.show();
+  });
+
+  // Debug: Listen for preload script events
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('🔧 Web contents finished loading');
+  });
+
+  mainWindow.webContents.on('dom-ready', () => {
+    console.log('🔧 DOM ready');
   });
 
   // Handle window closed
@@ -72,15 +88,15 @@ app.on('window-all-closed', () => {
 function createMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
-      label: 'GitIssueBlog',
+      label: 'IssueDesk',
       submenu: [
         {
-          label: 'About GitIssueBlog',
+          label: 'About IssueDesk',
           click: () => {
             dialog.showMessageBox(mainWindow, {
               type: 'info',
-              title: 'About GitIssueBlog',
-              message: 'GitIssueBlog Desktop Client',
+              title: 'About IssueDesk',
+              message: 'IssueDesk Desktop Client',
               detail: 'A desktop client for managing GitHub Issues as blog posts.',
             });
           },

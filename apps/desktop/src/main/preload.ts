@@ -1,5 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { AppConfig, Repository, Issue, Label, CreateIssue, UpdateIssue, CreateLabel, UpdateLabel, ApiResponse } from '@gitissueblog/shared';
+import { AppConfig, Repository, Issue, Label, CreateIssue, UpdateIssue, CreateLabel, UpdateLabel, ApiResponse } from '@issuedesk/shared';
+
+// Debug log to confirm preload script is loaded
+console.log('🔧 Preload script loaded successfully');
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
@@ -36,4 +39,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteLabel: (token: string, owner: string, repo: string, name: string): Promise<ApiResponse<void>> => 
     ipcRenderer.invoke('delete-label', token, owner, repo, name),
 });
+
+// Debug log to confirm electronAPI is exposed
+console.log('🔧 electronAPI exposed to window object');
 

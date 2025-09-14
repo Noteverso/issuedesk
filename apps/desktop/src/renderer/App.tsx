@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AppConfig } from '@gitissueblog/shared';
+import { AppConfig } from '@issuedesk/shared';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Issues from './pages/Issues';
@@ -13,9 +13,20 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Debug: Check if electronAPI is available
+    console.log('🔍 Checking window.electronAPI availability...');
+    console.log('window.electronAPI:', window.electronAPI);
+    console.log('typeof window.electronAPI:', typeof window.electronAPI);
+    console.log('Available methods:', window.electronAPI ? Object.keys(window.electronAPI) : 'N/A');
+    
     const loadConfig = async () => {
       try {
+        if (!window.electronAPI) {
+          throw new Error('window.electronAPI is not available');
+        }
+        console.log('✅ window.electronAPI is available, calling getConfig...');
         const appConfig = await window.electronAPI.getConfig();
+        console.log('✅ Config loaded successfully:', appConfig);
         setConfig(appConfig);
       } catch (error) {
         console.error('Failed to load config:', error);

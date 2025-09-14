@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
-import { Repository, Issue, Label } from '@gitissueblog/shared';
+import { Repository, Issue, Label } from '@issuedesk/shared';
 import { 
   Github, 
   FileText, 
@@ -86,16 +86,33 @@ export default function Dashboard() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <Github className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">欢迎使用 GitIssueBlog</h1>
+            <h1 className="text-2xl font-bold mb-2">欢迎使用 IssueDesk</h1>
             <p className="text-muted-foreground mb-6">
               请先在设置中配置 GitHub Token 以开始使用
             </p>
-            <a 
-              href="/settings" 
-              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
-              前往设置
-            </a>
+            <div className="space-x-4">
+              <a 
+                href="/settings" 
+                className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              >
+                前往设置
+              </a>
+              <button
+                onClick={() => {
+                  console.log('🧪 Testing window.electronAPI...');
+                  console.log('window.electronAPI:', window.electronAPI);
+                  if (window.electronAPI) {
+                    console.log('✅ window.electronAPI is available!');
+                    console.log('Available methods:', Object.keys(window.electronAPI));
+                  } else {
+                    console.log('❌ window.electronAPI is not available');
+                  }
+                }}
+                className="inline-flex items-center px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors"
+              >
+                测试 Electron API
+              </button>
+            </div>
           </div>
         </div>
       </div>

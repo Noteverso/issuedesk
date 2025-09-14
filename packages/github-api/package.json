@@ -1,6 +1,6 @@
 {
-  "name": "@gitissueblog/github-api",
-  "version": "1.0.0",
+  "name": "@issuedesk/github-api",
+  "version": "0.0.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -10,7 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@gitissueblog/shared": "workspace:*",
+    "@issuedesk/shared": "workspace:*",
     "axios": "^1.6.0"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-# GitIssueBlog
+# IssueDesk
 
 一个基于 GitHub Issues 的博客内容管理系统，包含桌面客户端和移动端应用。
 
@@ -7,7 +7,7 @@
 这是一个使用 pnpm workspace 管理的 mono repo，包含以下包：
 
 ```
-gitissueblog/
+issuedesk/
 ├── apps/
 │   ├── desktop/          # Electron 桌面应用
 │   └── mobile/           # React Native 移动应用

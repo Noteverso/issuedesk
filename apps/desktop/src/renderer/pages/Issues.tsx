@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
-import { Issue, CreateIssue, UpdateIssue } from '@gitissueblog/shared';
+import { Issue, CreateIssue, UpdateIssue } from '@issuedesk/shared';
 import { 
   Plus, 
   Search, 

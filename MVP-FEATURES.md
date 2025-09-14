@@ -1,4 +1,4 @@
-# GitIssueBlog MVP 功能说明
+# IssueDesk MVP 功能说明
 
 ## 已实现功能
 
@@ -28,7 +28,7 @@
 
 ### Mono Repo 结构
 ```
-gitissueblog/
+issuedesk/
 ├── apps/
 │   ├── desktop/          # Electron 桌面应用
 │   └── mobile/           # React Native 移动应用 (保留)

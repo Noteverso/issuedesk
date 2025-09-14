@@ -1,6 +1,6 @@
 {
-  "name": "@gitissueblog/mobile",
-  "version": "1.0.0",
+  "name": "@issuedesk/mobile",
+  "version": "0.0.1",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -16,7 +16,7 @@
     "expo-status-bar": "~3.0.8",
     "react": "19.1.0",
     "react-native": "0.81.4",
-    "@gitissueblog/shared": "workspace:*"
+    "@issuedesk/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

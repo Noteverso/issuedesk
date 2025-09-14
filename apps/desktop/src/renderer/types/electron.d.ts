@@ -1,4 +1,4 @@
-import { AppConfig, Repository, Issue, Label, CreateIssue, UpdateIssue, CreateLabel, UpdateLabel, ApiResponse } from '@gitissueblog/shared';
+import { AppConfig, Repository, Issue, Label, CreateIssue, UpdateIssue, CreateLabel, UpdateLabel, ApiResponse } from '@issuedesk/shared';
 
 declare global {
   interface Window {

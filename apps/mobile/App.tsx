@@ -12,7 +12,7 @@ export default function App() {
   const HomeScreen = () => (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.appTitle}>GitIssueBlog</Text>
+        <Text style={styles.appTitle}>IssueDesk</Text>
         <Text style={styles.appSubtitle}>
           使用 GitHub Issues 管理你的博客
         </Text>

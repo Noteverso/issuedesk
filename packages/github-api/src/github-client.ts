@@ -12,7 +12,7 @@ import {
   GITHUB_API_BASE_URL,
   GITHUB_API_VERSION,
   API_ENDPOINTS,
-} from '@gitissueblog/shared';
+} from '@issuedesk/shared';
 
 export class GitHubClient {
   private client: AxiosInstance;
@@ -26,7 +26,7 @@ export class GitHubClient {
         'Authorization': `token ${token}`,
         'Accept': `application/vnd.github.v3+json`,
         'X-GitHub-Api-Version': GITHUB_API_VERSION,
-        'User-Agent': 'GitIssueBlog-Client/1.0.0',
+        'User-Agent': 'IssueDesk-Client/1.0.0',
       },
       timeout: 30000,
     });

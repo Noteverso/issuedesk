@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
-import { Label, CreateLabel, UpdateLabel } from '@gitissueblog/shared';
+import { Label, CreateLabel, UpdateLabel } from '@issuedesk/shared';
 import { 
   Plus, 
   Search, 

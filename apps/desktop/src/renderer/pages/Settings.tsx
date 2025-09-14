@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
-import { Repository } from '@gitissueblog/shared';
+import { Repository } from '@issuedesk/shared';
 import { 
   Github, 
   Key, 
