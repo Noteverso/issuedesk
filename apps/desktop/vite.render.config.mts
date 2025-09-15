@@ -1,15 +1,16 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 
+// Vite config for Electron renderer (React UI)
 export default defineConfig({
   plugins: [react()],
   root: 'src/renderer',
   build: {
     outDir: '../../dist/renderer',
     emptyOutDir: true,
+    sourcemap: true,
   },
-  publicDir: '../public',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src/renderer'),
@@ -19,5 +20,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    strictPort: true,
   },
 });
+

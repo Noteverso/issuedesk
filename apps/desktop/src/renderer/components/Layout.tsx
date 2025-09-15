@@ -81,7 +81,7 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
 
         {/* Repository info */}
-        {config.github.defaultRepository && (
+        {config?.github?.defaultRepository && (
           <div className="absolute bottom-4 left-4 right-4">
             <div className="bg-muted rounded-lg p-3">
               <p className="text-xs text-muted-foreground mb-1">当前仓库</p>
@@ -107,7 +107,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex-1" />
           
           <div className="flex items-center space-x-4">
-            {config.github.username && (
+            {config?.github?.username && (
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <span>@{config.github.username}</span>
               </div>

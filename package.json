@@ -5,6 +5,7 @@
   "scripts": {
     "dev:mobile": "pnpm --filter @issuedesk/mobile start",
     "dev:desktop": "pnpm --filter @issuedesk/desktop dev",
+    "dev:all": "pnpm -r --parallel --filter @issuedesk/shared --filter @issuedesk/github-api --filter @issuedesk/desktop run dev",
     "build:mobile": "pnpm --filter @issuedesk/mobile build",
     "build:desktop": "pnpm --filter @issuedesk/desktop build",
     "build:shared": "pnpm --filter @issuedesk/shared build",

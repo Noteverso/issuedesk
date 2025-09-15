@@ -1,11 +1,32 @@
 import { app, BrowserWindow, Menu, ipcMain, dialog, shell } from 'electron';
 import { join } from 'path';
+
 import Store from 'electron-store';
 import { GitHubClient } from '@issuedesk/github-api';
 import { AppConfig } from '@issuedesk/shared';
 
+// Add default config for electron-store
+const defaultConfig: AppConfig = {
+  github: {
+    token: '',
+    username: '',
+    defaultRepository: '',
+  },
+  editor: {
+    theme: 'light',
+    fontSize: 14,
+    autoSave: true,
+    autoSaveInterval: 5000,
+  },
+  ui: {
+    sidebarWidth: 300,
+    showLineNumbers: true,
+    wordWrap: true,
+  },
+};
+
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
-const store = new Store<AppConfig>();
+const store = new Store<AppConfig>({ defaults: defaultConfig });
 
 let mainWindow: BrowserWindow;
 
@@ -151,6 +172,8 @@ function createMenu(): void {
 
 // IPC handlers
 ipcMain.handle('get-config', () => {
+  // Debug: log the config store
+  console.log('🔧 get-config store.store:', store.store);
   return store.store;
 });
 

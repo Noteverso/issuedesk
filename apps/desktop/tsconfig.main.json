@@ -13,8 +13,13 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": false,
-    "sourceMap": true
+    "sourceMap": true,
+    "paths": {
+      "@shared/*": ["../../packages/shared/src/*"],
+      "@github-api/*": ["../../packages/github-api/src/*"]
+    }
   },
+
   "include": ["src/main/**/*"],
   "exclude": ["node_modules", "dist", "src/renderer"]
 }
