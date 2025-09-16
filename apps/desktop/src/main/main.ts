@@ -36,7 +36,7 @@ function createWindow(): void {
   console.log('🔧 Preload script path:', preloadPath);
   console.log('🔧 isDev:', isDev);
   console.log('🔧 __dirname:', __dirname);
-  ``
+  
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -53,8 +53,8 @@ function createWindow(): void {
   });
 
   // Load the app
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));

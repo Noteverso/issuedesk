@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite';
 import { builtinModules } from 'node:module';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// __dirname equivalent for ESM
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 // Vite config for Electron preload script
 export default defineConfig({
@@ -30,4 +34,3 @@ export default defineConfig({
     },
   },
 });
-

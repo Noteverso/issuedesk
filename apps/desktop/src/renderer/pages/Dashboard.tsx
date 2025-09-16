@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useConfig } from '../contexts/ConfigContext';
 import { Repository, Issue, Label } from '@issuedesk/shared';
 import { 

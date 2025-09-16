@@ -1,6 +1,6 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { RouterProvider, createBrowserRouter, redirect } from 'react-router-dom';
+import { createRoot } from 'react-dom/client';
+import { RouterProvider, createBrowserRouter, redirect } from 'react-router';
 import App from './App';
 import Dashboard from './pages/Dashboard';
 import Issues from './pages/Issues';
@@ -37,7 +37,7 @@ const router = createBrowserRouter([
   },
 ]);
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <RouterProvider router={router} />
   </React.StrictMode>
