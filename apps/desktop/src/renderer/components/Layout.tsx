@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { 
   Home, 
   FileText, 
@@ -11,10 +11,6 @@ import {
 } from 'lucide-react';
 import { useConfig } from '../contexts/ConfigContext';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
 const navigation = [
   { name: '仪表板', href: '/dashboard', icon: Home },
   { name: 'Issues', href: '/issues', icon: FileText },
@@ -22,7 +18,7 @@ const navigation = [
   { name: '设置', href: '/settings', icon: Settings },
 ];
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { config } = useConfig();
@@ -118,7 +114,7 @@ export default function Layout({ children }: LayoutProps) {
         {/* Page content */}
         <main className="flex-1 overflow-auto">
           <div className="h-full">
-            {children}
+            <Outlet />
           </div>
         </main>
       </div>

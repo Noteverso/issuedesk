@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useConfig } from '../contexts/ConfigContext';
 import { Repository, Issue, Label } from '@issuedesk/shared';
 import { 
@@ -8,7 +9,8 @@ import {
   AlertCircle, 
   CheckCircle,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Settings
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -91,12 +93,12 @@ export default function Dashboard() {
               请先在设置中配置 GitHub Token 以开始使用
             </p>
             <div className="space-x-4">
-              <a 
-                href="/settings" 
+              <Link 
+                to="/settings" 
                 className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
                 前往设置
-              </a>
+              </Link>
               <button
                 onClick={() => {
                   console.log('🧪 Testing window.electronAPI...');
@@ -250,8 +252,8 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <a 
-            href="/issues" 
+          <Link 
+            to="/issues" 
             className="bg-card border border-border rounded-lg p-6 hover:bg-accent transition-colors"
           >
             <FileText className="h-8 w-8 text-primary mb-3" />
@@ -259,10 +261,10 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">
               创建、编辑和管理你的博客文章和笔记
             </p>
-          </a>
+          </Link>
 
-          <a 
-            href="/labels" 
+          <Link 
+            to="/labels" 
             className="bg-card border border-border rounded-lg p-6 hover:bg-accent transition-colors"
           >
             <Tag className="h-8 w-8 text-primary mb-3" />
@@ -270,10 +272,10 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">
               创建和管理标签，组织你的内容
             </p>
-          </a>
+          </Link>
 
-          <a 
-            href="/settings" 
+          <Link 
+            to="/settings" 
             className="bg-card border border-border rounded-lg p-6 hover:bg-accent transition-colors"
           >
             <Settings className="h-8 w-8 text-primary mb-3" />
@@ -281,7 +283,7 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">
               配置 GitHub 连接和应用程序设置
             </p>
-          </a>
+          </Link>
         </div>
       </div>
     </div>

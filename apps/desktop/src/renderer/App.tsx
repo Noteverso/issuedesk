@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppConfig } from '@issuedesk/shared';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Issues from './pages/Issues';
-import Labels from './pages/Labels';
-import Settings from './pages/Settings';
 import { ConfigProvider } from './contexts/ConfigContext';
 
 function App() {
@@ -89,15 +84,7 @@ function App() {
 
   return (
     <ConfigProvider value={{ config, updateConfig }}>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/issues" element={<Issues />} />
-          <Route path="/labels" element={<Labels />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </Layout>
+      <Layout />
     </ConfigProvider>
   );
 }
