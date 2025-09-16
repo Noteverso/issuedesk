@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 
 // Vite config for Electron renderer (React UI)
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   root: 'src/renderer',
   build: {
     outDir: '../../dist/renderer',
@@ -23,4 +24,3 @@ export default defineConfig({
     strictPort: true,
   },
 });
-

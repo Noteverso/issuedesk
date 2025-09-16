@@ -305,7 +305,7 @@ function CreateLabelModal({ onClose, onSubmit }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md">
         <h2 className="text-xl font-semibold mb-4">创建标签</h2>
         
@@ -411,7 +411,7 @@ function EditLabelModal({ label, onClose, onSubmit }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md">
         <h2 className="text-xl font-semibold mb-4">编辑标签</h2>
         
