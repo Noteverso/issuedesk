@@ -4,22 +4,21 @@
 
 echo "🚀 启动 IssueDesk 开发环境..."
 
-# 检查 pnpm 是否安装
-if ! command -v pnpm &> /dev/null; then
-    echo "❌ pnpm 未安装，请先安装 pnpm"
-    echo "npm install -g pnpm"
+# 检查 npm 是否安装
+if ! command -v npm &> /dev/null; then
+    echo "❌ npm 未安装，请先安装 Node.js (已包含 npm)"
     exit 1
 fi
 
 # 安装依赖
 echo "📦 安装依赖..."
-pnpm install
+npm install
 
 # 构建共享包
 echo "🔨 构建共享包..."
-pnpm build:shared
-pnpm build:github-api
+npm run build:shared
+npm run build:github-api
 
 # 启动桌面应用开发模式
 echo "🖥️  启动桌面应用..."
-pnpm dev:desktop
+npm run dev:desktop

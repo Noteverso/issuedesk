@@ -10,7 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@issuedesk/shared": "workspace:*",
+    "@issuedesk/shared": "file:../shared",
     "axios": "^1.6.0"
   },
   "devDependencies": {

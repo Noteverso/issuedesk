@@ -4,7 +4,7 @@
 
 ## 项目结构
 
-这是一个使用 pnpm workspace 管理的 mono repo，包含以下包：
+这是一个使用 npm workspaces 管理的 mono repo，包含以下包：
 
 ```
 issuedesk/
@@ -14,20 +14,19 @@ issuedesk/
 ├── packages/
 │   ├── shared/           # 共享类型和工具
 │   └── github-api/       # GitHub API 客户端
-├── pnpm-workspace.yaml   # pnpm workspace 配置
-└── package.json          # 根包配置
+└── package.json          # 根包配置（含 workspaces）
 ```
 
 ## 环境要求
 
 - Node.js >= 18.0.0
-- pnpm >= 8.0.0
+- npm >= 9.0.0（Node.js 附带）
 
 ## 安装依赖
 
 ```bash
 # 安装所有包的依赖
-pnpm install
+npm install
 ```
 
 ## 开发
@@ -36,39 +35,39 @@ pnpm install
 
 ```bash
 # 开发模式
-pnpm dev:desktop
+npm run dev:desktop
 
 # 构建
-pnpm build:desktop
+npm run build:desktop
 
 # 打包分发
-pnpm dist:desktop        # 当前平台
-pnpm dist:desktop:mac    # macOS
-pnpm dist:desktop:win    # Windows
-pnpm dist:desktop:linux  # Linux
+npm run dist:desktop        # 当前平台
+npm run dist:desktop:mac    # macOS
+npm run dist:desktop:win    # Windows
+npm run dist:desktop:linux  # Linux
 ```
 
 ### 移动应用 (React Native)
 
 ```bash
 # 开发模式
-pnpm dev:mobile
+npm run dev:mobile
 
 # 构建
-pnpm build:mobile
+npm run build:mobile
 ```
 
 ### 共享包
 
 ```bash
 # 构建共享包
-pnpm build:shared
+npm run build:shared
 
 # 构建 GitHub API 包
-pnpm build:github-api
+npm run build:github-api
 
 # 构建所有包
-pnpm build:all
+npm run build:all
 ```
 
 ## 功能特性
@@ -122,17 +121,17 @@ pnpm build:all
 
 ```bash
 # 运行 lint
-pnpm lint
+npm run lint
 
 # 类型检查
-pnpm type-check
+npm run type-check
 ```
 
 ### 清理
 
 ```bash
 # 清理所有 node_modules
-pnpm clean
+npm run clean
 ```
 
 ## 技术栈
@@ -141,7 +140,7 @@ pnpm clean
 - **移动应用**: React Native + Expo + TypeScript
 - **共享包**: TypeScript + Zod
 - **API 客户端**: Axios + TypeScript
-- **包管理**: pnpm workspace
+- **包管理**: npm workspaces
 
 ## 许可证
 

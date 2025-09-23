@@ -2,31 +2,38 @@
   "name": "issuedesk",
   "version": "0.0.1",
   "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ]
+  },
   "scripts": {
-    "dev:mobile": "pnpm --filter @issuedesk/mobile start",
-    "dev:desktop": "pnpm --filter @issuedesk/desktop dev",
-    "dev:all": "pnpm -r --parallel --filter @issuedesk/shared --filter @issuedesk/github-api --filter @issuedesk/desktop run dev",
-    "build:mobile": "pnpm --filter @issuedesk/mobile build",
-    "build:desktop": "pnpm --filter @issuedesk/desktop build",
-    "build:shared": "pnpm --filter @issuedesk/shared build",
-    "build:github-api": "pnpm --filter @issuedesk/github-api build",
-    "build:all": "pnpm build:shared && pnpm build:github-api && pnpm build:desktop",
-    "dist:desktop": "pnpm --filter @issuedesk/desktop dist",
-    "dist:desktop:mac": "pnpm --filter @issuedesk/desktop dist:mac",
-    "dist:desktop:win": "pnpm --filter @issuedesk/desktop dist:win",
-    "dist:desktop:linux": "pnpm --filter @issuedesk/desktop dist:linux",
-    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules",
-    "lint": "pnpm -r lint",
-    "type-check": "pnpm -r type-check",
-    "install:all": "pnpm install"
+    "dev:mobile": "npm run start --workspace @issuedesk/mobile",
+    "dev:desktop": "npm run dev --workspace @issuedesk/desktop",
+    "dev:all": "concurrently \"npm run dev --workspace @issuedesk/shared\" \"npm run dev --workspace @issuedesk/github-api\" \"npm run dev --workspace @issuedesk/desktop\"",
+    "build:mobile": "npm run build --workspace @issuedesk/mobile",
+    "build:desktop": "npm run build --workspace @issuedesk/desktop",
+    "build:shared": "npm run build --workspace @issuedesk/shared",
+    "build:github-api": "npm run build --workspace @issuedesk/github-api",
+    "build:all": "npm run build:shared && npm run build:github-api && npm run build:desktop",
+    "dist:desktop": "npm run dist --workspace @issuedesk/desktop",
+    "dist:desktop:mac": "npm run dist:mac --workspace @issuedesk/desktop",
+    "dist:desktop:win": "npm run dist:win --workspace @issuedesk/desktop",
+    "dist:desktop:linux": "npm run dist:linux --workspace @issuedesk/desktop",
+    "clean": "bash -c 'rm -rf node_modules apps/*/node_modules packages/*/node_modules'",
+    "lint": "npm run lint --workspaces --if-present",
+    "type-check": "npm run type-check --workspaces --if-present",
+    "install:all": "npm install"
   },
   "devDependencies": {
     "@types/node": "^24.5.0",
+    "concurrently": "^9.1.2",
     "typescript": "^5.9.2"
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "npm": ">=9.0.0"
   },
-  "packageManager": "pnpm@8.15.0"
+  "packageManager": "npm@10.9.0"
 }

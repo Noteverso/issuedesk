@@ -35,14 +35,14 @@ issuedesk/
 ├── packages/
 │   ├── shared/           # 共享类型和工具
 │   └── github-api/       # GitHub API 客户端
-└── pnpm-workspace.yaml   # pnpm workspace 配置
+└── package.json          # 根包配置（含 workspaces）
 ```
 
 ### 技术栈
 - **桌面应用**: Electron + React + TypeScript + Tailwind CSS
 - **状态管理**: React Context API
 - **API 客户端**: Axios + TypeScript
-- **包管理**: pnpm workspace
+- **包管理**: npm workspaces
 - **构建工具**: Vite + TypeScript
 
 ### 核心组件
@@ -56,19 +56,19 @@ issuedesk/
 
 ### 1. 环境要求
 - Node.js >= 18.0.0
-- pnpm >= 8.0.0
+- npm >= 9.0.0（Node.js 附带）
 
 ### 2. 安装和启动
 ```bash
 # 安装依赖
-pnpm install
+npm install
 
 # 构建共享包
-pnpm build:shared
-pnpm build:github-api
+npm run build:shared
+npm run build:github-api
 
 # 启动开发模式
-pnpm dev:desktop
+npm run dev:desktop
 
 # 或者使用启动脚本
 ./start-dev.sh
@@ -134,18 +134,18 @@ pnpm dev:desktop
 
 ### 开发构建
 ```bash
-pnpm build:desktop
+npm run build:desktop
 ```
 
 ### 生产构建
 ```bash
 # 当前平台
-pnpm dist:desktop
+npm run dist:desktop
 
 # 指定平台
-pnpm dist:desktop:mac    # macOS
-pnpm dist:desktop:win    # Windows
-pnpm dist:desktop:linux  # Linux
+npm run dist:desktop:mac    # macOS
+npm run dist:desktop:win    # Windows
+npm run dist:desktop:linux  # Linux
 ```
 
 ## 许可证
