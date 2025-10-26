@@ -68,106 +68,125 @@ const mockIssuesApi = {
 
 /**
  * Type-safe IPC client
- * Provides namespaced API even if underlying preload uses flat structure
+ * Provides namespaced API that calls the actual Electron IPC handlers
  */
 export const ipcClient = {
   get issues() {
     if (!isElectronAvailable()) {
+      console.warn('Electron not available, using mock issues API');
       return mockIssuesApi;
     }
     
-    // Return mock for now until handlers are implemented
-    return mockIssuesApi;
+    // Use the real IPC API exposed by preload
+    return (window as any).electronAPI.issues;
   },
   
   get labels() {
-    return {
-      list: async () => ({ labels: [], totalCount: 0 }),
-      get: async () => { throw new Error('Not implemented'); },
-      create: async () => { throw new Error('Not implemented'); },
-      update: async () => { throw new Error('Not implemented'); },
-      delete: async () => ({ success: false }),
-    };
+    if (!isElectronAvailable()) {
+      return {
+        list: async () => ({ labels: [], totalCount: 0 }),
+        get: async () => { throw new Error('Not implemented'); },
+        create: async () => { throw new Error('Not implemented'); },
+        update: async () => { throw new Error('Not implemented'); },
+        delete: async () => ({ success: false }),
+      };
+    }
+    return (window as any).electronAPI.labels;
   },
   
   get sync() {
-    return {
-      start: async () => ({ syncId: 'mock' }),
-      getStatus: async () => ({
-        status: 'idle' as const,
-        lastSyncAt: null,
-        conflicts: [],
-      }),
-      resolveConflict: async () => ({ success: false }),
-    };
+    if (!isElectronAvailable()) {
+      return {
+        start: async () => ({ syncId: 'mock' }),
+        getStatus: async () => ({
+          status: 'idle' as const,
+          lastSyncAt: null,
+          conflicts: [],
+        }),
+        resolveConflict: async () => ({ success: false }),
+      };
+    }
+    return (window as any).electronAPI.sync;
   },
   
   get settings() {
-    return {
-      get: async () => ({
-        settings: {
-          activeRepositoryId: null,
-          repositories: [],
-          theme: 'light' as const,
-          editorMode: 'preview' as const,
-          viewPreferences: {
-            issuesView: 'list' as const,
-            issuesPerPage: 50,
-            defaultFilter: {},
+    if (!isElectronAvailable()) {
+      return {
+        get: async () => ({
+          settings: {
+            activeRepositoryId: null,
+            repositories: [],
+            theme: 'light' as const,
+            editorMode: 'preview' as const,
+            viewPreferences: {
+              issuesView: 'list' as const,
+              issuesPerPage: 50,
+              defaultFilter: {},
+            },
+            rateLimit: null,
           },
-          rateLimit: null,
-        },
-      }),
-      update: async (req: any) => ({
-        settings: {
-          activeRepositoryId: null,
-          repositories: [],
-          theme: req.theme || 'light' as const,
-          editorMode: req.editorMode || 'preview' as const,
-          viewPreferences: req.viewPreferences || {
-            issuesView: 'list' as const,
-            issuesPerPage: 50,
-            defaultFilter: {},
+        }),
+        update: async (req: any) => ({
+          settings: {
+            activeRepositoryId: null,
+            repositories: [],
+            theme: req.theme || 'light' as const,
+            editorMode: req.editorMode || 'preview' as const,
+            viewPreferences: req.viewPreferences || {
+              issuesView: 'list' as const,
+              issuesPerPage: 50,
+              defaultFilter: {},
+            },
+            rateLimit: null,
           },
-          rateLimit: null,
-        },
-      }),
-      setRepository: async () => ({ success: true }),
-      switchRepository: async () => ({ success: true }),
-      getToken: async () => ({ token: null }),
-      setToken: async () => ({ success: true }),
-    };
+        }),
+        setRepository: async () => ({ success: true }),
+        switchRepository: async () => ({ success: true }),
+        getToken: async () => ({ token: null }),
+        setToken: async () => ({ success: true }),
+      };
+    }
+    return (window as any).electronAPI.settings;
   },
   
   get analytics() {
-    return {
-      getMetrics: async () => ({
-        totalIssues: 0,
-        openIssues: 0,
-        closedIssues: 0,
-        issuesByLabel: [],
-        issuesOverTime: [],
-      }),
-    };
+    if (!isElectronAvailable()) {
+      return {
+        getMetrics: async () => ({
+          totalIssues: 0,
+          openIssues: 0,
+          closedIssues: 0,
+          issuesByLabel: [],
+          issuesOverTime: [],
+        }),
+      };
+    }
+    return (window as any).electronAPI.analytics;
   },
   
   get system() {
-    return {
-      getInfo: async () => ({
-        version: '0.0.1',
-        platform: 'unknown',
-        electron: 'unknown',
-      }),
-      checkForUpdates: async () => ({
-        available: false,
-        currentVersion: '0.0.1',
-      }),
-    };
+    if (!isElectronAvailable()) {
+      return {
+        getInfo: async () => ({
+          version: '0.0.1',
+          platform: 'unknown',
+          electron: 'unknown',
+        }),
+        checkForUpdates: async () => ({
+          available: false,
+          currentVersion: '0.0.1',
+        }),
+      };
+    }
+    return (window as any).electronAPI.system;
   },
   
   on: (channel: string, callback: (...args: any[]) => void) => {
-    console.warn(`Event listener not implemented: ${channel}`);
-    return () => {};
+    if (!isElectronAvailable()) {
+      console.warn(`Event listener not implemented: ${channel}`);
+      return () => {};
+    }
+    return (window as any).electronAPI.on(channel, callback);
   },
 };
 

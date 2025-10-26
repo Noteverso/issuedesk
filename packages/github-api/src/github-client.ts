@@ -46,6 +46,40 @@ export class GitHubClient {
   }
 
   /**
+   * Perform a raw GitHub API request
+   */
+  async request<T = any>(
+    path: string,
+    options: {
+      method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+      params?: Record<string, any>;
+      data?: any;
+      headers?: Record<string, string>;
+    } = {}
+  ): Promise<ApiResponse<T>> {
+    try {
+      const response: AxiosResponse<T> = await this.client.request({
+        url: path,
+        method: options.method || 'GET',
+        params: options.params,
+        data: options.data,
+        headers: options.headers,
+      });
+
+      return {
+        data: response.data,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        data: null as any,
+        success: false,
+        message: (error as ApiError).message,
+      };
+    }
+  }
+
+  /**
    * Get current user information
    */
   async getCurrentUser(): Promise<ApiResponse<any>> {

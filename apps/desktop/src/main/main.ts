@@ -1,33 +1,11 @@
-import { app, BrowserWindow, Menu, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, Menu, shell, dialog } from 'electron';
 import { join } from 'path';
 
-import Store from 'electron-store';
-import { GitHubClient } from '@issuedesk/github-api';
-import { AppConfig } from '@issuedesk/shared';
 import { registerIssuesHandlers } from './ipc/issues';
-
-// Add default config for electron-store
-const defaultConfig: AppConfig = {
-  github: {
-    token: '',
-    username: '',
-    defaultRepository: '',
-  },
-  editor: {
-    theme: 'light',
-    fontSize: 14,
-    autoSave: true,
-    autoSaveInterval: 5000,
-  },
-  ui: {
-    sidebarWidth: 300,
-    showLineNumbers: true,
-    wordWrap: true,
-  },
-};
+import { registerSettingsHandlers, registerGitHubHandlers } from './ipc/settings';
+import { registerSystemHandlers } from './ipc/system';
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
-const store = new Store<AppConfig>({ defaults: defaultConfig });
 
 let mainWindow: BrowserWindow;
 
@@ -92,6 +70,9 @@ function createWindow(): void {
 app.whenReady().then(() => {
   // Register IPC handlers
   registerIssuesHandlers();
+  registerSettingsHandlers();
+  registerGitHubHandlers();
+  registerSystemHandlers();
   
   createWindow();
   createMenu();
@@ -174,154 +155,3 @@ function createMenu(): void {
   Menu.setApplicationMenu(menu);
 }
 
-// IPC handlers
-ipcMain.handle('get-config', () => {
-  // Debug: log the config store
-  console.log('🔧 get-config store.store:', store.store);
-  return store.store;
-});
-
-ipcMain.handle('set-config', (_, config: Partial<AppConfig>) => {
-  store.set(config);
-  return store.store;
-});
-
-ipcMain.handle('test-github-connection', async (_, token: string) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.testConnection();
-    return result;
-  } catch (error) {
-    return {
-      data: false,
-      success: false,
-      message: 'Connection failed',
-    };
-  }
-});
-
-ipcMain.handle('get-github-user', async (_, token: string) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.getCurrentUser();
-    return result;
-  } catch (error) {
-    return {
-      data: null,
-      success: false,
-      message: 'Failed to get user information',
-    };
-  }
-});
-
-ipcMain.handle('get-repositories', async (_, token: string) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.getRepositories();
-    return result;
-  } catch (error) {
-    return {
-      data: [],
-      success: false,
-      message: 'Failed to get repositories',
-    };
-  }
-});
-
-ipcMain.handle('get-issues', async (_, token: string, owner: string, repo: string, options: any) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.getIssues(owner, repo, options);
-    return result;
-  } catch (error) {
-    return {
-      data: [],
-      success: false,
-      message: 'Failed to get issues',
-    };
-  }
-});
-
-ipcMain.handle('create-issue', async (_, token: string, owner: string, repo: string, issue: any) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.createIssue(owner, repo, issue);
-    return result;
-  } catch (error) {
-    return {
-      data: null,
-      success: false,
-      message: 'Failed to create issue',
-    };
-  }
-});
-
-ipcMain.handle('update-issue', async (_, token: string, owner: string, repo: string, number: number, issue: any) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.updateIssue(owner, repo, number, issue);
-    return result;
-  } catch (error) {
-    return {
-      data: null,
-      success: false,
-      message: 'Failed to update issue',
-    };
-  }
-});
-
-ipcMain.handle('get-labels', async (_, token: string, owner: string, repo: string) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.getLabels(owner, repo);
-    return result;
-  } catch (error) {
-    return {
-      data: [],
-      success: false,
-      message: 'Failed to get labels',
-    };
-  }
-});
-
-ipcMain.handle('create-label', async (_, token: string, owner: string, repo: string, label: any) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.createLabel(owner, repo, label);
-    return result;
-  } catch (error) {
-    return {
-      data: null,
-      success: false,
-      message: 'Failed to create label',
-    };
-  }
-});
-
-ipcMain.handle('update-label', async (_, token: string, owner: string, repo: string, name: string, label: any) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.updateLabel(owner, repo, name, label);
-    return result;
-  } catch (error) {
-    return {
-      data: null,
-      success: false,
-      message: 'Failed to update label',
-    };
-  }
-});
-
-ipcMain.handle('delete-label', async (_, token: string, owner: string, repo: string, name: string) => {
-  try {
-    const client = new GitHubClient(token);
-    const result = await client.deleteLabel(owner, repo, name);
-    return result;
-  } catch (error) {
-    return {
-      data: undefined,
-      success: false,
-      message: 'Failed to delete label',
-    };
-  }
-});

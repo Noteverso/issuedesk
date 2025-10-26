@@ -1,6 +1,5 @@
-// Re-export all GitHub API modules
-export * from './client';
-export * from './issues';
-export * from './labels';
-export * from './rate-limit';
+// Re-export GitHub API client
+export { GitHubClient } from './github-client';
+
+// Re-export shared types for convenience
 export * from '@issuedesk/shared';

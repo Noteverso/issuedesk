@@ -24,3 +24,24 @@ export interface AppSettings {
   viewPreferences: ViewPreferences;
   rateLimit: RateLimitState | null;
 }
+
+// Legacy AppConfig for backward compatibility with electron-store
+// This is used by the main process for simple key-value settings
+export interface AppConfig {
+  github: {
+    token: string;
+    username: string;
+    defaultRepository: string;
+  };
+  editor: {
+    theme: ThemeMode;
+    fontSize: number;
+    autoSave: boolean;
+    autoSaveInterval: number;
+  };
+  ui: {
+    sidebarWidth: number;
+    showLineNumbers: boolean;
+    wordWrap: boolean;
+  };
+}
