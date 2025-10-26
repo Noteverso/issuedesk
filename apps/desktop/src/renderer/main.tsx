@@ -6,7 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Issues from './pages/Issues';
 import Labels from './pages/Labels';
 import Settings from './pages/Settings';
-import './index.css';
+import './styles/globals.css';
 
 const router = createBrowserRouter([
   {

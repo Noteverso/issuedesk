@@ -3,10 +3,10 @@ import {
   Repository,
   Issue,
   Label,
-  CreateIssue,
-  UpdateIssue,
-  CreateLabel,
-  UpdateLabel,
+  CreateIssueInput,
+  UpdateIssueInput,
+  CreateLabelInput,
+  UpdateLabelInput,
   ApiResponse,
   ApiError,
   GITHUB_API_BASE_URL,
@@ -171,7 +171,7 @@ export class GitHubClient {
   async createIssue(
     owner: string,
     repo: string,
-    issue: CreateIssue
+    issue: CreateIssueInput
   ): Promise<ApiResponse<Issue>> {
     try {
       const response: AxiosResponse<Issue> = await this.client.post(
@@ -199,7 +199,7 @@ export class GitHubClient {
     owner: string,
     repo: string,
     number: number,
-    issue: UpdateIssue
+    issue: UpdateIssueInput
   ): Promise<ApiResponse<Issue>> {
     try {
       const response: AxiosResponse<Issue> = await this.client.patch(
@@ -247,7 +247,7 @@ export class GitHubClient {
   async createLabel(
     owner: string,
     repo: string,
-    label: CreateLabel
+    label: CreateLabelInput
   ): Promise<ApiResponse<Label>> {
     try {
       const response: AxiosResponse<Label> = await this.client.post(
@@ -275,7 +275,7 @@ export class GitHubClient {
     owner: string,
     repo: string,
     name: string,
-    label: UpdateLabel
+    label: UpdateLabelInput
   ): Promise<ApiResponse<Label>> {
     try {
       const response: AxiosResponse<Label> = await this.client.patch(

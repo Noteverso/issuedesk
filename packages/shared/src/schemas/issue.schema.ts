@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Issue validation schemas
 export const IssueStateSchema = z.enum(['open', 'closed']);
 
-export const SyncStatusSchema = z.enum([
+export const IssueSyncStatusSchema = z.enum([
   'synced',
   'pending_create',
   'pending_update',
@@ -20,7 +20,7 @@ export const IssueSchema = z.object({
   createdAt: z.number().int().positive(),
   updatedAt: z.number().int().positive(),
   githubUrl: z.string().url(),
-  syncStatus: SyncStatusSchema,
+  syncStatus: IssueSyncStatusSchema,
   localUpdatedAt: z.number().int().positive(),
   remoteUpdatedAt: z.number().int().positive().nullable(),
   bodyChecksum: z.string().nullable(),

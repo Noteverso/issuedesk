@@ -7,7 +7,7 @@ import {
 } from './issue';
 import { Label, CreateLabelInput, UpdateLabelInput } from './label';
 import { AppSettings, ViewPreferences, ThemeMode, EditorMode } from './settings';
-import { SyncStatus, ConflictResolution } from './sync';
+import { SyncEngineStatus, ConflictResolution } from './sync';
 
 // IPC API types - defines the contract between main and renderer processes
 
@@ -167,7 +167,7 @@ export interface IpcApi {
   // Sync
   sync: {
     start: () => Promise<{ syncId: string }>;
-    getStatus: () => Promise<SyncStatus>;
+    getStatus: () => Promise<SyncEngineStatus>;
     resolveConflict: (req: ConflictResolveRequest) => Promise<{ success: boolean }>;
   };
 

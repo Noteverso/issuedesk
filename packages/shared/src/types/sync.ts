@@ -40,7 +40,7 @@ export interface SyncProgress {
 
 export type SyncState = 'idle' | 'syncing' | 'conflict' | 'error';
 
-export interface SyncStatus {
+export interface SyncEngineStatus {
   status: SyncState;
   progress?: SyncProgress;
   lastSyncAt: number | null;

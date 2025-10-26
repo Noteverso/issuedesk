@@ -1,0 +1,175 @@
+/**
+ * IPC Client - Type-safe wrapper for renderer-to-main communication
+ * 
+ * This utility provides a convenient API for accessing IPC methods
+ * exposed via the preload script, with proper error handling and
+ * TypeScript type safety.
+ * 
+ * NOTE: This is a temporary adapter that wraps the old flat API
+ * into the new namespaced structure until IPC handlers are fully implemented.
+ */
+
+import type { 
+  IssueListRequest, 
+  IssueListResult,
+  IssueGetRequest,
+  IssueGetResult,
+  IssueCreateRequest,
+  IssueCreateResult,
+  IssueUpdateRequest,
+  IssueUpdateResult,
+  IssueDeleteRequest,
+  IssueDeleteResult,
+} from '@issuedesk/shared';
+
+/**
+ * Check if the Electron API is available
+ */
+function isElectronAvailable(): boolean {
+  return typeof window !== 'undefined' && !!(window as any).electronAPI;
+}
+
+/**
+ * Temporary mock implementation until IPC handlers are ready
+ * Returns empty/default values to prevent crashes
+ */
+const mockIssuesApi = {
+  list: async (req: IssueListRequest): Promise<IssueListResult> => {
+    console.warn('IPC not available: issues.list called with mock data');
+    return {
+      issues: [],
+      totalCount: 0,
+      page: req.page || 1,
+      perPage: req.perPage || 50,
+      hasMore: false,
+    };
+  },
+  
+  get: async (req: IssueGetRequest): Promise<IssueGetResult> => {
+    console.warn('IPC not available: issues.get called');
+    throw new Error('Issue not found');
+  },
+  
+  create: async (req: IssueCreateRequest): Promise<IssueCreateResult> => {
+    console.warn('IPC not available: issues.create called');
+    throw new Error('Cannot create issue: IPC not available');
+  },
+  
+  update: async (req: IssueUpdateRequest): Promise<IssueUpdateResult> => {
+    console.warn('IPC not available: issues.update called');
+    throw new Error('Cannot update issue: IPC not available');
+  },
+  
+  delete: async (req: IssueDeleteRequest): Promise<IssueDeleteResult> => {
+    console.warn('IPC not available: issues.delete called');
+    return { success: false };
+  },
+};
+
+/**
+ * Type-safe IPC client
+ * Provides namespaced API even if underlying preload uses flat structure
+ */
+export const ipcClient = {
+  get issues() {
+    if (!isElectronAvailable()) {
+      return mockIssuesApi;
+    }
+    
+    // Return mock for now until handlers are implemented
+    return mockIssuesApi;
+  },
+  
+  get labels() {
+    return {
+      list: async () => ({ labels: [], totalCount: 0 }),
+      get: async () => { throw new Error('Not implemented'); },
+      create: async () => { throw new Error('Not implemented'); },
+      update: async () => { throw new Error('Not implemented'); },
+      delete: async () => ({ success: false }),
+    };
+  },
+  
+  get sync() {
+    return {
+      start: async () => ({ syncId: 'mock' }),
+      getStatus: async () => ({
+        status: 'idle' as const,
+        lastSyncAt: null,
+        conflicts: [],
+      }),
+      resolveConflict: async () => ({ success: false }),
+    };
+  },
+  
+  get settings() {
+    return {
+      get: async () => ({
+        settings: {
+          activeRepositoryId: null,
+          repositories: [],
+          theme: 'light' as const,
+          editorMode: 'preview' as const,
+          viewPreferences: {
+            issuesView: 'list' as const,
+            issuesPerPage: 50,
+            defaultFilter: {},
+          },
+          rateLimit: null,
+        },
+      }),
+      update: async (req: any) => ({
+        settings: {
+          activeRepositoryId: null,
+          repositories: [],
+          theme: req.theme || 'light' as const,
+          editorMode: req.editorMode || 'preview' as const,
+          viewPreferences: req.viewPreferences || {
+            issuesView: 'list' as const,
+            issuesPerPage: 50,
+            defaultFilter: {},
+          },
+          rateLimit: null,
+        },
+      }),
+      setRepository: async () => ({ success: true }),
+      switchRepository: async () => ({ success: true }),
+      getToken: async () => ({ token: null }),
+      setToken: async () => ({ success: true }),
+    };
+  },
+  
+  get analytics() {
+    return {
+      getMetrics: async () => ({
+        totalIssues: 0,
+        openIssues: 0,
+        closedIssues: 0,
+        issuesByLabel: [],
+        issuesOverTime: [],
+      }),
+    };
+  },
+  
+  get system() {
+    return {
+      getInfo: async () => ({
+        version: '0.0.1',
+        platform: 'unknown',
+        electron: 'unknown',
+      }),
+      checkForUpdates: async () => ({
+        available: false,
+        currentVersion: '0.0.1',
+      }),
+    };
+  },
+  
+  on: (channel: string, callback: (...args: any[]) => void) => {
+    console.warn(`Event listener not implemented: ${channel}`);
+    return () => {};
+  },
+};
+
+export { isElectronAvailable };
+export default ipcClient;

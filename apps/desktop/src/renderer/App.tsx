@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AppConfig } from '@issuedesk/shared';
-import Layout from './components/Layout';
+import Layout from './components/common/Layout';
 import { ConfigProvider } from './contexts/ConfigContext';
+import { ThemeProvider } from './components/common/ThemeProvider';
 
 function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
@@ -83,9 +84,11 @@ function App() {
   }
 
   return (
-    <ConfigProvider value={{ config, updateConfig }}>
-      <Layout />
-    </ConfigProvider>
+    <ThemeProvider>
+      <ConfigProvider value={{ config, updateConfig }}>
+        <Layout />
+      </ConfigProvider>
+    </ThemeProvider>
   );
 }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
-import { Label, CreateLabel, UpdateLabel } from '@issuedesk/shared';
+import { Label, CreateLabelInput, UpdateLabelInput } from '@issuedesk/shared';
 import { 
   Plus, 
   Search, 
@@ -52,7 +52,7 @@ export default function Labels() {
     }
   };
 
-  const handleCreateLabel = async (labelData: CreateLabel) => {
+  const handleCreateLabel = async (labelData: CreateLabelInput) => {
     if (!config.github.token || !config.github.defaultRepository) return;
 
     try {
@@ -76,7 +76,7 @@ export default function Labels() {
     }
   };
 
-  const handleUpdateLabel = async (labelName: string, labelData: UpdateLabel) => {
+  const handleUpdateLabel = async (labelName: string, labelData: UpdateLabelInput) => {
     if (!config.github.token || !config.github.defaultRepository) return;
 
     try {
@@ -278,7 +278,7 @@ export default function Labels() {
 // Create Label Modal Component
 function CreateLabelModal({ onClose, onSubmit }: {
   onClose: () => void;
-  onSubmit: (data: CreateLabel) => void;
+  onSubmit: (data: CreateLabelInput) => void;
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -384,7 +384,7 @@ function CreateLabelModal({ onClose, onSubmit }: {
 function EditLabelModal({ label, onClose, onSubmit }: {
   label: Label;
   onClose: () => void;
-  onSubmit: (data: UpdateLabel) => void;
+  onSubmit: (data: UpdateLabelInput) => void;
 }) {
   const [name, setName] = useState(label.name);
   const [description, setDescription] = useState(label.description || '');

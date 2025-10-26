@@ -1,4 +1,6 @@
-import { Issue, BlogPost, BlogPostDraft } from './types';
+// Utility functions
+// NOTE: Blog-related utilities have been temporarily disabled as they rely on
+// the old GitHub API Issue format. These can be re-enabled when needed.
 
 /**
  * Extract excerpt from markdown content
@@ -8,107 +10,37 @@ export function extractExcerpt(content: string, maxLength: number = 200): string
   
   // Remove markdown syntax
   const plainText = content
-    .replace(/#{1,6}\s+/g, '') // Remove headers
-    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-    .replace(/\*(.*?)\*/g, '$1') // Remove italic
-    .replace(/`(.*?)`/g, '$1') // Remove inline code
-    .replace(/```[\s\S]*?```/g, '') // Remove code blocks
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
-    .replace(/\n+/g, ' ') // Replace newlines with spaces
+    .replace(/#+\s/g, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+    .replace(/`(.+?)`/g, '$1')
     .trim();
   
-  if (plainText.length <= maxLength) {
-    return plainText;
-  }
+  if (plainText.length <= maxLength) return plainText;
   
   return plainText.substring(0, maxLength).trim() + '...';
 }
 
 /**
- * Calculate reading time for content
+ * Calculate reading time in minutes
  */
 export function calculateReadingTime(content: string): number {
   if (!content) return 0;
   
   const wordsPerMinute = 200;
-  const wordCount = content.split(/\s+/).length;
-  return Math.ceil(wordCount / wordsPerMinute);
-}
-
-/**
- * Extract tags from issue labels
- */
-export function extractTagsFromLabels(labels: Array<{ name: string }>): string[] {
-  return labels
-    .filter(label => !label.name.startsWith('blog-') && !label.name.startsWith('status-'))
-    .map(label => label.name);
-}
-
-/**
- * Check if issue is a blog post
- */
-export function isBlogPost(issue: Issue): boolean {
-  return issue.labels.some(label => 
-    label.name === 'blog' || 
-    label.name.startsWith('blog-') ||
-    label.name === 'post'
-  );
-}
-
-/**
- * Convert Issue to BlogPost
- */
-export function issueToBlogPost(issue: Issue): BlogPost {
-  const content = issue.body || '';
+  const words = content.trim().split(/\s+/).length;
+  const minutes = Math.ceil(words / wordsPerMinute);
   
-  return {
-    ...issue,
-    excerpt: extractExcerpt(content),
-    readingTime: calculateReadingTime(content),
-    tags: extractTagsFromLabels(issue.labels),
-    published: issue.state === 'open' && isBlogPost(issue),
-  };
+  return Math.max(1, minutes);
 }
 
 /**
- * Create a blog post draft
+ * Format timestamp to readable date
  */
-export function createBlogPostDraft(
-  title: string = '',
-  content: string = '',
-  labels: string[] = ['blog', 'draft']
-): BlogPostDraft {
-  return {
-    title,
-    content,
-    labels,
-    isDraft: true,
-    lastModified: new Date(),
-  };
-}
-
-/**
- * Validate GitHub repository name format
- */
-export function isValidRepositoryName(name: string): boolean {
-  const regex = /^[a-zA-Z0-9._-]+$/;
-  return regex.test(name) && name.length > 0 && name.length <= 100;
-}
-
-/**
- * Validate GitHub username format
- */
-export function isValidUsername(username: string): boolean {
-  const regex = /^[a-zA-Z0-9]([a-zA-Z0-9]|-(?![.-])){0,38}$/;
-  return regex.test(username);
-}
-
-/**
- * Format date for display
- */
-export function formatDate(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleDateString('zh-CN', {
+export function formatDate(timestamp: number | string): string {
+  const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+  return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -116,68 +48,20 @@ export function formatDate(date: string | Date): string {
 }
 
 /**
- * Format relative time
+ * Format timestamp to relative time
  */
-export function formatRelativeTime(date: string | Date): string {
-  const now = new Date();
-  const d = new Date(date);
-  const diffInSeconds = Math.floor((now.getTime() - d.getTime()) / 1000);
+export function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return 'just now';
+  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+  if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+  if (days < 30) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
   
-  if (diffInSeconds < 60) {
-    return '刚刚';
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} 分钟前`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} 小时前`;
-  } else if (diffInSeconds < 2592000) {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} 天前`;
-  } else {
-    return formatDate(d);
-  }
-}
-
-/**
- * Generate a random color for labels
- */
-export function generateRandomColor(): string {
-  const colors = [
-    'FF6B6B', '4ECDC4', '45B7D1', '96CEB4', 'FFEAA7',
-    'DDA0DD', '98D8C8', 'F7DC6F', 'BB8FCE', '85C1E9',
-    'F8C471', '82E0AA', 'F1948A', '85C1E9', 'D7BDE2'
-  ];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
-/**
- * Debounce function
- */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
-
-/**
- * Throttle function
- */
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  limit: number
-): (...args: Parameters<T>) => void {
-  let inThrottle: boolean;
-  return (...args: Parameters<T>) => {
-    if (!inThrottle) {
-      func(...args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
-    }
-  };
+  return formatDate(timestamp);
 }

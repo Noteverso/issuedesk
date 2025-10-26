@@ -18,6 +18,7 @@
       "@/*": ["src/renderer/*"],
       "@shared/*": ["../../packages/shared/src/*"],
       "@github-api/*": ["../../packages/github-api/src/*"]
-    }
+    },
+    "types": ["node", "react", "react-dom"]
   }
 }

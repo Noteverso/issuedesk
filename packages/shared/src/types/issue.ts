@@ -1,7 +1,7 @@
 // Issue-related types
 export type IssueState = 'open' | 'closed';
 
-export type SyncStatus =
+export type IssueSyncStatus =
   | 'synced'
   | 'pending_create'
   | 'pending_update'
@@ -17,7 +17,7 @@ export interface Issue {
   createdAt: number; // Unix timestamp (ms)
   updatedAt: number; // Unix timestamp (ms)
   githubUrl: string;
-  syncStatus: SyncStatus;
+  syncStatus: IssueSyncStatus;
   localUpdatedAt: number; // Unix timestamp (ms)
   remoteUpdatedAt: number | null;
   bodyChecksum: string | null; // SHA-256 hash

@@ -73,7 +73,7 @@ Project uses monorepo workspace structure:
 ### IPC Bridge
 
 - [X] T026 Implement preload script in apps/desktop/src/preload/index.ts (contextBridge setup, type-safe API exposure)
-- [ ] T027 Create IPC client utility in apps/desktop/src/renderer/src/services/ipc.ts (type-safe wrapper for renderer)
+- [X] T027 Create IPC client utility in apps/desktop/src/renderer/src/services/ipc.ts (type-safe wrapper for renderer)
 
 ### GitHub API Abstraction
 
@@ -89,11 +89,11 @@ Project uses monorepo workspace structure:
 
 ### UI Foundation
 
-- [ ] T034 Create main App component in apps/desktop/src/renderer/src/App.tsx (routing, theme provider)
-- [ ] T035 [P] Create Layout component in apps/desktop/src/renderer/src/components/common/Layout.tsx (sidebar, header)
-- [ ] T036 [P] Create Sidebar navigation in apps/desktop/src/renderer/src/components/common/Sidebar.tsx (Dashboard, Issues, Labels, Settings)
-- [ ] T037 [P] Create ThemeProvider in apps/desktop/src/renderer/src/components/common/ThemeProvider.tsx (light/dark mode)
-- [ ] T038 [P] Setup Tailwind globals in apps/desktop/src/renderer/src/styles/globals.css (Primer CSS imports, Tiptap styling)
+- [X] T034 Create main App component in apps/desktop/src/renderer/src/App.tsx (routing, theme provider)
+- [X] T035 [P] Create Layout component in apps/desktop/src/renderer/src/components/common/Layout.tsx (sidebar, header)
+- [X] T036 [P] Create Sidebar navigation in apps/desktop/src/renderer/src/components/common/Sidebar.tsx (Dashboard, Issues, Labels, Settings)
+- [X] T037 [P] Create ThemeProvider in apps/desktop/src/renderer/src/components/common/ThemeProvider.tsx (light/dark mode)
+- [X] T038 [P] Setup Tailwind globals in apps/desktop/src/renderer/src/styles/globals.css (Primer CSS imports, Tiptap styling)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -107,34 +107,34 @@ Project uses monorepo workspace structure:
 
 ### IPC Handlers for User Story 1
 
-- [ ] T039 [P] [US1] Implement issues.list IPC handler in apps/desktop/src/main/ipc/issues.ts (pagination, filtering, validation)
-- [ ] T040 [P] [US1] Implement issues.get IPC handler in apps/desktop/src/main/ipc/issues.ts
-- [ ] T041 [P] [US1] Implement issues.create IPC handler in apps/desktop/src/main/ipc/issues.ts (local-first, queue for sync)
-- [ ] T042 [P] [US1] Implement issues.update IPC handler in apps/desktop/src/main/ipc/issues.ts (conflict detection)
-- [ ] T043 [P] [US1] Implement issues.delete IPC handler in apps/desktop/src/main/ipc/issues.ts (soft delete, queue)
+- [X] T039 [P] [US1] Implement issues.list IPC handler in apps/desktop/src/main/ipc/issues.ts (pagination, filtering, validation)
+- [X] T040 [P] [US1] Implement issues.get IPC handler in apps/desktop/src/main/ipc/issues.ts
+- [X] T041 [P] [US1] Implement issues.create IPC handler in apps/desktop/src/main/ipc/issues.ts (local-first, queue for sync)
+- [X] T042 [P] [US1] Implement issues.update IPC handler in apps/desktop/src/main/ipc/issues.ts (conflict detection)
+- [X] T043 [P] [US1] Implement issues.delete IPC handler in apps/desktop/src/main/ipc/issues.ts (soft delete, queue)
 
 ### React Hooks for User Story 1
 
-- [ ] T044 [P] [US1] Create useIssues hook in apps/desktop/src/renderer/src/hooks/useIssues.ts (list, pagination, filters)
-- [ ] T045 [P] [US1] Create useIssue hook in apps/desktop/src/renderer/src/hooks/useIssue.ts (single issue CRUD)
+- [X] T044 [P] [US1] Create useIssues hook in apps/desktop/src/renderer/src/hooks/useIssues.ts (list, pagination, filters)
+- [X] T045 [P] [US1] Create useIssue hook in apps/desktop/src/renderer/src/hooks/useIssue.ts (single issue CRUD)
 
 ### UI Components for User Story 1
 
-- [ ] T046 [US1] Create Issues page in apps/desktop/src/renderer/src/pages/Issues.tsx (layout, filter bar, issue list)
-- [ ] T047 [P] [US1] Create IssueList component in apps/desktop/src/renderer/src/components/issue/IssueList.tsx (table view with pagination)
-- [ ] T048 [P] [US1] Create IssueCard component in apps/desktop/src/renderer/src/components/issue/IssueCard.tsx (card view)
-- [ ] T049 [P] [US1] Create IssueFilters component in apps/desktop/src/renderer/src/components/issue/IssueFilters.tsx (search, state filter)
-- [ ] T050 [US1] Create MarkdownEditor component in apps/desktop/src/renderer/src/components/markdown/MarkdownEditor.tsx (Tiptap with code/preview toggle)
-- [ ] T051 [US1] Create IssueEditor component in apps/desktop/src/renderer/src/components/issue/IssueEditor.tsx (modal form with MarkdownEditor)
-- [ ] T052 [P] [US1] Create ViewToggle component in apps/desktop/src/renderer/src/components/common/ViewToggle.tsx (list/card switch)
+- [X] T046 [US1] Create Issues page in apps/desktop/src/renderer/src/pages/Issues.tsx (layout, filter bar, issue list)
+- [X] T047 [P] [US1] Create IssueList component in apps/desktop/src/renderer/src/components/issue/IssueList.tsx (table view with pagination)
+- [X] T048 [P] [US1] Create IssueCard component in apps/desktop/src/renderer/src/components/issue/IssueCard.tsx (card view)
+- [X] T049 [P] [US1] Create IssueFilters component in apps/desktop/src/renderer/src/components/issue/IssueFilters.tsx (search, state filter)
+- [X] T050 [US1] Create MarkdownEditor component in apps/desktop/src/renderer/src/components/markdown/MarkdownEditor.tsx (Tiptap with code/preview toggle)
+- [X] T051 [US1] Create IssueEditor component in apps/desktop/src/renderer/src/components/issue/IssueEditor.tsx (modal form with MarkdownEditor)
+- [X] T052 [P] [US1] Create ViewToggle component in apps/desktop/src/renderer/src/components/common/ViewToggle.tsx (list/card switch)
 
 ### Tests for User Story 1
 
-- [ ] T053 [P] [US1] IPC contract test for issues.list in tests/contract/issues.spec.ts (validates Issue[] response)
-- [ ] T054 [P] [US1] IPC contract test for issues.create in tests/contract/issues.spec.ts (validates title required, body optional)
-- [ ] T055 [P] [US1] IPC contract test for issues.update in tests/contract/issues.spec.ts
-- [ ] T056 [P] [US1] E2E test for issue creation flow in tests/e2e/issue-management.spec.ts (Playwright)
-- [ ] T057 [P] [US1] E2E test for markdown code/preview toggle in tests/e2e/markdown-editor.spec.ts
+- [X] T053 [P] [US1] IPC contract test for issues.list in tests/contract/issues.spec.ts (validates Issue[] response)
+- [X] T054 [P] [US1] IPC contract test for issues.create in tests/contract/issues.spec.ts (validates title required, body optional)
+- [X] T055 [P] [US1] IPC contract test for issues.update in tests/contract/issues.spec.ts
+- [X] T056 [P] [US1] E2E test for issue creation flow in tests/e2e/issue-management.spec.ts (Playwright)
+- [X] T057 [P] [US1] E2E test for markdown code/preview toggle in tests/e2e/markdown-editor.spec.ts
 
 **Checkpoint**: User Story 1 complete - can create, edit, delete issues with markdown support
 
