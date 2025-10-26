@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
+import { useTheme } from '../components/common/ThemeProvider';
 import { Repository } from '@issuedesk/shared';
 import { 
   Github, 
@@ -14,9 +15,12 @@ import {
 
 export default function Settings() {
   const { config, updateConfig } = useConfig();
+  const { theme, setTheme } = useTheme();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [connectionMessage, setConnectionMessage] = useState('');
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -24,7 +28,7 @@ export default function Settings() {
   // Form states
   const [githubToken, setGithubToken] = useState(config.github.token || '');
   const [defaultRepository, setDefaultRepository] = useState(config.github.defaultRepository || '');
-  const [editorTheme, setEditorTheme] = useState(config.editor.theme);
+  // Note: editorTheme is now managed by ThemeProvider via useTheme()
   const [fontSize, setFontSize] = useState(config.editor.fontSize);
   const [autoSave, setAutoSave] = useState(config.editor.autoSave);
   const [autoSaveInterval, setAutoSaveInterval] = useState(config.editor.autoSaveInterval);
@@ -88,26 +92,40 @@ export default function Settings() {
   };
 
   const handleSave = async () => {
-    const newConfig = {
-      github: {
-        token: githubToken,
-        username: userInfo?.login || '',
-        defaultRepository: defaultRepository,
-      },
-      editor: {
-        theme: editorTheme,
-        fontSize: fontSize,
-        autoSave: autoSave,
-        autoSaveInterval: autoSaveInterval,
-      },
-      ui: {
-        sidebarWidth: sidebarWidth,
-        showLineNumbers: showLineNumbers,
-        wordWrap: wordWrap,
-      },
-    };
+    try {
+      setSaving(true);
+      setSaveStatus('idle');
+      
+      const newConfig = {
+        github: {
+          token: githubToken,
+          username: userInfo?.login || '',
+          defaultRepository: defaultRepository,
+        },
+        editor: {
+          theme: theme, // Use theme from ThemeProvider
+          fontSize: fontSize,
+          autoSave: autoSave,
+          autoSaveInterval: autoSaveInterval,
+        },
+        ui: {
+          sidebarWidth: sidebarWidth,
+          showLineNumbers: showLineNumbers,
+          wordWrap: wordWrap,
+        },
+      };
 
-    await updateConfig(newConfig);
+      await updateConfig(newConfig);
+      
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleTokenChange = (token: string) => {
@@ -239,8 +257,8 @@ export default function Settings() {
               <div>
                 <label className="block text-sm font-medium mb-2">主题</label>
                 <select
-                  value={editorTheme}
-                  onChange={(e) => setEditorTheme(e.target.value as 'light' | 'dark')}
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value as 'light' | 'dark')}
                   className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="light">浅色</option>
@@ -340,13 +358,35 @@ export default function Settings() {
           </div>
 
           {/* Save Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-4 items-center">
+            {saveStatus === 'success' && (
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <CheckCircle className="h-4 w-4" />
+                保存成功！
+              </span>
+            )}
+            {saveStatus === 'error' && (
+              <span className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                保存失败
+              </span>
+            )}
             <button
               onClick={handleSave}
-              className="inline-flex items-center px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              disabled={saving}
+              className="inline-flex items-center px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save className="h-4 w-4 mr-2" />
-              保存设置
+              {saving ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  保存中...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  保存设置
+                </>
+              )}
             </button>
           </div>
         </div>

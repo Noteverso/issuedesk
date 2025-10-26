@@ -69,10 +69,29 @@ export function registerSettingsHandlers() {
   // Legacy set-config handler (for backward compatibility)
   ipcMain.handle('set-config', async (event, partialConfig: Partial<AppConfig>) => {
     try {
-      store.set(partialConfig);
-      const config = store.store;
-      console.log('✅ Config updated (legacy):', config);
-      return config;
+      // Merge partial config with existing config
+      const currentConfig = store.store;
+      const updatedConfig = {
+        ...currentConfig,
+        github: {
+          ...currentConfig.github,
+          ...(partialConfig.github || {}),
+        },
+        editor: {
+          ...currentConfig.editor,
+          ...(partialConfig.editor || {}),
+        },
+        ui: {
+          ...currentConfig.ui,
+          ...(partialConfig.ui || {}),
+        },
+      };
+      
+      // Save the merged config
+      store.store = updatedConfig;
+      
+      console.log('✅ Config updated (legacy):', updatedConfig);
+      return updatedConfig;
     } catch (error) {
       console.error('❌ Error setting config:', error);
       return store.store;
