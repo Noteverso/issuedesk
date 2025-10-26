@@ -27,16 +27,16 @@ Project uses monorepo workspace structure:
 
 **Purpose**: Project initialization and workspace configuration
 
-- [ ] T001 Install Electron dependencies in apps/desktop/package.json (electron, electron-builder, electron-reload)
-- [ ] T002 [P] Install React dependencies in apps/desktop/package.json (react, react-dom, react-router-dom, @types/react)
-- [ ] T003 [P] Install Tailwind CSS and configure in apps/desktop/tailwind.config.js
-- [ ] T004 [P] Install Tiptap editor dependencies (@tiptap/react, @tiptap/starter-kit, @tiptap/extension-task-list, @tiptap/extension-table, tiptap-markdown)
-- [ ] T005 [P] Install other UI dependencies (react-markdown, remark-gfm, recharts, @primer/css)
-- [ ] T006 [P] Install data dependencies (better-sqlite3, electron-store)
-- [ ] T007 [P] Configure Vite for Electron in apps/desktop/vite.config.ts (main, preload, renderer)
-- [ ] T008 [P] Setup TypeScript configuration in apps/desktop/tsconfig.json (extends shared config)
-- [ ] T009 [P] Configure ESLint and Prettier in .eslintrc.js and .prettierrc
-- [ ] T010 Create Electron main entry point in apps/desktop/src/main/index.ts (app lifecycle, window creation)
+- [X] T001 Install Electron dependencies in apps/desktop/package.json (electron, electron-builder, electron-reload)
+- [X] T002 [P] Install React dependencies in apps/desktop/package.json (react, react-dom, react-router-dom, @types/react)
+- [X] T003 [P] Install Tailwind CSS and configure in apps/desktop/tailwind.config.js
+- [X] T004 [P] Install Tiptap editor dependencies (@tiptap/react, @tiptap/starter-kit, @tiptap/extension-task-list, @tiptap/extension-table, tiptap-markdown)
+- [X] T005 [P] Install other UI dependencies (react-markdown, remark-gfm, recharts, @primer/css)
+- [X] T006 [P] Install data dependencies (better-sqlite3, electron-store)
+- [X] T007 [P] Configure Vite for Electron in apps/desktop/vite.config.ts (main, preload, renderer)
+- [X] T008 [P] Setup TypeScript configuration in apps/desktop/tsconfig.json (extends shared config)
+- [X] T009 [P] Configure ESLint and Prettier in .eslintrc.js and .prettierrc
+- [X] T010 Create Electron main entry point in apps/desktop/src/main/index.ts (app lifecycle, window creation)
 
 ---
 
@@ -48,44 +48,44 @@ Project uses monorepo workspace structure:
 
 ### Shared Type System
 
-- [ ] T011 [P] Define core types in packages/shared/src/types/issue.ts (Issue, IssueState, SyncStatus)
-- [ ] T012 [P] Define Label types in packages/shared/src/types/label.ts (Label, LabelColor)
-- [ ] T013 [P] Define Repository types in packages/shared/src/types/repository.ts (Repository, RepositoryConfig)
-- [ ] T014 [P] Define Settings types in packages/shared/src/types/settings.ts (AppSettings, ViewPreferences)
-- [ ] T015 [P] Define Sync types in packages/shared/src/types/sync.ts (SyncQueue, ConflictResolution)
-- [ ] T016 [P] Define IPC API types in packages/shared/src/types/ipc.ts (IpcApi, all request/response interfaces)
+- [X] T011 [P] Define core types in packages/shared/src/types/issue.ts (Issue, IssueState, SyncStatus)
+- [X] T012 [P] Define Label types in packages/shared/src/types/label.ts (Label, LabelColor)
+- [X] T013 [P] Define Repository types in packages/shared/src/types/repository.ts (Repository, RepositoryConfig)
+- [X] T014 [P] Define Settings types in packages/shared/src/types/settings.ts (AppSettings, ViewPreferences)
+- [X] T015 [P] Define Sync types in packages/shared/src/types/sync.ts (SyncQueue, ConflictResolution)
+- [X] T016 [P] Define IPC API types in packages/shared/src/types/ipc.ts (IpcApi, all request/response interfaces)
 
 ### Zod Schemas
 
-- [ ] T017 [P] Create Issue schema in packages/shared/src/schemas/issue.schema.ts
-- [ ] T018 [P] Create Label schema in packages/shared/src/schemas/label.schema.ts
-- [ ] T019 [P] Create Settings schema in packages/shared/src/schemas/settings.schema.ts
-- [ ] T020 [P] Create IPC request/response schemas in packages/shared/src/schemas/ipc.schema.ts
+- [X] T017 [P] Create Issue schema in packages/shared/src/schemas/issue.schema.ts
+- [X] T018 [P] Create Label schema in packages/shared/src/schemas/label.schema.ts
+- [X] T019 [P] Create Settings schema in packages/shared/src/schemas/settings.schema.ts
+- [X] T020 [P] Create IPC request/response schemas in packages/shared/src/schemas/ipc.schema.ts
 
 ### Database Infrastructure
 
-- [ ] T021 Create SQLite schema definitions in apps/desktop/src/main/database/schemas/initial.sql (issues, labels, issue_labels, sync_queue, _meta tables)
-- [ ] T022 Implement DatabaseManager in apps/desktop/src/main/database/manager.ts (multi-repo connection management, migrations)
-- [ ] T023 [P] Create Issue repository in apps/desktop/src/main/database/repositories/issues.ts (CRUD operations, filtering)
-- [ ] T024 [P] Create Label repository in apps/desktop/src/main/database/repositories/labels.ts (CRUD operations)
-- [ ] T025 [P] Create SyncQueue repository in apps/desktop/src/main/database/repositories/sync-queue.ts (queue operations)
+- [X] T021 Create SQLite schema definitions in apps/desktop/src/main/database/schemas/initial.sql (issues, labels, issue_labels, sync_queue, _meta tables)
+- [X] T022 Implement DatabaseManager in apps/desktop/src/main/database/manager.ts (multi-repo connection management, migrations)
+- [X] T023 [P] Create Issue repository in apps/desktop/src/main/database/repositories/issues.ts (CRUD operations, filtering)
+- [X] T024 [P] Create Label repository in apps/desktop/src/main/database/repositories/labels.ts (CRUD operations)
+- [X] T025 [P] Create SyncQueue repository in apps/desktop/src/main/database/repositories/sync-queue.ts (queue operations)
 
 ### IPC Bridge
 
-- [ ] T026 Implement preload script in apps/desktop/src/preload/index.ts (contextBridge setup, type-safe API exposure)
+- [X] T026 Implement preload script in apps/desktop/src/preload/index.ts (contextBridge setup, type-safe API exposure)
 - [ ] T027 Create IPC client utility in apps/desktop/src/renderer/src/services/ipc.ts (type-safe wrapper for renderer)
 
 ### GitHub API Abstraction
 
-- [ ] T028 [P] Create Octokit client wrapper in packages/github-api/src/client.ts (authentication, rate limiting)
-- [ ] T029 [P] Implement Issues API in packages/github-api/src/issues.ts (list, get, create, update, delete)
-- [ ] T030 [P] Implement Labels API in packages/github-api/src/labels.ts (list, create, update, delete)
-- [ ] T031 [P] Implement rate limit tracker in packages/github-api/src/rate-limit.ts (header parsing, warning threshold)
+- [X] T028 [P] Create Octokit client wrapper in packages/github-api/src/client.ts (authentication, rate limiting)
+- [X] T029 [P] Implement Issues API in packages/github-api/src/issues.ts (list, get, create, update, delete)
+- [X] T030 [P] Implement Labels API in packages/github-api/src/labels.ts (list, create, update, delete)
+- [X] T031 [P] Implement rate limit tracker in packages/github-api/src/rate-limit.ts (header parsing, warning threshold)
 
 ### Security & Settings
 
-- [ ] T032 Implement secure token storage in apps/desktop/src/main/security/keychain.ts (electron-store with OS keychain)
-- [ ] T033 Create settings manager in apps/desktop/src/main/settings/manager.ts (electron-store wrapper, repository management)
+- [X] T032 Implement secure token storage in apps/desktop/src/main/security/keychain.ts (electron-store with OS keychain)
+- [X] T033 Create settings manager in apps/desktop/src/main/settings/manager.ts (electron-store wrapper, repository management)
 
 ### UI Foundation
 

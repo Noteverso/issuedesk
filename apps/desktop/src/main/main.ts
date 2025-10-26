@@ -4,6 +4,7 @@ import { join } from 'path';
 import Store from 'electron-store';
 import { GitHubClient } from '@issuedesk/github-api';
 import { AppConfig } from '@issuedesk/shared';
+import { registerIssuesHandlers } from './ipc/issues';
 
 // Add default config for electron-store
 const defaultConfig: AppConfig = {
@@ -89,6 +90,9 @@ function createWindow(): void {
 
 // App event handlers
 app.whenReady().then(() => {
+  // Register IPC handlers
+  registerIssuesHandlers();
+  
   createWindow();
   createMenu();
 
