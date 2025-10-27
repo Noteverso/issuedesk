@@ -58,10 +58,10 @@ export default function Dashboard() {
     closedIssues: issues.filter(issue => issue.state === 'closed').length,
     totalLabels: labels.length,
     blogIssues: issues.filter(issue => 
-      issue.labels.some(labelName => labelName === 'blog' || labelName === 'Blog')
+      issue.labels.some(label => label.name === 'blog' || label.name === 'Blog')
     ).length,
     noteIssues: issues.filter(issue => 
-      issue.labels.some(labelName => labelName === 'note' || labelName === 'Note')
+      issue.labels.some(label => label.name === 'note' || label.name === 'Note')
     ).length,
   };
 
@@ -210,18 +210,17 @@ export default function Dashboard() {
                       }`}>
                         {issue.state === 'open' ? '开放' : '已关闭'}
                       </span>
-                      {issue.labels.map((labelName) => {
-                        const label = labels.find(l => l.name === labelName);
+                      {issue.labels.map((label) => {
                         return (
                           <span 
-                            key={labelName}
+                            key={label.id}
                             className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                             style={label ? { 
                               backgroundColor: `#${label.color}20`,
                               color: `#${label.color}`
                             } : {}}
                           >
-                            {labelName}
+                            {label.name}
                           </span>
                         );
                       })}

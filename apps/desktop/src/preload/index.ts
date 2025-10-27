@@ -39,6 +39,9 @@ const api: IpcApi = {
     switchRepository: (req) => ipcRenderer.invoke('settings:switchRepository', req),
     getToken: () => ipcRenderer.invoke('settings:getToken'),
     setToken: (req) => ipcRenderer.invoke('settings:setToken', req),
+    testConnection: (token) => ipcRenderer.invoke('settings:testConnection', token),
+    getUser: (token) => ipcRenderer.invoke('settings:getUser', token),
+    getRepositories: (token) => ipcRenderer.invoke('settings:getRepositories', token),
   },
 
   // Analytics API

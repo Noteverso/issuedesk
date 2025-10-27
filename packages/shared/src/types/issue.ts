@@ -1,4 +1,6 @@
 // Issue-related types
+import { Label } from './label';
+
 export type IssueState = 'open' | 'closed';
 
 export type IssueSyncStatus =
@@ -21,7 +23,7 @@ export interface Issue {
   localUpdatedAt: number; // Unix timestamp (ms)
   remoteUpdatedAt: number | null;
   bodyChecksum: string | null; // SHA-256 hash
-  labels: string[]; // Label IDs
+  labels: Label[]; // Full label objects
 }
 
 export interface CreateIssueInput {

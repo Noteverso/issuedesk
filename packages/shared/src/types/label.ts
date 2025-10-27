@@ -1,6 +1,6 @@
 // Label-related types
 export interface Label {
-  id: string; // UUID v4
+  id: string;
   name: string;
   color: string; // Hex color without #
   description: string | null;

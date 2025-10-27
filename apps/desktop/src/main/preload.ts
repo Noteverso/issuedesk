@@ -39,10 +39,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     testConnection: (token: string) => ipcRenderer.invoke('settings:testConnection', token),
     getUser: (token: string) => ipcRenderer.invoke('settings:getUser', token),
     getRepositories: (token: string) => ipcRenderer.invoke('settings:getRepositories', token),
-    getLabels: (token: string, owner: string, repo: string) => ipcRenderer.invoke('settings:getLabels', token, owner, repo),
-    createLabel: (token: string, owner: string, repo: string, label: any) => ipcRenderer.invoke('settings:createLabel', token, owner, repo, label),
-    updateLabel: (token: string, owner: string, repo: string, name: string, label: any) => ipcRenderer.invoke('settings:updateLabel', token, owner, repo, name, label),
-    deleteLabel: (token: string, owner: string, repo: string, name: string) => ipcRenderer.invoke('settings:deleteLabel', token, owner, repo, name),
   },
 
   analytics: {

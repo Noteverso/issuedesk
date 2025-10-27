@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, shell, dialog } from 'electron';
 import { join } from 'path';
 
 import { registerIssuesHandlers } from './ipc/issues';
+import { registerLabelsHandlers } from './ipc/labels';
 import { registerSettingsHandlers } from './ipc/settings';
 import { registerSystemHandlers } from './ipc/system';
 
@@ -70,6 +71,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   // Register IPC handlers
   registerIssuesHandlers();
+  registerLabelsHandlers();
   registerSettingsHandlers(); // Now includes GitHub handlers (non-issue related)
   registerSystemHandlers();
   

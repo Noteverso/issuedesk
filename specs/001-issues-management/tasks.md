@@ -179,27 +179,27 @@ Project uses monorepo workspace structure:
 
 ### IPC Handlers for User Story 3
 
-- [ ] T067 [P] [US3] Implement labels.list IPC handler in apps/desktop/src/main/ipc/labels.ts
-- [ ] T068 [P] [US3] Implement labels.create IPC handler in apps/desktop/src/main/ipc/labels.ts
-- [ ] T069 [P] [US3] Implement labels.update IPC handler in apps/desktop/src/main/ipc/labels.ts
-- [ ] T070 [P] [US3] Implement labels.delete IPC handler in apps/desktop/src/main/ipc/labels.ts
+- [X] T067 [P] [US3] Implement labels.list IPC handler in apps/desktop/src/main/ipc/labels.ts
+- [X] T068 [P] [US3] Implement labels.create IPC handler in apps/desktop/src/main/ipc/labels.ts
+- [X] T069 [P] [US3] Implement labels.update IPC handler in apps/desktop/src/main/ipc/labels.ts
+- [X] T070 [P] [US3] Implement labels.delete IPC handler in apps/desktop/src/main/ipc/labels.ts
 
 ### React Hooks for User Story 3
 
-- [ ] T071 [US3] Create useLabels hook in apps/desktop/src/renderer/src/hooks/useLabels.ts (list, CRUD operations)
+- [X] T071 [US3] Create useLabels hook in apps/desktop/src/renderer/src/hooks/useLabels.ts (list, CRUD operations)
 
 ### UI Components for User Story 3
 
-- [ ] T072 [US3] Create Labels page in apps/desktop/src/renderer/src/pages/Labels.tsx (layout, label list)
-- [ ] T073 [P] [US3] Create LabelList component in apps/desktop/src/renderer/src/components/label/LabelList.tsx (table view)
-- [ ] T074 [P] [US3] Create LabelCard component in apps/desktop/src/renderer/src/components/label/LabelCard.tsx (card view with color preview)
-- [ ] T075 [US3] Create LabelEditor component in apps/desktop/src/renderer/src/components/label/LabelEditor.tsx (modal form with color picker)
+- [X] T072 [US3] Create Labels page in apps/desktop/src/renderer/src/pages/Labels.tsx (layout, label list)
+- [X] T073 [P] [US3] Create LabelList component in apps/desktop/src/renderer/src/components/label/LabelList.tsx (table view)
+- [X] T074 [P] [US3] Create LabelCard component in apps/desktop/src/renderer/src/components/label/LabelCard.tsx (card view with color preview)
+- [X] T075 [US3] Create LabelEditor component in apps/desktop/src/renderer/src/components/label/LabelEditor.tsx (modal form with color picker)
 
 ### Tests for User Story 3
 
-- [ ] T076 [P] [US3] IPC contract test for labels.list in tests/contract/labels.spec.ts
-- [ ] T077 [P] [US3] IPC contract test for labels.create in tests/contract/labels.spec.ts (validate hex color format)
-- [ ] T078 [P] [US3] E2E test for label creation in tests/e2e/label-management.spec.ts
+- [X] T076 [P] [US3] IPC contract test for labels.list in tests/contract/labels.spec.ts
+- [X] T077 [P] [US3] IPC contract test for labels.create in tests/contract/labels.spec.ts (validate hex color format)
+- [X] T078 [P] [US3] E2E test for label creation in tests/e2e/label-management.spec.ts
 
 **Checkpoint**: User Stories 1, 2, AND 3 complete - can manage labels
 

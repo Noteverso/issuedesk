@@ -206,10 +206,6 @@ export interface IpcApi {
     testConnection: (token: string) => Promise<GitHubApiResponse<boolean>>;
     getUser: (token: string) => Promise<GitHubApiResponse<GitHubUser>>;
     getRepositories: (token: string) => Promise<GitHubApiResponse<GitHubRepository[]>>;
-    getLabels: (token: string, owner: string, repo: string) => Promise<GitHubApiResponse<Label[]>>;
-    createLabel: (token: string, owner: string, repo: string, label: CreateLabelInput) => Promise<GitHubApiResponse<Label>>;
-    updateLabel: (token: string, owner: string, repo: string, name: string, label: UpdateLabelInput) => Promise<GitHubApiResponse<Label>>;
-    deleteLabel: (token: string, owner: string, repo: string, name: string) => Promise<GitHubApiResponse<void>>;
   };
 
   // Analytics

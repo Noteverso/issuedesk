@@ -34,7 +34,8 @@ export default function Labels() {
       setError(null);
       
       const result = await ipcClient.labels.list(settings.activeRepositoryId);
-      setLabels(result);
+      console.log(result)
+      setLabels(result.labels || []);
     } catch (err) {
       setError('加载标签失败');
       console.error('Load labels error:', err);
@@ -82,6 +83,7 @@ export default function Labels() {
     }
   };
 
+  console.log('labels:', labels);
   const filteredLabels = labels.filter(label => 
     label.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (label.description && label.description.toLowerCase().includes(searchTerm.toLowerCase()))
