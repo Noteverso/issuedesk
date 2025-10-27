@@ -14,6 +14,7 @@ export interface CreateLabelInput {
 }
 
 export interface UpdateLabelInput {
+  new_name?: string;
   name?: string;
   color?: string;
   description?: string;

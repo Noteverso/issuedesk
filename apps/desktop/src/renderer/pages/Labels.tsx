@@ -8,17 +8,20 @@ import {
   Edit, 
   Trash2, 
   Tag,
-  Palette
+  Palette,
+  Loader2
 } from 'lucide-react';
+import { useToast, ToastContainer } from '../components/common/Toast';
 
 export default function Labels() {
   const { settings } = useConfig();
   const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [deletingLabel, setDeletingLabel] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingLabel, setEditingLabel] = useState<Label | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     if (settings.activeRepositoryId) {
@@ -31,13 +34,12 @@ export default function Labels() {
 
     try {
       setLoading(true);
-      setError(null);
       
-      const result = await ipcClient.labels.list(settings.activeRepositoryId);
+      const result = await ipcClient.labels.list();
       console.log(result)
       setLabels(result.labels || []);
-    } catch (err) {
-      setError('加载标签失败');
+    } catch (err: any) {
+      toast.error('加载标签失败', err?.message || '请稍后重试');
       console.error('Load labels error:', err);
     } finally {
       setLoading(false);
@@ -48,12 +50,14 @@ export default function Labels() {
     if (!settings.activeRepositoryId) return;
 
     try {
-      await ipcClient.labels.create(settings.activeRepositoryId, labelData);
+      await ipcClient.labels.create(labelData);
+      toast.success('创建成功', `标签 "${labelData.name}" 已创建`);
       setShowCreateModal(false);
       loadLabels(); // 重新加载列表
-    } catch (err) {
-      setError('创建标签失败');
+    } catch (err: any) {
+      toast.error('创建标签失败', err?.message || '请稍后重试');
       console.error('Create label error:', err);
+      throw err; // Re-throw to let modal handle it
     }
   };
 
@@ -61,25 +65,32 @@ export default function Labels() {
     if (!settings.activeRepositoryId) return;
 
     try {
-      await ipcClient.labels.update(settings.activeRepositoryId, labelName, labelData);
+      await ipcClient.labels.update({ id: labelName, data: labelData });
+      toast.success('更新成功', `标签已更新`);
       setEditingLabel(null);
       loadLabels(); // 重新加载列表
-    } catch (err) {
-      setError('更新标签失败');
+    } catch (err: any) {
+      toast.error('更新标签失败', err?.message || '请稍后重试');
       console.error('Update label error:', err);
+      throw err; // Re-throw to let modal handle it
     }
   };
 
   const handleDeleteLabel = async (labelName: string) => {
     if (!settings.activeRepositoryId) return;
+    if (deletingLabel) return; // Prevent multiple deletes at once
     if (!confirm(`确定要删除标签 "${labelName}" 吗？`)) return;
 
     try {
-      await ipcClient.labels.delete(settings.activeRepositoryId, labelName);
+      setDeletingLabel(labelName);
+      await ipcClient.labels.delete({ id: labelName });
+      toast.success('删除成功', `标签 "${labelName}" 已删除`);
       loadLabels(); // 重新加载列表
-    } catch (err) {
-      setError('删除标签失败');
+    } catch (err: any) {
+      toast.error('删除标签失败', err?.message || '请稍后重试');
       console.error('Delete label error:', err);
+    } finally {
+      setDeletingLabel(null);
     }
   };
 
@@ -105,6 +116,7 @@ export default function Labels() {
 
   return (
     <div className="p-6">
+      <ToastContainer messages={toast.messages} onClose={toast.closeToast} />
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -117,6 +129,7 @@ export default function Labels() {
           <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            title="创建新标签"
           >
             <Plus className="h-4 w-4 mr-2" />
             创建标签
@@ -140,57 +153,70 @@ export default function Labels() {
             onClick={loadLabels}
             disabled={loading}
             className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
+            title="刷新标签列表"
           >
             {loading ? '加载中...' : '刷新'}
           </button>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-            <p className="text-destructive">{error}</p>
-          </div>
-        )}
-
         {/* Labels Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredLabels.map((label) => (
-            <div key={label.id} className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: `#${label.color}` }}
-                  />
-                  <span className="font-medium">{label.name}</span>
+          {filteredLabels.map((label) => {
+            const isDeleting = deletingLabel === label.name;
+            return (
+              <div 
+                key={label.id} 
+                className={`bg-card border border-border rounded-lg p-4 transition-opacity ${
+                  isDeleting ? 'opacity-50 pointer-events-none' : ''
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: `#${label.color}` }}
+                    />
+                    <span className="font-medium">{label.name}</span>
+                    {isDeleting && (
+                      <span className="text-xs text-muted-foreground">(删除中...)</span>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => setEditingLabel(label)}
+                      disabled={isDeleting}
+                      className="p-1 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                      title="编辑标签"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteLabel(label.name)}
+                      disabled={isDeleting}
+                      className="p-1 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                      title={isDeleting ? '删除中...' : '删除标签'}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <button
-                    onClick={() => setEditingLabel(label)}
-                    className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteLabel(label.name)}
-                    className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+
+                {label.description && (
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {label.description}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>颜色: #{label.color}</span>
                 </div>
               </div>
-
-              {label.description && (
-                <p className="text-sm text-muted-foreground mb-3">
-                  {label.description}
-                </p>
-              )}
-
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>颜色: #{label.color}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {filteredLabels.length === 0 && !loading && (
@@ -224,21 +250,29 @@ export default function Labels() {
 // Create Label Modal Component
 function CreateLabelModal({ onClose, onSubmit }: {
   onClose: () => void;
-  onSubmit: (data: CreateLabelInput) => void;
+  onSubmit: (data: CreateLabelInput) => Promise<void>;
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('0366d6');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || isSubmitting) return;
 
-    onSubmit({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      color: color,
-    });
+    try {
+      setIsSubmitting(true);
+      await onSubmit({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        color: color,
+      });
+    } catch (error) {
+      // Error is handled by parent component
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const generateRandomColor = () => {
@@ -309,15 +343,18 @@ function CreateLabelModal({ onClose, onSubmit }: {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
             >
               取消
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              disabled={isSubmitting}
+              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              创建
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting ? '创建中...' : '创建'}
             </button>
           </div>
         </form>
@@ -330,21 +367,29 @@ function CreateLabelModal({ onClose, onSubmit }: {
 function EditLabelModal({ label, onClose, onSubmit }: {
   label: Label;
   onClose: () => void;
-  onSubmit: (data: UpdateLabelInput) => void;
+  onSubmit: (data: UpdateLabelInput) => Promise<void>;
 }) {
   const [name, setName] = useState(label.name);
   const [description, setDescription] = useState(label.description || '');
   const [color, setColor] = useState(label.color);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || isSubmitting) return;
 
-    onSubmit({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      color: color,
-    });
+    try {
+      setIsSubmitting(true);
+      await onSubmit({
+        new_name: name.trim(),
+        description: description.trim() || undefined,
+        color: color,
+      });
+    } catch (error) {
+      // Error is handled by parent component
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const generateRandomColor = () => {
@@ -412,15 +457,18 @@ function EditLabelModal({ label, onClose, onSubmit }: {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
             >
               取消
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              disabled={isSubmitting}
+              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              保存
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting ? '保存中...' : '保存'}
             </button>
           </div>
         </form>
