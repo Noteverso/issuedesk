@@ -16,6 +16,14 @@
 - Q: The dashboard displays issue and label analytics. What level of analytics detail should be provided? → A: Basic stats + trend data (last 7/30 days) + label distribution chart
 - **Clarification**: Project should support multiple caches (one per repository)
 
+### Session 2025-10-27
+
+- **Clarification**: Issues should contain full Label objects (with id, name, color, description, issueCount), not just label IDs. This provides richer UI context without additional lookups.
+- **Clarification**: When creating/updating issues, label references are still passed as string IDs for simplicity. The full Label objects are only included in read operations.
+- **Clarification**: Label color picker should offer 20 preset colors plus random generation capability, matching GitHub's label creation UX.
+- **Clarification**: Each label should track an issue count for dashboard analytics and UI display purposes.
+- **Clarification**: External API responses (GitHub API) must be transformed to match internal type contracts - GitHub's label structure differs from the app's Label type.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Issue Management (Priority: P1)
@@ -30,9 +38,10 @@ User can perform full CRUD operations on GitHub issues directly from the desktop
 
 1. **Given** user is on the Issues page, **When** user clicks "New Issue" and fills in title and markdown body, **Then** issue is created locally and synced to GitHub with a success notification
 2. **Given** user selects an existing issue, **When** user edits the title or body and saves, **Then** changes are persisted locally and synced to GitHub
-3. **Given** user selects an issue, **When** user clicks delete and confirms, **Then** issue is removed from local database and closed on GitHub
-4. **Given** user is editing an issue, **When** user toggles between "Code" and "Preview" modes, **Then** markdown content is displayed as raw text or rendered HTML respectively
-5. **Given** user is viewing an issue card, **When** user clicks the external link icon, **Then** issue opens in default browser on GitHub website
+3. **Given** user views an issue in the list or detail view, **When** the issue has labels, **Then** user sees complete label information (name, color, description) without additional loading, displayed as colored badges
+4. **Given** user selects an issue, **When** user clicks delete and confirms, **Then** issue is removed from local database and closed on GitHub
+5. **Given** user is editing an issue, **When** user toggles between "Code" and "Preview" modes, **Then** markdown content is displayed as raw text or rendered HTML respectively
+6. **Given** user is viewing an issue card, **When** user clicks the external link icon, **Then** issue opens in default browser on GitHub website
 
 ---
 
@@ -65,9 +74,10 @@ User can create, edit, and view labels with custom colors and descriptions.
 **Acceptance Scenarios**:
 
 1. **Given** user is on the Labels page, **When** user clicks "New Label" and provides name and color, **Then** label is created locally and synced to GitHub
-2. **Given** user selects an existing label, **When** user edits the name, color, or description, **Then** changes are persisted and reflected on all associated issues
-3. **Given** user is viewing labels, **When** user toggles between list and card view, **Then** labels are displayed in the selected layout
-4. **Given** user is on the Labels page, **When** labels load, **Then** all repository labels are displayed with their colors and issue counts
+2. **Given** user is creating or editing a label, **When** user opens the color picker, **Then** user sees 20 preset colors matching common GitHub label colors, plus a random color generator button for quick selection
+3. **Given** user selects an existing label, **When** user edits the name, color, or description, **Then** changes are persisted and reflected on all associated issues
+4. **Given** user is viewing labels, **When** user toggles between list and card view, **Then** labels are displayed in the selected layout
+5. **Given** user is on the Labels page, **When** labels load, **Then** all repository labels are displayed with their colors, descriptions, and issue counts as badges
 
 ---
 
@@ -151,8 +161,8 @@ User can configure application settings including editor preferences, GitHub rep
 
 ### Key Entities
 
-- **Issue**: Represents a GitHub issue with title, body (markdown), labels, state (open/closed), created/updated timestamps, GitHub URL, local sync status, and repository identifier
-- **Label**: Represents a GitHub label with name, color (hex), optional description, issue count, and repository identifier
+- **Issue**: Represents a GitHub issue with title, body (markdown), labels (full Label objects with all properties for rich UI display), state (open/closed), created/updated timestamps, GitHub URL, local sync status, and repository identifier
+- **Label**: Represents a GitHub label with name, color (hex), optional description, issue count (for analytics and UI badges), and repository identifier
 - **Repository**: Represents a configured GitHub repository with owner, name, last sync timestamp, cache file path, and active status (current vs. historical)
 - **Settings**: User preferences including GitHub token, active repository ID, editor mode preference (code/preview), theme (light/dark), and view preferences (list/card)
 - **SyncQueue**: Tracks pending operations to sync with GitHub when online (create, update, delete for issues and labels), maintains operation order, includes conflict detection metadata (local/remote timestamps and checksums), stores rate-limit queued operations with scheduled retry time, scoped per repository
