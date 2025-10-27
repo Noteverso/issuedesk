@@ -9,17 +9,13 @@
  * into the new namespaced structure until IPC handlers are fully implemented.
  */
 
-import type { 
-  IssueListRequest, 
+import {
+  IssueListRequest,
   IssueListResult,
   IssueGetRequest,
-  IssueGetResult,
   IssueCreateRequest,
-  IssueCreateResult,
   IssueUpdateRequest,
-  IssueUpdateResult,
   IssueDeleteRequest,
-  IssueDeleteResult,
 } from '@issuedesk/shared';
 
 /**
@@ -45,22 +41,22 @@ const mockIssuesApi = {
     };
   },
   
-  get: async (req: IssueGetRequest): Promise<IssueGetResult> => {
+  get: async (req: IssueGetRequest): Promise<{ issue: null }> => {
     console.warn('IPC not available: issues.get called');
-    throw new Error('Issue not found');
+    return { issue: null };
   },
   
-  create: async (req: IssueCreateRequest): Promise<IssueCreateResult> => {
+  create: async (req: IssueCreateRequest): Promise<{ issue: any }> => {
     console.warn('IPC not available: issues.create called');
     throw new Error('Cannot create issue: IPC not available');
   },
   
-  update: async (req: IssueUpdateRequest): Promise<IssueUpdateResult> => {
+  update: async (req: IssueUpdateRequest): Promise<{ issue: any }> => {
     console.warn('IPC not available: issues.update called');
     throw new Error('Cannot update issue: IPC not available');
   },
   
-  delete: async (req: IssueDeleteRequest): Promise<IssueDeleteResult> => {
+  delete: async (req: IssueDeleteRequest): Promise<{ success: boolean }> => {
     console.warn('IPC not available: issues.delete called');
     return { success: false };
   },
@@ -77,7 +73,7 @@ export const ipcClient = {
       return mockIssuesApi;
     }
     
-    // Use the real IPC API exposed by preload
+    // Use the real IPC API exposed by preload (window.electronAPI)
     return (window as any).electronAPI.issues;
   },
   

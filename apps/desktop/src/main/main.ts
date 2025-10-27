@@ -2,7 +2,7 @@ import { app, BrowserWindow, Menu, shell, dialog } from 'electron';
 import { join } from 'path';
 
 import { registerIssuesHandlers } from './ipc/issues';
-import { registerSettingsHandlers, registerGitHubHandlers } from './ipc/settings';
+import { registerSettingsHandlers } from './ipc/settings';
 import { registerSystemHandlers } from './ipc/system';
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
@@ -70,8 +70,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   // Register IPC handlers
   registerIssuesHandlers();
-  registerSettingsHandlers();
-  registerGitHubHandlers();
+  registerSettingsHandlers(); // Now includes GitHub handlers (non-issue related)
   registerSystemHandlers();
   
   createWindow();

@@ -14,9 +14,9 @@ import {
 } from 'lucide-react';
 
 export default function Settings() {
-  const { config, updateConfig } = useConfig();
+  const { settings, updateSettings } = useConfig();
   const { theme, setTheme } = useTheme();
-  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [repositories, setRepositories] = useState<any[]>([]); // Use any[] for GitHub API responses
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -25,16 +25,27 @@ export default function Settings() {
   const [connectionMessage, setConnectionMessage] = useState('');
   const [userInfo, setUserInfo] = useState<any>(null);
 
+  // Get active repository info
+  const activeRepo = settings.repositories.find(r => r.id === settings.activeRepositoryId);
+  
   // Form states
-  const [githubToken, setGithubToken] = useState(config.github.token || '');
-  const [defaultRepository, setDefaultRepository] = useState(config.github.defaultRepository || '');
-  // Note: editorTheme is now managed by ThemeProvider via useTheme()
-  const [fontSize, setFontSize] = useState(config.editor.fontSize);
-  const [autoSave, setAutoSave] = useState(config.editor.autoSave);
-  const [autoSaveInterval, setAutoSaveInterval] = useState(config.editor.autoSaveInterval);
-  const [sidebarWidth, setSidebarWidth] = useState(config.ui.sidebarWidth);
-  const [showLineNumbers, setShowLineNumbers] = useState(config.ui.showLineNumbers);
-  const [wordWrap, setWordWrap] = useState(config.ui.wordWrap);
+  const [githubToken, setGithubToken] = useState('');
+  const [defaultRepository, setDefaultRepository] = useState(settings.activeRepositoryId || '');
+  const [fontSize, setFontSize] = useState(14); // Default from old config
+  const [autoSave, setAutoSave] = useState(true);
+  const [autoSaveInterval, setAutoSaveInterval] = useState(5000);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [showLineNumbers, setShowLineNumbers] = useState(true);
+  const [wordWrap, setWordWrap] = useState(true);
+
+  useEffect(() => {
+    // Load token on mount
+    window.electronAPI.settings.getToken().then((response) => {
+      if (response.token) {
+        setGithubToken(response.token);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (githubToken) {
@@ -47,8 +58,9 @@ export default function Settings() {
 
     try {
       setLoading(true);
-      const response = await window.electronAPI.getRepositories(githubToken);
-      if (response.success) {
+      // Use new settings handler to get repositories
+      const response = await window.electronAPI.settings.getRepositories(githubToken);
+      if (response.success && response.data) {
         setRepositories(response.data);
       }
     } catch (error) {
@@ -66,20 +78,19 @@ export default function Settings() {
       setConnectionStatus('idle');
       setConnectionMessage('');
 
-      const [connectionResponse, userResponse] = await Promise.all([
-        window.electronAPI.testGitHubConnection(githubToken),
-        window.electronAPI.getGitHubUser(githubToken)
-      ]);
+      // Test connection using new settings handlers
+      const response = await window.electronAPI.settings.testConnection(githubToken);
+      const userResponse = await window.electronAPI.settings.getUser(githubToken);
 
-      if (connectionResponse.success) {
+      if (response?.success) {
         setConnectionStatus('success');
         setConnectionMessage('连接成功！');
-        if (userResponse.success) {
+        if (userResponse?.success && userResponse.data) {
           setUserInfo(userResponse.data);
         }
       } else {
         setConnectionStatus('error');
-        setConnectionMessage(connectionResponse.message || '连接失败');
+        setConnectionMessage(response?.message || '连接失败');
         setUserInfo(null);
       }
     } catch (error) {
@@ -96,26 +107,21 @@ export default function Settings() {
       setSaving(true);
       setSaveStatus('idle');
       
-      const newConfig = {
-        github: {
-          token: githubToken,
-          username: userInfo?.login || '',
-          defaultRepository: defaultRepository,
-        },
-        editor: {
-          theme: theme, // Use theme from ThemeProvider
-          fontSize: fontSize,
-          autoSave: autoSave,
-          autoSaveInterval: autoSaveInterval,
-        },
-        ui: {
-          sidebarWidth: sidebarWidth,
-          showLineNumbers: showLineNumbers,
-          wordWrap: wordWrap,
-        },
-      };
+      // Save token
+      await window.electronAPI.settings.setToken({
+        token: githubToken
+      });
 
-      await updateConfig(newConfig);
+      // Save repository if changed
+      if (defaultRepository && defaultRepository !== settings.activeRepositoryId) {
+        const [owner, name] = defaultRepository.split('/');
+        if (owner && name) {
+          await window.electronAPI.settings.setRepository({ owner, name });
+        }
+      }
+
+      // Update theme
+      await updateSettings({ theme });
       
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);

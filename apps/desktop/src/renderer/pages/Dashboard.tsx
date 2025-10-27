@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { useConfig } from '../contexts/ConfigContext';
-import { Repository, Issue, Label } from '@issuedesk/shared';
+import { Issue, Label } from '@issuedesk/shared';
+import { ipcClient } from '../services/ipc';
 import { 
   Github, 
   FileText, 
@@ -14,53 +15,35 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
-  const { config } = useConfig();
-  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const { settings } = useConfig();
   const [issues, setIssues] = useState<Issue[]>([]);
   const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (config.github.token) {
+    if (settings.activeRepositoryId) {
       loadDashboardData();
     } else {
       setLoading(false);
     }
-  }, [config.github.token, config.github.defaultRepository]);
+  }, [settings.activeRepositoryId]);
 
   const loadDashboardData = async () => {
-    if (!config.github.token) return;
+    if (!settings.activeRepositoryId) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      // Load repositories
-      const reposResponse = await window.electronAPI.getRepositories(config.github.token);
-      if (reposResponse.success) {
-        setRepositories(reposResponse.data);
-      }
+      // Load issues and labels using the new IPC API
+      const [issuesResponse, labelsResponse] = await Promise.all([
+        ipcClient.issues.list({ perPage: 10 }),
+        ipcClient.labels.list()
+      ]);
 
-      // Load issues and labels if default repository is set
-      if (config.github.defaultRepository) {
-        const [owner, repo] = config.github.defaultRepository.split('/');
-        
-        const [issuesResponse, labelsResponse] = await Promise.all([
-          window.electronAPI.getIssues(config.github.token, owner, repo, { 
-            state: 'all', 
-            per_page: 10 
-          }),
-          window.electronAPI.getLabels(config.github.token, owner, repo)
-        ]);
-
-        if (issuesResponse.success) {
-          setIssues(issuesResponse.data);
-        }
-        if (labelsResponse.success) {
-          setLabels(labelsResponse.data);
-        }
-      }
+      setIssues(issuesResponse.issues);
+      setLabels(labelsResponse.labels);
     } catch (err) {
       setError('加载数据失败');
       console.error('Dashboard load error:', err);
@@ -75,14 +58,14 @@ export default function Dashboard() {
     closedIssues: issues.filter(issue => issue.state === 'closed').length,
     totalLabels: labels.length,
     blogIssues: issues.filter(issue => 
-      issue.labels.some(label => label.name === 'blog' || label.name === 'Blog')
+      issue.labels.some(labelName => labelName === 'blog' || labelName === 'Blog')
     ).length,
     noteIssues: issues.filter(issue => 
-      issue.labels.some(label => label.name === 'note' || label.name === 'Note')
+      issue.labels.some(labelName => labelName === 'note' || labelName === 'Note')
     ).length,
   };
 
-  if (!config.github.token) {
+  if (!settings.activeRepositoryId) {
     return (
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
@@ -90,7 +73,7 @@ export default function Dashboard() {
             <Github className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">欢迎使用 IssueDesk</h1>
             <p className="text-muted-foreground mb-6">
-              请先在设置中配置 GitHub Token 以开始使用
+              请先在设置中配置 GitHub Token 和仓库以开始使用
             </p>
             <div className="space-x-4">
               <Link 
@@ -160,8 +143,8 @@ export default function Dashboard() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">仪表板</h1>
           <p className="text-muted-foreground">
-            {config.github.defaultRepository 
-              ? `管理仓库 ${config.github.defaultRepository} 的 Issues 和标签`
+            {settings.activeRepositoryId 
+              ? `管理仓库 ${settings.activeRepositoryId} 的 Issues 和标签`
               : '请设置默认仓库以查看详细信息'
             }
           </p>
@@ -227,18 +210,21 @@ export default function Dashboard() {
                       }`}>
                         {issue.state === 'open' ? '开放' : '已关闭'}
                       </span>
-                      {issue.labels.map((label) => (
-                        <span 
-                          key={label.id}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                          style={{ 
-                            backgroundColor: `#${label.color}20`,
-                            color: `#${label.color}`
-                          }}
-                        >
-                          {label.name}
-                        </span>
-                      ))}
+                      {issue.labels.map((labelName) => {
+                        const label = labels.find(l => l.name === labelName);
+                        return (
+                          <span 
+                            key={labelName}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                            style={label ? { 
+                              backgroundColor: `#${label.color}20`,
+                              color: `#${label.color}`
+                            } : {}}
+                          >
+                            {labelName}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground">

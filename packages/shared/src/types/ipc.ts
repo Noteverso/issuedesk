@@ -80,11 +80,35 @@ export interface SwitchRepositoryRequest {
 
 export interface SetTokenRequest {
   token: string;
+  username?: string;
 }
 
 export interface GetTokenResponse {
-  hasToken: boolean;
-  tokenPreview?: string;
+  token: string | null;
+}
+
+export interface GitHubUser {
+  login: string;
+  name: string;
+  avatar_url: string;
+  email?: string;
+}
+
+export interface GitHubRepository {
+  id: number;
+  name: string;
+  full_name: string;
+  owner: {
+    login: string;
+  };
+  private: boolean;
+  description: string;
+}
+
+export interface GitHubApiResponse<T> {
+  success: boolean;
+  data: T | null;
+  message?: string;
 }
 
 // Analytics API
@@ -179,6 +203,13 @@ export interface IpcApi {
     switchRepository: (req: SwitchRepositoryRequest) => Promise<{ success: boolean }>;
     getToken: () => Promise<GetTokenResponse>;
     setToken: (req: SetTokenRequest) => Promise<{ success: boolean }>;
+    testConnection: (token: string) => Promise<GitHubApiResponse<boolean>>;
+    getUser: (token: string) => Promise<GitHubApiResponse<GitHubUser>>;
+    getRepositories: (token: string) => Promise<GitHubApiResponse<GitHubRepository[]>>;
+    getLabels: (token: string, owner: string, repo: string) => Promise<GitHubApiResponse<Label[]>>;
+    createLabel: (token: string, owner: string, repo: string, label: CreateLabelInput) => Promise<GitHubApiResponse<Label>>;
+    updateLabel: (token: string, owner: string, repo: string, name: string, label: UpdateLabelInput) => Promise<GitHubApiResponse<Label>>;
+    deleteLabel: (token: string, owner: string, repo: string, name: string) => Promise<GitHubApiResponse<void>>;
   };
 
   // Analytics

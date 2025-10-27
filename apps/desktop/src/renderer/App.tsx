@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { AppConfig } from '@issuedesk/shared';
+import { AppSettings } from '@issuedesk/shared';
 import Layout from './components/common/Layout';
 import { ConfigProvider } from './contexts/ConfigContext';
 import { ThemeProvider } from './components/common/ThemeProvider';
 
 function App() {
-  const [config, setConfig] = useState<AppConfig | null>(null);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,50 +15,43 @@ function App() {
     console.log('typeof window.electronAPI:', typeof window.electronAPI);
     console.log('Available methods:', window.electronAPI ? Object.keys(window.electronAPI) : 'N/A');
     
-    const loadConfig = async () => {
+    const loadSettings = async () => {
       try {
         if (!window.electronAPI) {
           throw new Error('window.electronAPI is not available');
         }
-        console.log('✅ window.electronAPI is available, calling getConfig...');
-        const appConfig = await window.electronAPI.getConfig();
-        console.log('✅ Config loaded successfully:', appConfig);
-        setConfig(appConfig);
+        console.log('✅ window.electronAPI is available, calling settings.get...');
+        const { settings: appSettings } = await window.electronAPI.settings.get();
+        console.log('✅ Settings loaded successfully:', appSettings);
+        setSettings(appSettings);
       } catch (error) {
-        console.error('Failed to load config:', error);
-        // Set default config if loading fails
-        setConfig({
-          github: {
-            token: '',
-            username: '',
-            defaultRepository: '',
+        console.error('Failed to load settings:', error);
+        // Set default settings if loading fails
+        setSettings({
+          activeRepositoryId: null,
+          repositories: [],
+          theme: 'light',
+          editorMode: 'preview',
+          viewPreferences: {
+            issues: 'list',
+            labels: 'list',
           },
-          editor: {
-            theme: 'light',
-            fontSize: 14,
-            autoSave: true,
-            autoSaveInterval: 5000,
-          },
-          ui: {
-            sidebarWidth: 300,
-            showLineNumbers: true,
-            wordWrap: true,
-          },
+          rateLimit: null,
         });
       } finally {
         setLoading(false);
       }
     };
 
-    loadConfig();
+    loadSettings();
   }, []);
 
-  const updateConfig = async (newConfig: Partial<AppConfig>) => {
+  const updateSettings = async (updates: Partial<AppSettings>) => {
     try {
-      const updatedConfig = await window.electronAPI.setConfig(newConfig);
-      setConfig(updatedConfig);
+      const { settings: updatedSettings } = await window.electronAPI.settings.update(updates);
+      setSettings(updatedSettings);
     } catch (error) {
-      console.error('Failed to update config:', error);
+      console.error('Failed to update settings:', error);
     }
   };
 
@@ -73,7 +66,7 @@ function App() {
     );
   }
 
-  if (!config) {
+  if (!settings) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -85,7 +78,7 @@ function App() {
 
   return (
     <ThemeProvider>
-      <ConfigProvider value={{ config, updateConfig }}>
+      <ConfigProvider value={{ settings, updateSettings }}>
         <Layout />
       </ConfigProvider>
     </ThemeProvider>

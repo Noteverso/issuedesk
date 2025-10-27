@@ -36,6 +36,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     switchRepository: (params: any) => ipcRenderer.invoke('settings:switchRepository', params),
     getToken: () => ipcRenderer.invoke('settings:getToken'),
     setToken: (params: any) => ipcRenderer.invoke('settings:setToken', params),
+    testConnection: (token: string) => ipcRenderer.invoke('settings:testConnection', token),
+    getUser: (token: string) => ipcRenderer.invoke('settings:getUser', token),
+    getRepositories: (token: string) => ipcRenderer.invoke('settings:getRepositories', token),
+    getLabels: (token: string, owner: string, repo: string) => ipcRenderer.invoke('settings:getLabels', token, owner, repo),
+    createLabel: (token: string, owner: string, repo: string, label: any) => ipcRenderer.invoke('settings:createLabel', token, owner, repo, label),
+    updateLabel: (token: string, owner: string, repo: string, name: string, label: any) => ipcRenderer.invoke('settings:updateLabel', token, owner, repo, name, label),
+    deleteLabel: (token: string, owner: string, repo: string, name: string) => ipcRenderer.invoke('settings:deleteLabel', token, owner, repo, name),
   },
 
   analytics: {
@@ -52,27 +59,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on(channel, subscription);
     return () => ipcRenderer.removeListener(channel, subscription);
   },
-
-  // Legacy flat API for backward compatibility
-  getConfig: () => ipcRenderer.invoke('get-config'),
-  setConfig: (config: any) => ipcRenderer.invoke('set-config', config),
-  testGitHubConnection: (token: string) => ipcRenderer.invoke('test-github-connection', token),
-  getGitHubUser: (token: string) => ipcRenderer.invoke('get-github-user', token),
-  getRepositories: (token: string) => ipcRenderer.invoke('get-repositories', token),
-  getIssues: (token: string, owner: string, repo: string, options?: any) => 
-    ipcRenderer.invoke('get-issues', token, owner, repo, options),
-  createIssue: (token: string, owner: string, repo: string, issue: any) => 
-    ipcRenderer.invoke('create-issue', token, owner, repo, issue),
-  updateIssue: (token: string, owner: string, repo: string, number: number, issue: any) => 
-    ipcRenderer.invoke('update-issue', token, owner, repo, number, issue),
-  getLabels: (token: string, owner: string, repo: string) => 
-    ipcRenderer.invoke('get-labels', token, owner, repo),
-  createLabel: (token: string, owner: string, repo: string, label: any) => 
-    ipcRenderer.invoke('create-label', token, owner, repo, label),
-  updateLabel: (token: string, owner: string, repo: string, name: string, label: any) => 
-    ipcRenderer.invoke('update-label', token, owner, repo, name, label),
-  deleteLabel: (token: string, owner: string, repo: string, name: string) => 
-    ipcRenderer.invoke('delete-label', token, owner, repo, name),
 });
 
 // Debug log to confirm electronAPI is exposed

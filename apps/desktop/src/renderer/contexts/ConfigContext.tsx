@@ -1,9 +1,9 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { AppConfig } from '@issuedesk/shared';
+import { AppSettings } from '@issuedesk/shared';
 
 interface ConfigContextType {
-  config: AppConfig;
-  updateConfig: (newConfig: Partial<AppConfig>) => Promise<void>;
+  settings: AppSettings;
+  updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
 }
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
 import { Label, CreateLabelInput, UpdateLabelInput } from '@issuedesk/shared';
+import { ipcClient } from '../services/ipc';
 import { 
   Plus, 
   Search, 
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export default function Labels() {
-  const { config } = useConfig();
+  const { settings } = useConfig();
   const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,30 +21,20 @@ export default function Labels() {
   const [editingLabel, setEditingLabel] = useState<Label | null>(null);
 
   useEffect(() => {
-    if (config.github.token && config.github.defaultRepository) {
+    if (settings.activeRepositoryId) {
       loadLabels();
     }
-  }, [config.github.token, config.github.defaultRepository]);
+  }, [settings.activeRepositoryId]);
 
   const loadLabels = async () => {
-    if (!config.github.token || !config.github.defaultRepository) return;
+    if (!settings.activeRepositoryId) return;
 
     try {
       setLoading(true);
       setError(null);
       
-      const [owner, repo] = config.github.defaultRepository.split('/');
-      const response = await window.electronAPI.getLabels(
-        config.github.token, 
-        owner, 
-        repo
-      );
-
-      if (response.success) {
-        setLabels(response.data);
-      } else {
-        setError(response.message || '加载标签失败');
-      }
+      const result = await ipcClient.labels.list(settings.activeRepositoryId);
+      setLabels(result);
     } catch (err) {
       setError('加载标签失败');
       console.error('Load labels error:', err);
@@ -53,23 +44,12 @@ export default function Labels() {
   };
 
   const handleCreateLabel = async (labelData: CreateLabelInput) => {
-    if (!config.github.token || !config.github.defaultRepository) return;
+    if (!settings.activeRepositoryId) return;
 
     try {
-      const [owner, repo] = config.github.defaultRepository.split('/');
-      const response = await window.electronAPI.createLabel(
-        config.github.token,
-        owner,
-        repo,
-        labelData
-      );
-
-      if (response.success) {
-        setShowCreateModal(false);
-        loadLabels(); // 重新加载列表
-      } else {
-        setError(response.message || '创建标签失败');
-      }
+      await ipcClient.labels.create(settings.activeRepositoryId, labelData);
+      setShowCreateModal(false);
+      loadLabels(); // 重新加载列表
     } catch (err) {
       setError('创建标签失败');
       console.error('Create label error:', err);
@@ -77,24 +57,12 @@ export default function Labels() {
   };
 
   const handleUpdateLabel = async (labelName: string, labelData: UpdateLabelInput) => {
-    if (!config.github.token || !config.github.defaultRepository) return;
+    if (!settings.activeRepositoryId) return;
 
     try {
-      const [owner, repo] = config.github.defaultRepository.split('/');
-      const response = await window.electronAPI.updateLabel(
-        config.github.token,
-        owner,
-        repo,
-        labelName,
-        labelData
-      );
-
-      if (response.success) {
-        setEditingLabel(null);
-        loadLabels(); // 重新加载列表
-      } else {
-        setError(response.message || '更新标签失败');
-      }
+      await ipcClient.labels.update(settings.activeRepositoryId, labelName, labelData);
+      setEditingLabel(null);
+      loadLabels(); // 重新加载列表
     } catch (err) {
       setError('更新标签失败');
       console.error('Update label error:', err);
@@ -102,23 +70,12 @@ export default function Labels() {
   };
 
   const handleDeleteLabel = async (labelName: string) => {
-    if (!config.github.token || !config.github.defaultRepository) return;
+    if (!settings.activeRepositoryId) return;
     if (!confirm(`确定要删除标签 "${labelName}" 吗？`)) return;
 
     try {
-      const [owner, repo] = config.github.defaultRepository.split('/');
-      const response = await window.electronAPI.deleteLabel(
-        config.github.token,
-        owner,
-        repo,
-        labelName
-      );
-
-      if (response.success) {
-        loadLabels(); // 重新加载列表
-      } else {
-        setError(response.message || '删除标签失败');
-      }
+      await ipcClient.labels.delete(settings.activeRepositoryId, labelName);
+      loadLabels(); // 重新加载列表
     } catch (err) {
       setError('删除标签失败');
       console.error('Delete label error:', err);
@@ -130,21 +87,15 @@ export default function Labels() {
     (label.description && label.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  if (!config.github.token) {
-    return (
-      <div className="p-6">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">请先在设置中配置 GitHub Token</p>
-        </div>
-      </div>
-    );
-  }
+  // Get active repository info
+  const activeRepo = settings.repositories.find(r => r.id === settings.activeRepositoryId);
+  const repoFullName = activeRepo ? `${activeRepo.owner}/${activeRepo.name}` : '';
 
-  if (!config.github.defaultRepository) {
+  if (!settings.activeRepositoryId) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">请先在设置中配置默认仓库</p>
+          <p className="text-muted-foreground">请先在设置中配置仓库</p>
         </div>
       </div>
     );
@@ -158,7 +109,7 @@ export default function Labels() {
           <div>
             <h1 className="text-3xl font-bold mb-2">标签管理</h1>
             <p className="text-muted-foreground">
-              管理仓库 {config.github.defaultRepository} 的标签
+              管理仓库 {repoFullName} 的标签
             </p>
           </div>
           <button
@@ -218,14 +169,12 @@ export default function Labels() {
                   >
                     <Edit className="h-4 w-4" />
                   </button>
-                  {!label.default && (
-                    <button
-                      onClick={() => handleDeleteLabel(label.name)}
-                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleDeleteLabel(label.name)}
+                    className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
 
@@ -237,11 +186,6 @@ export default function Labels() {
 
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>颜色: #{label.color}</span>
-                {label.default && (
-                  <span className="px-2 py-1 bg-primary/10 text-primary rounded-full">
-                    默认标签
-                  </span>
-                )}
               </div>
             </div>
           ))}

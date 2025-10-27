@@ -9,17 +9,22 @@ import {
   UpdateLabelInput,
   ApiResponse,
   ApiError,
+  RateLimitState,
   GITHUB_API_BASE_URL,
   GITHUB_API_VERSION,
   API_ENDPOINTS,
 } from '@issuedesk/shared';
+import { RateLimitTracker } from './rate-limit';
 
 export class GitHubClient {
   private client: AxiosInstance;
   private token: string;
+  private rateLimitTracker: RateLimitTracker;
 
   constructor(token: string) {
     this.token = token;
+    this.rateLimitTracker = new RateLimitTracker(0.2); // Warn at 20% remaining
+    
     this.client = axios.create({
       baseURL: GITHUB_API_BASE_URL,
       headers: {
@@ -31,10 +36,21 @@ export class GitHubClient {
       timeout: 30000,
     });
 
-    // Add response interceptor for error handling
+    // Add response interceptor for rate limit tracking and error handling
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // Update rate limit state from response headers
+        if (response.headers) {
+          this.rateLimitTracker.update(response.headers as Record<string, string>);
+        }
+        return response;
+      },
       (error) => {
+        // Update rate limit even on error responses
+        if (error.response?.headers) {
+          this.rateLimitTracker.update(error.response.headers as Record<string, string>);
+        }
+        
         const apiError: ApiError = {
           message: error.response?.data?.message || error.message || 'Unknown error',
           status: error.response?.status,
@@ -43,6 +59,27 @@ export class GitHubClient {
         return Promise.reject(apiError);
       }
     );
+  }
+
+  /**
+   * Get the current rate limit state
+   */
+  getRateLimitState(): RateLimitState | null {
+    return this.rateLimitTracker.getState();
+  }
+
+  /**
+   * Register a callback for rate limit warnings
+   */
+  onRateLimitWarning(callback: (state: RateLimitState) => void): void {
+    this.rateLimitTracker.onWarning(callback);
+  }
+
+  /**
+   * Check if a request can be made based on current rate limit
+   */
+  canMakeRequest(): boolean {
+    return this.rateLimitTracker.canMakeRequest();
   }
 
   /**

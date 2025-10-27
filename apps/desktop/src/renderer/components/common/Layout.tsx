@@ -6,7 +6,7 @@ import Sidebar from './Sidebar';
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { config } = useConfig();
+  const { settings } = useConfig();
 
   return (
     <div className="flex h-screen bg-background">
@@ -14,7 +14,7 @@ export default function Layout() {
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        repositoryName={config?.github?.defaultRepository}
+        repositoryName={settings?.activeRepositoryId || undefined}
       />
 
       {/* Main content */}
@@ -30,13 +30,7 @@ export default function Layout() {
           
           <div className="flex-1" />
           
-          <div className="flex items-center space-x-4">
-            {config?.github?.username && (
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <span>@{config.github.username}</span>
-              </div>
-            )}
-          </div>
+          {/* User info removed - AppSettings doesn't store username */}
         </div>
 
         {/* Page content */}

@@ -21,7 +21,7 @@ const navigation = [
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { config } = useConfig();
+  const { settings } = useConfig();
 
   return (
     <div className="flex h-screen bg-background">
@@ -77,12 +77,12 @@ export default function Layout() {
         </nav>
 
         {/* Repository info */}
-        {config?.github?.defaultRepository && (
+        {settings?.activeRepositoryId && (
           <div className="absolute bottom-4 left-4 right-4">
             <div className="bg-muted rounded-lg p-3">
               <p className="text-xs text-muted-foreground mb-1">当前仓库</p>
               <p className="text-sm font-medium truncate">
-                {config.github.defaultRepository}
+                {settings.activeRepositoryId}
               </p>
             </div>
           </div>
@@ -102,13 +102,7 @@ export default function Layout() {
           
           <div className="flex-1" />
           
-          <div className="flex items-center space-x-4">
-            {config?.github?.username && (
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <span>@{config.github.username}</span>
-              </div>
-            )}
-          </div>
+          {/* User info can be fetched separately if needed */}
         </div>
 
         {/* Page content */}
