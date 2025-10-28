@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
-import { IssueFilter, CreateIssueInput, UpdateIssueInput } from '@issuedesk/shared';
+import { IssueFilter, CreateIssueInput, UpdateIssueInput, Issue } from '@issuedesk/shared';
 import { useIssues } from '../hooks/useIssues';
 import { useIssue } from '../hooks/useIssue';
 import { useSettings } from '../hooks/useSettings';
+import { ipcClient } from '../services/ipc';
 import { IssueList } from '../components/issue/IssueList';
 import { IssueCard } from '../components/issue/IssueCard';
 import { IssueFilters } from '../components/issue/IssueFilters';
@@ -13,7 +14,7 @@ import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 export default function Issues() {
   const [filter, setFilter] = useState<IssueFilter>({});
   const [editorOpen, setEditorOpen] = useState(false);
-  const [editingIssueId, setEditingIssueId] = useState<string | null>(null);
+  const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
 
   // Get settings and view preferences
   const { settings, updateViewPreferences } = useSettings();
@@ -31,8 +32,7 @@ export default function Issues() {
     autoLoad: true,
   });
 
-  const { issue: editingIssue, create, update } = useIssue({
-    id: editingIssueId || undefined,
+  const { create } = useIssue({
     autoLoad: false,
   });
 
@@ -53,18 +53,18 @@ export default function Issues() {
   };
 
   const handleCreateIssue = () => {
-    setEditingIssueId(null);
+    setEditingIssue(null);
     setEditorOpen(true);
   };
 
-  const handleEditIssue = (issueId: string) => {
-    setEditingIssueId(issueId);
+  const handleEditIssue = (issue: Issue) => {
+    setEditingIssue(issue);
     setEditorOpen(true);
   };
 
   const handleSaveIssue = async (data: CreateIssueInput | UpdateIssueInput) => {
-    if (editingIssueId) {
-      await update(data as UpdateIssueInput);
+    if (editingIssue) {
+      await ipcClient.issues.update({ id: editingIssue.id, data: data as UpdateIssueInput });
     } else {
       await create(data as CreateIssueInput);
     }
@@ -73,7 +73,7 @@ export default function Issues() {
 
   const handleCloseEditor = () => {
     setEditorOpen(false);
-    setEditingIssueId(null);
+    setEditingIssue(null);
   };
 
   return (
@@ -118,7 +118,7 @@ export default function Issues() {
             page={page}
             totalPages={totalPages}
             onPageChange={setPage}
-            onIssueClick={(issue) => handleEditIssue(issue.id)}
+            onIssueClick={(issue) => handleEditIssue(issue)}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -145,7 +145,7 @@ export default function Issues() {
                 <IssueCard
                   key={issue.id}
                   issue={issue}
-                  onClick={() => handleEditIssue(issue.id)}
+                  onClick={() => handleEditIssue(issue)}
                 />
               ))
             )}
@@ -155,6 +155,7 @@ export default function Issues() {
 
       {/* Issue Editor Modal */}
       <IssueEditor
+        key={editingIssue?.id || 'new'}
         issue={editingIssue}
         isOpen={editorOpen}
         onClose={handleCloseEditor}
