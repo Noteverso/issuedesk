@@ -148,24 +148,24 @@ Project uses monorepo workspace structure:
 
 ### IPC Handlers for User Story 2
 
-- [ ] T058 [US2] Extend issues.list handler to support label filtering in apps/desktop/src/main/ipc/issues.ts
-- [ ] T059 [P] [US2] Implement settings.update IPC handler in apps/desktop/src/main/ipc/settings.ts (view preferences)
+- [X] T058 [US2] Extend issues.list handler to support label filtering in apps/desktop/src/main/ipc/issues.ts
+- [X] T059 [P] [US2] Implement settings.update IPC handler in apps/desktop/src/main/ipc/settings.ts (view preferences)
 
 ### React Hooks for User Story 2
 
-- [ ] T060 [US2] Extend useIssues hook with filter state management in apps/desktop/src/renderer/src/hooks/useIssues.ts
-- [ ] T061 [P] [US2] Create useSettings hook in apps/desktop/src/renderer/src/hooks/useSettings.ts (theme, view preferences)
+- [X] T060 [US2] Extend useIssues hook with filter state management in apps/desktop/src/renderer/src/hooks/useIssues.ts
+- [X] T061 [P] [US2] Create useSettings hook in apps/desktop/src/renderer/src/hooks/useSettings.ts (theme, view preferences)
 
 ### UI Components for User Story 2
 
-- [ ] T062 [US2] Extend IssueFilters component with label multi-select in apps/desktop/src/renderer/src/components/issue/IssueFilters.tsx
-- [ ] T063 [US2] Wire ViewToggle to persist preference in apps/desktop/src/renderer/src/components/common/ViewToggle.tsx
+- [X] T062 [US2] Extend IssueFilters component with label multi-select in apps/desktop/src/renderer/src/components/issue/IssueFilters.tsx
+- [X] T063 [US2] Wire ViewToggle to persist preference in apps/desktop/src/renderer/src/components/common/ViewToggle.tsx
 
 ### Tests for User Story 2
 
-- [ ] T064 [P] [US2] IPC contract test for issues.list with filters in tests/contract/issues.spec.ts
-- [ ] T065 [P] [US2] E2E test for filtering workflow in tests/e2e/issue-filtering.spec.ts (apply label filter, clear filter)
-- [ ] T066 [P] [US2] E2E test for view preference persistence in tests/e2e/view-toggle.spec.ts
+- [X] T064 [P] [US2] IPC contract test for issues.list with filters in tests/contract/issues.spec.ts
+- [X] T065 [P] [US2] E2E test for filtering workflow in tests/e2e/issue-filtering.spec.ts (apply label filter, clear filter)
+- [X] T066 [P] [US2] E2E test for view preference persistence in tests/e2e/view-toggle.spec.ts
 
 **Checkpoint**: User Stories 1 AND 2 complete - can filter and switch views
 

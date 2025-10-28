@@ -19,9 +19,10 @@ export function IssueList({
   onPageChange,
   onIssueClick,
 }: IssueListProps) {
-  const formatTimeAgo = (timestamp: number): string => {
+  const formatTimeAgo = (timestamp: string): string => {
+    const date = new Date(timestamp);
     const now = Date.now();
-    const diff = now - timestamp;
+    const diff = now - date.getTime();
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
@@ -37,7 +38,7 @@ export function IssueList({
     return `${years} ${years === 1 ? 'year' : 'years'} ago`;
   };
 
-  const formatDate = (timestamp: number): string => {
+  const formatDate = (timestamp: string): string => {
     return new Date(timestamp).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -153,12 +154,14 @@ export function IssueList({
 
             {/* Actions */}
             <div className="col-span-1 flex items-center justify-end md:justify-start">
-              {issue.github_url && (
+              {issue.html_url && (
                 <a
-                  href={issue.github_url}
+                  href={issue.html_url}
+                  target="_blank"
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
-                    window.electronAPI?.system?.openExternal({ url: issue.github_url });
+                    window.electronAPI?.system?.openExternal({ url: issue.html_url });
                   }}
                   className="text-muted-foreground hover:text-foreground transition-colors p-1"
                   title="Open on GitHub"

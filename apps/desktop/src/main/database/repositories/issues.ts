@@ -48,7 +48,7 @@ export class IssuesRepository {
 
     return {
       issues,
-      totalCount: count,
+      total: count,
       page,
       perPage,
       hasMore: page * perPage < count,

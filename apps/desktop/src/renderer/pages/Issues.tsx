@@ -1,19 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { IssueFilter, CreateIssueInput, UpdateIssueInput } from '@issuedesk/shared';
-import useIssues from '../hooks/useIssues';
-import useIssue from '../hooks/useIssue';
-import IssueList from '../components/issue/IssueList';
-import IssueCard from '../components/issue/IssueCard';
-import IssueFilters from '../components/issue/IssueFilters';
-import IssueEditor from '../components/issue/IssueEditor';
-import ViewToggle, { ViewMode } from '../components/common/ViewToggle';
+import { useIssues } from '../hooks/useIssues';
+import { useIssue } from '../hooks/useIssue';
+import { useSettings } from '../hooks/useSettings';
+import { IssueList } from '../components/issue/IssueList';
+import { IssueCard } from '../components/issue/IssueCard';
+import { IssueFilters } from '../components/issue/IssueFilters';
+import { IssueEditor } from '../components/issue/IssueEditor';
+import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
 
 export default function Issues() {
   const [filter, setFilter] = useState<IssueFilter>({});
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingIssueId, setEditingIssueId] = useState<string | null>(null);
+
+  // Get settings and view preferences
+  const { settings, updateViewPreferences } = useSettings();
+  const [viewMode, setViewMode] = useState<ViewMode>(settings?.viewPreferences.issues || 'list');
+
+  // Sync viewMode with settings when settings change
+  useEffect(() => {
+    if (settings?.viewPreferences.issues) {
+      setViewMode(settings.viewPreferences.issues);
+    }
+  }, [settings]);
 
   const { issues, total, page, totalPages, loading, error, refetch, setPage, setFilter: updateFilter } = useIssues({
     filter,
@@ -29,6 +40,16 @@ export default function Issues() {
     setFilter(newFilter);
     updateFilter(newFilter);
     setPage(1); // Reset to first page when filter changes
+  };
+
+  const handleViewModeChange = async (mode: ViewMode) => {
+    setViewMode(mode);
+    // Persist the preference
+    try {
+      await updateViewPreferences({ issues: mode });
+    } catch (error) {
+      console.error('Failed to save view preference:', error);
+    }
   };
 
   const handleCreateIssue = () => {
@@ -67,7 +88,7 @@ export default function Issues() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <ViewToggle value={viewMode} onChange={setViewMode} />
+            <ViewToggle value={viewMode} onChange={handleViewModeChange} />
             <button
               onClick={handleCreateIssue}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium"

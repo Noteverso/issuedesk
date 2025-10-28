@@ -217,6 +217,8 @@ export interface IpcApi {
   system: {
     openExternal: (req: OpenExternalRequest) => Promise<{ success: boolean }>;
     getVersion: () => Promise<VersionInfo>;
+    getInfo: () => Promise<any>;
+    checkForUpdates: () => Promise<any>;
   };
 
   // Event listeners

@@ -34,7 +34,7 @@ const mockIssuesApi = {
     console.warn('IPC not available: issues.list called with mock data');
     return {
       issues: [],
-      totalCount: 0,
+      total: 0,
       page: req.page || 1,
       perPage: req.perPage || 50,
       hasMore: false,

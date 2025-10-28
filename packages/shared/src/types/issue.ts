@@ -16,9 +16,9 @@ export interface Issue {
   title: string;
   body: string | null;
   state: IssueState;
-  createdAt: number; // Unix timestamp (ms)
-  updatedAt: number; // Unix timestamp (ms)
-  githubUrl: string;
+  created_at: string; // ISO 8601 timestamp from GitHub API
+  updated_at: string; // ISO 8601 timestamp from GitHub API
+  html_url: string; // GitHub URL
   syncStatus: IssueSyncStatus;
   localUpdatedAt: number; // Unix timestamp (ms)
   remoteUpdatedAt: number | null;
@@ -47,7 +47,7 @@ export interface IssueFilter {
 
 export interface IssueListResult {
   issues: Issue[];
-  totalCount: number;
+  total: number;
   page: number;
   perPage: number;
   hasMore: boolean;

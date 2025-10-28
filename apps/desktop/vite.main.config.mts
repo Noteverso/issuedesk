@@ -21,6 +21,8 @@ export default defineConfig({
       },
       external: [
         'electron',
+        'uuid',
+        'better-sqlite3',
         ...builtinModules,
         ...builtinModules.map((m) => `node:${m}`),
         '@issuedesk/shared',

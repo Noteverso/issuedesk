@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { IssueFilter } from '@issuedesk/shared';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, Check } from 'lucide-react';
+import { useLabels } from '../../hooks/useLabels';
 
 interface IssueFiltersProps {
   filter: IssueFilter;
@@ -10,6 +11,8 @@ interface IssueFiltersProps {
 export function IssueFilters({ filter, onFilterChange }: IssueFiltersProps) {
   const [searchTerm, setSearchTerm] = useState(filter.search || '');
   const [isExpanded, setIsExpanded] = useState(false);
+  const { labels: availableLabels, loading: labelsLoading } = useLabels();
+  const [selectedLabels, setSelectedLabels] = useState<string[]>(filter.labels || []);
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
@@ -20,12 +23,25 @@ export function IssueFilters({ filter, onFilterChange }: IssueFiltersProps) {
     onFilterChange({ ...filter, state });
   };
 
+  const handleLabelToggle = (labelName: string) => {
+    const newSelectedLabels = selectedLabels.includes(labelName)
+      ? selectedLabels.filter(l => l !== labelName)
+      : [...selectedLabels, labelName];
+    
+    setSelectedLabels(newSelectedLabels);
+    onFilterChange({ 
+      ...filter, 
+      labels: newSelectedLabels.length > 0 ? newSelectedLabels : undefined 
+    });
+  };
+
   const handleClearFilters = () => {
     setSearchTerm('');
+    setSelectedLabels([]);
     onFilterChange({});
   };
 
-  const hasActiveFilters = filter.search || filter.state;
+  const hasActiveFilters = filter.search || filter.state || (filter.labels && filter.labels.length > 0);
 
   return (
     <div className="space-y-4">
@@ -103,7 +119,15 @@ export function IssueFilters({ filter, onFilterChange }: IssueFiltersProps) {
         {/* Advanced filters toggle */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="px-4 py-2 text-sm font-medium border border-border rounded-md bg-background text-foreground hover:bg-accent transition-colors flex items-center gap-2"
+          className={`
+            px-4 py-2 text-sm font-medium border border-border rounded-md
+            transition-colors flex items-center gap-2
+            ${
+              isExpanded || (filter.labels && filter.labels.length > 0)
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-background text-foreground hover:bg-accent'
+            }
+          `}
         >
           <Filter className="h-4 w-4" />
           Filters
@@ -124,14 +148,46 @@ export function IssueFilters({ filter, onFilterChange }: IssueFiltersProps) {
       {isExpanded && (
         <div className="p-4 bg-muted/50 rounded-md border border-border">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Label filter (placeholder for US2) */}
+            {/* Label filter */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Labels
               </label>
-              <p className="text-xs text-muted-foreground">
-                Label filtering will be available in User Story 2
-              </p>
+              {labelsLoading ? (
+                <p className="text-xs text-muted-foreground">Loading labels...</p>
+              ) : availableLabels.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No labels available</p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {availableLabels.map((label) => (
+                    <button
+                      key={label.name}
+                      type="button"
+                      onClick={() => handleLabelToggle(label.name)}
+                      className={`
+                        w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md
+                        border transition-colors text-left
+                        ${
+                          selectedLabels.includes(label.name)
+                            ? 'border-primary bg-primary/10 text-foreground'
+                            : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center gap-2 flex-1">
+                        <span
+                          className="inline-block w-3 h-3 rounded-full"
+                          style={{ backgroundColor: `#${label.color}` }}
+                        />
+                        <span>{label.name}</span>
+                      </div>
+                      {selectedLabels.includes(label.name) && (
+                        <Check className="h-4 w-4 text-primary" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Sort by (future enhancement) */}

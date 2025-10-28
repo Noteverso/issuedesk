@@ -10,14 +10,15 @@ interface IssueCardProps {
 }
 
 export function IssueCard({ issue, onClick, onEdit, onDelete }: IssueCardProps) {
-  const truncateBody = (body: string | null, maxLength: number = 150) => {
+  const truncateBody = (body: string | null, maxLength = 150) => {
     if (!body) return '';
     return body.length > maxLength ? `${body.slice(0, maxLength)}...` : body;
   };
 
-  const formatTimeAgo = (timestamp: number): string => {
+  const formatTimeAgo = (timestamp: string): string => {
+    const date = new Date(timestamp);
     const now = Date.now();
-    const diff = now - timestamp;
+    const diff = now - date.getTime();
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
@@ -49,27 +50,29 @@ export function IssueCard({ issue, onClick, onEdit, onDelete }: IssueCardProps) 
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center space-x-2 flex-1 min-w-0">
           {issue.state === 'open' ? (
-            <Circle className="h-5 w-5 text-green-500 flex-shrink-0" />
+            <Circle className="h-5 w-5 text-green-500 shrink-0" />
           ) : (
-            <CheckCircle className="h-5 w-5 text-purple-500 flex-shrink-0" />
+            <CheckCircle className="h-5 w-5 text-purple-500 shrink-0" />
           )}
           <h3 className="font-medium text-foreground truncate" title={issue.title}>
             {issue.title}
           </h3>
-          <span className="text-sm text-muted-foreground flex-shrink-0">
+          <span className="text-sm text-muted-foreground shrink-0">
             #{issue.number}
           </span>
         </div>
         
-        {issue.github_url && (
+        {issue.html_url && (
           <a
-            href={issue.github_url}
+            href={issue.html_url}
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
-              window.electronAPI?.system?.openExternal({ url: issue.github_url });
+              window.electronAPI?.system?.openExternal({ url: issue.html_url });
             }}
-            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 ml-2"
-            title="Open on GitHub"
+            className="text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-2"
           >
             <ExternalLink className="h-4 w-4" />
           </a>

@@ -81,21 +81,52 @@ export function registerIssuesHandlers() {
       }
       
       console.log('🔄 Fetching issues from GitHub...');
-      const response = await client.getIssues(repo.owner, repo.name, {
+      
+      // Build GitHub API options with label filtering support
+      const githubOptions: {
+        state?: 'open' | 'closed' | 'all';
+        labels?: string;
+        page?: number;
+        per_page?: number;
+      } = {
         state: validated.filter?.state === 'all' ? undefined : validated.filter?.state,
         page: validated.page,
         per_page: validated.perPage,
-      });
+      };
+      
+      // Add label filtering if labels are specified
+      // GitHub API expects comma-separated label names
+      if (validated.filter?.labels && validated.filter.labels.length > 0) {
+        githubOptions.labels = validated.filter.labels.join(',');
+        console.log('  - Filtering by labels:', githubOptions.labels);
+      }
+      
+      const response = await client.getIssues(repo.owner, repo.name, githubOptions);
       
       if (!response.success || !response.data) {
         throw new Error(response.message || 'Failed to fetch issues from GitHub');
       }
       
-      console.log(`✅ Fetched ${response.data.length} issues from GitHub`);
+      let issues = response.data;
+      
+      // Apply client-side search filtering if search term is provided
+      // GitHub API doesn't support full-text search in the issues endpoint, 
+      // so we filter locally
+      if (validated.filter?.search) {
+        const searchTerm = validated.filter.search.toLowerCase();
+        console.log('  - Applying client-side search filter:', searchTerm);
+        
+        issues = issues.filter(issue => 
+          issue.title.toLowerCase().includes(searchTerm) ||
+          (issue.body && issue.body.toLowerCase().includes(searchTerm))
+        );
+      }
+      
+      console.log(`✅ Fetched ${issues.length} issues from GitHub (filtered from ${response.data.length})`);
       
       return {
-        issues: response.data,
-        total: response.data.length,
+        issues,
+        total: issues.length,
         page: validated.page || 1,
         perPage: validated.perPage || 50,
       };

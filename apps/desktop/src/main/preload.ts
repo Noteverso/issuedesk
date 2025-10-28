@@ -1,62 +1,70 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { IpcApi } from '@issuedesk/shared';
 
 // Debug log to confirm preload script is loaded
 console.log('🔧 Preload script loaded successfully');
 
-// Expose protected methods that allow the renderer process to use
-// the ipcRenderer without exposing the entire object
-contextBridge.exposeInMainWorld('electronAPI', {
-  // New namespaced API (matches IpcApi interface)
+// Type-safe API implementation matching IpcApi interface
+const api: IpcApi = {
+  // Issues API
   issues: {
-    list: (params: any) => ipcRenderer.invoke('issues:list', params),
-    get: (params: any) => ipcRenderer.invoke('issues:get', params),
-    create: (params: any) => ipcRenderer.invoke('issues:create', params),
-    update: (params: any) => ipcRenderer.invoke('issues:update', params),
-    delete: (params: any) => ipcRenderer.invoke('issues:delete', params),
+    list: (req) => ipcRenderer.invoke('issues:list', req),
+    get: (req) => ipcRenderer.invoke('issues:get', req),
+    create: (req) => ipcRenderer.invoke('issues:create', req),
+    update: (req) => ipcRenderer.invoke('issues:update', req),
+    delete: (req) => ipcRenderer.invoke('issues:delete', req),
   },
 
+  // Labels API
   labels: {
-    list: (params: any) => ipcRenderer.invoke('labels:list', params),
-    get: (params: any) => ipcRenderer.invoke('labels:get', params),
-    create: (params: any) => ipcRenderer.invoke('labels:create', params),
-    update: (params: any) => ipcRenderer.invoke('labels:update', params),
-    delete: (params: any) => ipcRenderer.invoke('labels:delete', params),
+    list: () => ipcRenderer.invoke('labels:list'),
+    create: (req) => ipcRenderer.invoke('labels:create', req),
+    update: (req) => ipcRenderer.invoke('labels:update', req),
+    delete: (req) => ipcRenderer.invoke('labels:delete', req),
   },
 
+  // Sync API
   sync: {
     start: () => ipcRenderer.invoke('sync:start'),
     getStatus: () => ipcRenderer.invoke('sync:getStatus'),
-    resolveConflict: (params: any) => ipcRenderer.invoke('sync:resolveConflict', params),
+    resolveConflict: (req) => ipcRenderer.invoke('sync:resolveConflict', req),
   },
 
+  // Settings API
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
-    update: (params: any) => ipcRenderer.invoke('settings:update', params),
-    setRepository: (params: any) => ipcRenderer.invoke('settings:setRepository', params),
-    switchRepository: (params: any) => ipcRenderer.invoke('settings:switchRepository', params),
+    update: (req) => ipcRenderer.invoke('settings:update', req),
+    setRepository: (req) => ipcRenderer.invoke('settings:setRepository', req),
+    switchRepository: (req) => ipcRenderer.invoke('settings:switchRepository', req),
     getToken: () => ipcRenderer.invoke('settings:getToken'),
-    setToken: (params: any) => ipcRenderer.invoke('settings:setToken', params),
-    testConnection: (token: string) => ipcRenderer.invoke('settings:testConnection', token),
-    getUser: (token: string) => ipcRenderer.invoke('settings:getUser', token),
-    getRepositories: (token: string) => ipcRenderer.invoke('settings:getRepositories', token),
+    setToken: (req) => ipcRenderer.invoke('settings:setToken', req),
+    testConnection: (token) => ipcRenderer.invoke('settings:testConnection', token),
+    getUser: (token) => ipcRenderer.invoke('settings:getUser', token),
+    getRepositories: (token) => ipcRenderer.invoke('settings:getRepositories', token),
   },
 
+  // Analytics API
   analytics: {
-    getMetrics: (params: any) => ipcRenderer.invoke('analytics:getMetrics', params),
+    getDashboard: () => ipcRenderer.invoke('analytics:getDashboard'),
   },
 
+  // System API
   system: {
+    openExternal: (req) => ipcRenderer.invoke('system:openExternal', req),
+    getVersion: () => ipcRenderer.invoke('system:getVersion'),
     getInfo: () => ipcRenderer.invoke('system:getInfo'),
     checkForUpdates: () => ipcRenderer.invoke('system:checkForUpdates'),
   },
 
-  on: (channel: string, callback: (...args: any[]) => void) => {
-    const subscription = (_event: any, ...args: any[]) => callback(...args);
-    ipcRenderer.on(channel, subscription);
-    return () => ipcRenderer.removeListener(channel, subscription);
+  // Event listeners
+  on: (channel, callback) => {
+    const validChannels = ['sync:progress', 'sync:conflict', 'rate-limit:warning', 'token:invalid'];
+    if (validChannels.includes(channel)) {
+      ipcRenderer.on(channel, (_, data) => callback(data));
+    }
   },
-});
+};
 
-// Debug log to confirm electronAPI is exposed
-console.log('🔧 electronAPI exposed to window object');
+// Expose API to renderer via contextBridge
+contextBridge.exposeInMainWorld('electronAPI', api);
 

@@ -95,6 +95,47 @@ describe('IPC Contract: issues.list', () => {
     
     // TODO: Verify search results contain search term
   });
+
+  it('should support label filtering (US2)', async () => {
+    const labelRequest = {
+      filter: { labels: ['bug', 'enhancement'] },
+    };
+
+    expect(() => IssueListRequestSchema.parse(labelRequest)).not.toThrow();
+    
+    // TODO: Verify filtered results contain specified labels
+    // const result = await api.issues.list(labelRequest);
+    // result.issues.forEach(issue => {
+    //   const issueLabels = issue.labels.map(l => l.name);
+    //   expect(
+    //     issueLabels.includes('bug') || issueLabels.includes('enhancement')
+    //   ).toBe(true);
+    // });
+  });
+
+  it('should support combined filtering (state + labels + search)', async () => {
+    const combinedRequest = {
+      filter: {
+        state: 'open' as const,
+        labels: ['bug'],
+        search: 'crash',
+      },
+    };
+
+    expect(() => IssueListRequestSchema.parse(combinedRequest)).not.toThrow();
+    
+    // TODO: Verify all filters are applied correctly
+    // const result = await api.issues.list(combinedRequest);
+    // result.issues.forEach(issue => {
+    //   expect(issue.state).toBe('open');
+    //   const issueLabels = issue.labels.map(l => l.name);
+    //   expect(issueLabels).toContain('bug');
+    //   expect(
+    //     issue.title.toLowerCase().includes('crash') ||
+    //     (issue.body && issue.body.toLowerCase().includes('crash'))
+    //   ).toBe(true);
+    // });
+  });
 });
 
 describe('IPC Contract: issues.create', () => {
