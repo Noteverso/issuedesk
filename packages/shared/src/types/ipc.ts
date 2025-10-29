@@ -19,18 +19,18 @@ export interface IssueListRequest {
 }
 
 export interface IssueGetRequest {
-  id: string;
+  id: number;
 }
 
 export interface IssueCreateRequest extends CreateIssueInput {}
 
 export interface IssueUpdateRequest {
-  id: string;
+  id: number;
   data: UpdateIssueInput;
 }
 
 export interface IssueDeleteRequest {
-  id: string;
+  id: number;
 }
 
 // Labels API

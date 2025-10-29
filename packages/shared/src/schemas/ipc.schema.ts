@@ -13,18 +13,18 @@ export const IssueListRequestSchema = z.object({
 });
 
 export const IssueGetRequestSchema = z.object({
-  id: z.string().uuid(),
+  id: z.number().min(1),
 });
 
 export const IssueCreateRequestSchema = CreateIssueInputSchema;
 
 export const IssueUpdateRequestSchema = z.object({
-  id: z.string().uuid(),
+  id: z.number().min(1),
   data: UpdateIssueInputSchema,
 });
 
 export const IssueDeleteRequestSchema = z.object({
-  id: z.string().uuid(),
+  id: z.number().min(1),
 });
 
 // Labels

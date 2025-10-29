@@ -4,17 +4,20 @@ import { IssueFilter, CreateIssueInput, UpdateIssueInput, Issue } from '@issuede
 import { useIssues } from '../hooks/useIssues';
 import { useIssue } from '../hooks/useIssue';
 import { useSettings } from '../hooks/useSettings';
-import { ipcClient } from '../services/ipc';
 import { IssueList } from '../components/issue/IssueList';
 import { IssueCard } from '../components/issue/IssueCard';
 import { IssueFilters } from '../components/issue/IssueFilters';
 import { IssueEditor } from '../components/issue/IssueEditor';
 import { ViewToggle, type ViewMode } from '../components/common/ViewToggle';
+import { useToast, ToastContainer } from '../components/common/Toast';
 
 export default function Issues() {
   const [filter, setFilter] = useState<IssueFilter>({});
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
+
+  // Toast notifications
+  const toast = useToast();
 
   // Get settings and view preferences
   const { settings, updateViewPreferences } = useSettings();
@@ -32,7 +35,14 @@ export default function Issues() {
     autoLoad: true,
   });
 
+  // Hook for creating new issues
   const { create } = useIssue({
+    autoLoad: false,
+  });
+
+  // Hook for updating/deleting the current editing issue
+  const { update, deleteIssue } = useIssue({
+    id: editingIssue?.number,
     autoLoad: false,
   });
 
@@ -63,12 +73,33 @@ export default function Issues() {
   };
 
   const handleSaveIssue = async (data: CreateIssueInput | UpdateIssueInput) => {
-    if (editingIssue) {
-      await ipcClient.issues.update({ id: editingIssue.id, data: data as UpdateIssueInput });
-    } else {
-      await create(data as CreateIssueInput);
+    try {
+      if (editingIssue) {
+        await update(data as UpdateIssueInput);
+        toast.success('Issue updated', `Issue #${editingIssue.number} has been updated successfully`);
+      } else {
+        const newIssue = await create(data as CreateIssueInput);
+        toast.success('Issue created', `Issue #${newIssue.number} has been created successfully`);
+      }
+      await refetch();
+      handleCloseEditor();
+    } catch (err: any) {
+      toast.error(
+        editingIssue ? 'Failed to update issue' : 'Failed to create issue',
+        err?.message || 'Please try again later'
+      );
     }
-    await refetch();
+  };
+
+  const handleCloseIssue = async (issue: Issue) => {
+    try {
+      await deleteIssue();
+      toast.success('Issue closed', `Issue #${issue.number} has been closed successfully`);
+      await refetch();
+      handleCloseEditor();
+    } catch (err: any) {
+      toast.error('Failed to close issue', err?.message || 'Please try again later');
+    }
   };
 
   const handleCloseEditor = () => {
@@ -78,6 +109,9 @@ export default function Issues() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Toast notifications */}
+      <ToastContainer messages={toast.messages} onClose={toast.closeToast} />
+
       {/* Header */}
       <div className="flex-shrink-0 px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center justify-between mb-4">
@@ -160,6 +194,7 @@ export default function Issues() {
         isOpen={editorOpen}
         onClose={handleCloseEditor}
         onSave={handleSaveIssue}
+        onCloseIssue={handleCloseIssue}
       />
     </div>
   );

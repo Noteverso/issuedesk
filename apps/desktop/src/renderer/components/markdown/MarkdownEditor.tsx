@@ -61,6 +61,11 @@ export function MarkdownEditor({
   const [mode, setMode] = useState<EditorMode>('edit');
   const [codeContent, setCodeContent] = useState(content);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // Force re-render when cursor position changes to update button states
+  const [, setEditorState] = useState(0);
+
+  // Only update editor when content changes from external source (not from user editing)
+  const isInternalUpdate = useRef(false);
 
   const editor = useEditor({
     extensions: [
@@ -82,13 +87,19 @@ export function MarkdownEditor({
         },
       }),
     ],
-    content: '',
+    content: marked(content) as string, // Set initial content here
     onUpdate: ({ editor }) => {
+      isInternalUpdate.current = true;
+
       // Convert HTML to Markdown before sending to parent
       const html = editor.getHTML();
       const markdown = turndownService.turndown(html);
       onChange(markdown);
       setCodeContent(markdown);
+    },
+    onSelectionUpdate: () => {
+      // Force re-render to update toolbar button active states
+      setEditorState(prev => prev + 1);
     },
     editorProps: {
       attributes: {
@@ -96,19 +107,21 @@ export function MarkdownEditor({
       },
     },
   });
-
-  // Update editor content when content prop changes from outside
+ 
   useEffect(() => {
-    if (editor && content !== undefined) {
-      // Convert markdown to HTML for TipTap
-      const html = marked(content) as string;
-      const currentHtml = editor.getHTML();
-      if (html !== currentHtml) {
-        // Avoid resetting if content update
-        editor.commands.setContent(html);
-        setCodeContent(content);
-      }
+    if(!editor || !content) return;
+    if (isInternalUpdate.current) {
+      return;
     }
+
+    const html = marked(content) as string;
+    
+    // Only update if content genuinely changed from outside
+    if (html !== editor.getHTML()) {
+      editor.commands.setContent(html, { emitUpdate: false });
+      setCodeContent(content);
+    }
+
   }, [content, editor]);
 
   const handleCodeModeChange = (value: string) => {

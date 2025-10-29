@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Issue, CreateIssueInput, UpdateIssueInput } from '@issuedesk/shared';
-import { X } from 'lucide-react';
-import MarkdownEditor from '../markdown/MarkdownEditor';
+import { X, XCircle } from 'lucide-react';
+import { MarkdownEditor } from '../markdown/MarkdownEditor';
 
 interface IssueEditorProps {
   issue?: Issue | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: CreateIssueInput | UpdateIssueInput) => Promise<void>;
+  onCloseIssue?: (issue: Issue) => Promise<void>;
 }
 
-export function IssueEditor({ issue, isOpen, onClose, onSave }: IssueEditorProps) {
+export function IssueEditor({ issue, isOpen, onClose, onSave, onCloseIssue }: IssueEditorProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Reset form when issue changes or modal opens
@@ -42,7 +44,7 @@ export function IssueEditor({ issue, isOpen, onClose, onSave }: IssueEditorProps
         // Create new issue
         await onSave({ title, body });
       }
-      onClose();
+      // Don't close here - let parent handle it after success
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save issue');
     } finally {
@@ -50,8 +52,30 @@ export function IssueEditor({ issue, isOpen, onClose, onSave }: IssueEditorProps
     }
   };
 
+  const handleCloseIssue = async () => {
+    if (!issue || !onCloseIssue) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to close issue #${issue.number}? This will mark the issue as closed.`
+    );
+
+    if (!confirmed) return;
+
+    setClosing(true);
+    setError(null);
+
+    try {
+      await onCloseIssue(issue);
+      // Don't close here - let parent handle it after success
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to close issue');
+    } finally {
+      setClosing(false);
+    }
+  };
+
   const handleClose = () => {
-    if (!saving) {
+    if (!saving && !closing) {
       onClose();
     }
   };
@@ -146,21 +170,35 @@ export function IssueEditor({ issue, isOpen, onClose, onSave }: IssueEditorProps
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
-            <button
-              onClick={handleClose}
-              disabled={saving}
-              className="px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving || !title.trim()}
-              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Saving...' : issue ? 'Update Issue' : 'Create Issue'}
-            </button>
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+            {/* Close Issue button - only show when editing open issues */}
+            {issue && issue.state === 'open' && onCloseIssue && (
+              <button
+                onClick={handleCloseIssue}
+                disabled={saving || closing}
+                className="px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <XCircle className="h-4 w-4" />
+                {closing ? 'Closing...' : 'Close Issue'}
+              </button>
+            )}
+
+            <div className={`flex items-center gap-3 ${!issue || issue.state !== 'open' || !onCloseIssue ? 'ml-auto' : ''}`}>
+              <button
+                onClick={handleClose}
+                disabled={saving || closing}
+                className="px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || closing || !title.trim()}
+                className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Saving...' : issue ? 'Update Issue' : 'Create Issue'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Issue, CreateIssueInput, UpdateIssueInput } from '@issuedesk/shared';
-import ipcClient from '../services/ipc';
+import { ipcClient } from '../services/ipc';
 
 interface UseIssueOptions {
-  id?: string;
+  id?: number;
   autoLoad?: boolean;
 }
 

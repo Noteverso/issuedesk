@@ -172,7 +172,7 @@ export function registerIssuesHandlers() {
       
       // Fetch from GitHub using issue number (validated.id should be the issue number)
       console.log('🔄 Fetching issue from GitHub...');
-      const response = await client.getIssue(repo.owner, repo.name, parseInt(validated.id));
+      const response = await client.getIssue(repo.owner, repo.name, validated.id);
       
       if (!response.success || !response.data) {
         throw new Error(response.message || 'Issue not found');
@@ -271,7 +271,7 @@ export function registerIssuesHandlers() {
       
       // Update on GitHub (using validated.id as the issue number)
       console.log('🔄 Updating issue on GitHub...');
-      const response = await client.updateIssue(repo.owner, repo.name, parseInt(validated.id), {
+      const response = await client.updateIssue(repo.owner, repo.name, validated.id, {
         title: validated.data.title,
         body: validated.data.body,
         state: validated.data.state,
@@ -321,7 +321,7 @@ export function registerIssuesHandlers() {
       }
       
       console.log('🔄 Closing issue on GitHub...');
-      const response = await client.updateIssue(repo.owner, repo.name, parseInt(validated.id), {
+      const response = await client.updateIssue(repo.owner, repo.name, validated.id, {
         state: 'closed',
       });
       
