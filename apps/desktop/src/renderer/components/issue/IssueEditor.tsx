@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Issue, CreateIssueInput, UpdateIssueInput } from '@issuedesk/shared';
 import { X, XCircle } from 'lucide-react';
 import { MarkdownEditor } from '../markdown/MarkdownEditor';
+import { LabelSelector } from '../label/LabelSelector';
+import { useLabels } from '../../hooks/useLabels';
 
 interface IssueEditorProps {
   issue?: Issue | null;
@@ -14,15 +16,20 @@ interface IssueEditorProps {
 export function IssueEditor({ issue, isOpen, onClose, onSave, onCloseIssue }: IssueEditorProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [closing, setClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch available labels
+  const { labels, loading: labelsLoading } = useLabels();
 
   // Reset form when issue changes or modal opens
   useEffect(() => {
     if (isOpen) {
       setTitle(issue?.title || '');
       setBody(issue?.body || '');
+      setSelectedLabels(issue?.labels?.map(label => label.name) || []);
       setError(null);
     }
   }, [issue, isOpen]);
@@ -39,10 +46,10 @@ export function IssueEditor({ issue, isOpen, onClose, onSave, onCloseIssue }: Is
     try {
       if (issue) {
         // Update existing issue
-        await onSave({ title, body });
+        await onSave({ title, body, labels: selectedLabels });
       } else {
         // Create new issue
-        await onSave({ title, body });
+        await onSave({ title, body, labels: selectedLabels });
       }
       // Don't close here - let parent handle it after success
     } catch (err) {
@@ -156,16 +163,22 @@ export function IssueEditor({ issue, isOpen, onClose, onSave, onCloseIssue }: Is
               </p>
             </div>
 
-            {/* Labels placeholder (US3) */}
+            {/* Labels selector */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Labels
               </label>
-              <div className="px-4 py-3 bg-muted/50 border border-border rounded-md">
-                <p className="text-xs text-muted-foreground">
-                  Label management will be available in User Story 3
+              <LabelSelector
+                labels={labels}
+                selectedLabels={selectedLabels}
+                onChange={setSelectedLabels}
+                disabled={saving || labelsLoading}
+              />
+              {labelsLoading && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Loading labels...
                 </p>
-              </div>
+              )}
             </div>
           </div>
 
