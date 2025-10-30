@@ -7,7 +7,9 @@
 
 ## Summary
 
-Desktop application for managing GitHub issues with offline-first architecture. Users can perform full CRUD operations on issues and labels, view analytics dashboard, filter/search issues, and sync changes with GitHub. Built using Electron for native desktop integration, React + Tailwind CSS for UI, SQLite for local persistence (one database per repository), and electron-store for app settings/preferences.
+Desktop application for managing GitHub issues with **API-first architecture** transitioning to offline-first. Users can perform full CRUD operations on issues, comments, and labels via GitHub REST API, view analytics dashboard, filter/search issues, and sync changes with GitHub. Built using Electron for native desktop integration, React + Tailwind CSS for UI, with SQLite for local persistence (one database per repository) implemented in final phase, and electron-store for app settings/preferences.
+
+**Implementation Strategy**: GitHub REST API integration first for immediate functionality, followed by SQLite caching layer for offline support and performance optimization.
 
 ## Technical Context
 
@@ -24,7 +26,8 @@ Desktop application for managing GitHub issues with offline-first architecture. 
 - Zod (runtime validation in @issuedesk/shared)
 
 **Storage**: 
-- SQLite (one database per repository for issues, labels, sync queue)
+- **Phase 1-8**: GitHub REST API as primary data source (online-only)
+- **Phase 9+**: SQLite (one database per repository for issues, comments, labels, sync queue) - offline caching
 - electron-store (global app settings, active repository, theme)
 - OS keychain (GitHub token via electron-store with encryption)
 
@@ -38,10 +41,11 @@ Desktop application for managing GitHub issues with offline-first architecture. 
 - UI interactions 60fps (<16ms per frame)
 
 **Constraints**: 
-- Offline-first (all core features work without network)
+- **Phase 1-8**: Online-only (requires network for GitHub API)
+- **Phase 9+**: Offline-first (all core features work without network via SQLite cache)
 - <200MB RAM idle
 - <100MB installed size
-- Sequential sync with conflict detection
+- Sequential sync with conflict detection (Phase 9+)
 - GitHub API rate limit tracking (warn at 20% remaining)
 
 **Scale/Scope**: 
