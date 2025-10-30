@@ -50,6 +50,7 @@ Project uses monorepo workspace structure:
 
 - [X] T011 [P] Define core types in packages/shared/src/types/issue.ts (Issue, IssueState, SyncStatus)
 - [X] T012 [P] Define Label types in packages/shared/src/types/label.ts (Label, LabelColor)
+- [ ] T012a [P] Define Comment types in packages/shared/src/types/comment.ts (Comment, CommentMetadata, parsed HTML metadata structure)
 - [X] T013 [P] Define Repository types in packages/shared/src/types/repository.ts (Repository, RepositoryConfig)
 - [X] T014 [P] Define Settings types in packages/shared/src/types/settings.ts (AppSettings, ViewPreferences)
 - [X] T015 [P] Define Sync types in packages/shared/src/types/sync.ts (SyncQueue, ConflictResolution)
@@ -59,15 +60,18 @@ Project uses monorepo workspace structure:
 
 - [X] T017 [P] Create Issue schema in packages/shared/src/schemas/issue.schema.ts
 - [X] T018 [P] Create Label schema in packages/shared/src/schemas/label.schema.ts
+- [ ] T018a [P] Create Comment schema in packages/shared/src/schemas/comment.schema.ts (with HTML metadata validation)
 - [X] T019 [P] Create Settings schema in packages/shared/src/schemas/settings.schema.ts
 - [X] T020 [P] Create IPC request/response schemas in packages/shared/src/schemas/ipc.schema.ts
 
 ### Database Infrastructure
 
 - [X] T021 Create SQLite schema definitions in apps/desktop/src/main/database/schemas/initial.sql (issues, labels, issue_labels, sync_queue, _meta tables)
+- [ ] T021a Create comments table schema in apps/desktop/src/main/database/schemas/comments-migration.sql (comments table with issue_id foreign key)
 - [X] T022 Implement DatabaseManager in apps/desktop/src/main/database/manager.ts (multi-repo connection management, migrations)
 - [X] T023 [P] Create Issue repository in apps/desktop/src/main/database/repositories/issues.ts (CRUD operations, filtering)
 - [X] T024 [P] Create Label repository in apps/desktop/src/main/database/repositories/labels.ts (CRUD operations)
+- [ ] T024a [P] Create Comment repository in apps/desktop/src/main/database/repositories/comments.ts (CRUD operations, tag filtering, HTML metadata parsing)
 - [X] T025 [P] Create SyncQueue repository in apps/desktop/src/main/database/repositories/sync-queue.ts (queue operations)
 
 ### IPC Bridge
@@ -79,6 +83,7 @@ Project uses monorepo workspace structure:
 
 - [X] T028 [P] Create Octokit client wrapper in packages/github-api/src/client.ts (authentication, rate limiting)
 - [X] T029 [P] Implement Issues API in packages/github-api/src/issues.ts (list, get, create, update, delete)
+- [ ] T029a [P] Implement Comments API in packages/github-api/src/comments.ts (list, get, create, update, delete for issue comments)
 - [X] T030 [P] Implement Labels API in packages/github-api/src/labels.ts (list, create, update, delete)
 - [X] T031 [P] Implement rate limit tracker in packages/github-api/src/rate-limit.ts (header parsing, warning threshold)
 
@@ -140,7 +145,52 @@ Project uses monorepo workspace structure:
 
 ---
 
-## Phase 4: User Story 2 - Issue Filtering and Display (Priority: P2)
+## Phase 4: User Story 3 - Issue Comments Management (Priority: P2)
+
+**Goal**: Users can view, filter, create, edit, and delete comments on GitHub issues with enhanced metadata (title, description, tags) parsed from HTML comments
+
+**Independent Test**: Create comment with metadata on an issue, verify HTML metadata is embedded and synced to GitHub, filter comments by tags, edit comment metadata, verify changes persist
+
+### Utilities for User Story 3
+
+- [ ] T057a [P] [US3-Comments] Create HTML metadata parser utility in packages/shared/src/utils/comment-metadata.ts (parse/serialize title, description, tags from/to HTML comments)
+
+### IPC Handlers for User Story 3
+
+- [ ] T057b [P] [US3-Comments] Implement comments.list IPC handler in apps/desktop/src/main/ipc/comments.ts (by issue ID, pagination)
+- [ ] T057c [P] [US3-Comments] Implement comments.get IPC handler in apps/desktop/src/main/ipc/comments.ts
+- [ ] T057d [P] [US3-Comments] Implement comments.create IPC handler in apps/desktop/src/main/ipc/comments.ts (embed HTML metadata, queue for sync)
+- [ ] T057e [P] [US3-Comments] Implement comments.update IPC handler in apps/desktop/src/main/ipc/comments.ts (update HTML metadata, conflict detection)
+- [ ] T057f [P] [US3-Comments] Implement comments.delete IPC handler in apps/desktop/src/main/ipc/comments.ts (queue for sync)
+
+### React Hooks for User Story 3
+
+- [ ] T057g [P] [US3-Comments] Create useComments hook in apps/desktop/src/renderer/src/hooks/useComments.ts (list by issue, pagination, tag filters)
+- [ ] T057h [P] [US3-Comments] Create useComment hook in apps/desktop/src/renderer/src/hooks/useComment.ts (single comment CRUD)
+
+### UI Components for User Story 3
+
+- [ ] T057i [US3-Comments] Create CommentList component in apps/desktop/src/renderer/src/components/comment/CommentList.tsx (table view with metadata display)
+- [ ] T057j [P] [US3-Comments] Create CommentCard component in apps/desktop/src/renderer/src/components/comment/CommentCard.tsx (card view showing title, description, tags, body preview)
+- [ ] T057k [P] [US3-Comments] Create CommentFilters component in apps/desktop/src/renderer/src/components/comment/CommentFilters.tsx (tag multi-select filter, search)
+- [ ] T057l [US3-Comments] Create CommentEditor component in apps/desktop/src/renderer/src/components/comment/CommentEditor.tsx (modal form with title, description, tags inputs, MarkdownEditor for body)
+- [ ] T057m [US3-Comments] Update Issue detail page to include comments section in apps/desktop/src/renderer/src/pages/Issues.tsx (show comment count, comment list/card view toggle)
+
+### Tests for User Story 3
+
+- [ ] T057n [P] [US3-Comments] Unit test for HTML metadata parser in tests/unit/comment-metadata.spec.ts (parse valid/invalid HTML, serialize metadata)
+- [ ] T057o [P] [US3-Comments] IPC contract test for comments.list in tests/contract/comments.spec.ts (validates Comment[] response with metadata)
+- [ ] T057p [P] [US3-Comments] IPC contract test for comments.create in tests/contract/comments.spec.ts (validates HTML metadata embedding)
+- [ ] T057q [P] [US3-Comments] IPC contract test for comments.update in tests/contract/comments.spec.ts
+- [ ] T057r [P] [US3-Comments] E2E test for comment creation flow in tests/e2e/comment-management.spec.ts (Playwright: create comment with metadata, verify on GitHub)
+- [ ] T057s [P] [US3-Comments] E2E test for comment filtering in tests/e2e/comment-filtering.spec.ts (filter by tags, verify results)
+- [ ] T057t [P] [US3-Comments] E2E test for legacy comment handling in tests/e2e/comment-legacy.spec.ts (view GitHub comment without metadata, verify empty title/description)
+
+**Checkpoint**: User Stories 1 AND 3 (Comments) complete - can manage issue comments with metadata
+
+---
+
+## Phase 5: User Story 2 - Issue Filtering and Display (Priority: P2)
 
 **Goal**: Users can filter issues by label/title/status and switch between list and card view layouts
 
@@ -167,11 +217,11 @@ Project uses monorepo workspace structure:
 - [X] T065 [P] [US2] E2E test for filtering workflow in tests/e2e/issue-filtering.spec.ts (apply label filter, clear filter)
 - [X] T066 [P] [US2] E2E test for view preference persistence in tests/e2e/view-toggle.spec.ts
 
-**Checkpoint**: User Stories 1 AND 2 complete - can filter and switch views
+**Checkpoint**: User Stories 1, 2, AND 3 (Comments) complete - can filter issues and manage comments
 
 ---
 
-## Phase 5: User Story 3 - Label Management (Priority: P3)
+## Phase 6: User Story 4 - Label Management (Priority: P3)
 
 **Goal**: Users can create, edit, and view labels with custom colors and descriptions
 
@@ -201,11 +251,11 @@ Project uses monorepo workspace structure:
 - [X] T077 [P] [US3] IPC contract test for labels.create in tests/contract/labels.spec.ts (validate hex color format)
 - [X] T078 [P] [US3] E2E test for label creation in tests/e2e/label-management.spec.ts
 
-**Checkpoint**: User Stories 1, 2, AND 3 complete - can manage labels
+**Checkpoint**: User Stories 1, 2, 3, AND 4 complete - can manage labels
 
 ---
 
-## Phase 6: User Story 4 - Dashboard Analytics (Priority: P4)
+## Phase 7: User Story 5 - Dashboard Analytics (Priority: P4)
 
 **Goal**: Users can view analytics and statistics about issues and labels (total counts, open/closed ratio, 7/30 day trends, label distribution)
 
@@ -231,11 +281,11 @@ Project uses monorepo workspace structure:
 - [ ] T085 [P] [US4] IPC contract test for analytics.getDashboard in tests/contract/analytics.spec.ts
 - [ ] T086 [P] [US4] E2E test for dashboard data accuracy in tests/e2e/dashboard.spec.ts (verify counts match created issues)
 
-**Checkpoint**: User Stories 1-4 complete - dashboard displays analytics
+**Checkpoint**: User Stories 1-5 complete - dashboard displays analytics
 
 ---
 
-## Phase 7: User Story 5 - Settings Configuration (Priority: P5)
+## Phase 8: User Story 6 - Settings Configuration (Priority: P5)
 
 **Goal**: Users can configure GitHub repository connection, editor preferences, and theme
 
@@ -260,11 +310,11 @@ Project uses monorepo workspace structure:
 - [ ] T095 [P] [US5] E2E test for repository connection in tests/e2e/settings.spec.ts (enter token, connect, verify issues load)
 - [ ] T096 [P] [US5] E2E test for theme switching in tests/e2e/theme.spec.ts (toggle dark mode, verify UI updates)
 
-**Checkpoint**: All 5 user stories complete - full application functional
+**Checkpoint**: All 6 user stories complete - full application functional
 
 ---
 
-## Phase 8: Sync Engine Implementation
+## Phase 9: Sync Engine Implementation
 
 **Goal**: Background sync with GitHub, conflict detection, and rate limit handling
 
@@ -272,8 +322,8 @@ Project uses monorepo workspace structure:
 
 ### Sync Core
 
-- [ ] T097 Create sync engine orchestrator in apps/desktop/src/main/sync/engine.ts (process queue, sequential sync)
-- [ ] T098 [P] Implement conflict detector in apps/desktop/src/main/sync/conflict.ts (compare timestamps, generate diff)
+- [ ] T097 Create sync engine orchestrator in apps/desktop/src/main/sync/engine.ts (process queue, sequential sync for issues, comments, and labels)
+- [ ] T098 [P] Implement conflict detector in apps/desktop/src/main/sync/conflict.ts (compare timestamps, generate diff for issues, comments, and labels)
 - [ ] T099 [P] Implement rate limit handler in apps/desktop/src/main/sync/rate-limit.ts (queue retry logic, emit warnings)
 
 ### IPC Handlers for Sync
@@ -288,20 +338,20 @@ Project uses monorepo workspace structure:
 
 ### UI Components for Sync
 
-- [ ] T104 Create ConflictModal component in apps/desktop/src/renderer/src/components/sync/ConflictModal.tsx (side-by-side diff, resolution buttons)
+- [ ] T104 Create ConflictModal component in apps/desktop/src/renderer/src/components/sync/ConflictModal.tsx (side-by-side diff, resolution buttons for issues, comments, and labels)
 - [ ] T105 [P] Create SyncStatusIndicator component in apps/desktop/src/renderer/src/components/sync/SyncStatusIndicator.tsx (status bar indicator)
 
 ### Tests for Sync
 
 - [ ] T106 [P] IPC contract test for sync.getStatus in tests/contract/sync.spec.ts
-- [ ] T107 [P] E2E test for sync queue processing in tests/e2e/sync.spec.ts (create issue offline, go online, verify synced)
-- [ ] T108 E2E test for conflict resolution in tests/e2e/conflict.spec.ts (simulate conflict, resolve, verify GitHub updated)
+- [ ] T107 [P] E2E test for sync queue processing in tests/e2e/sync.spec.ts (create issue and comment offline, go online, verify synced)
+- [ ] T108 E2E test for conflict resolution in tests/e2e/conflict.spec.ts (simulate conflict for issue and comment, resolve, verify GitHub updated)
 
 **Checkpoint**: Sync engine complete - offline-first architecture functional
 
 ---
 
-## Phase 9: System Integration & Error Handling
+## Phase 10: System Integration & Error Handling
 
 **Goal**: External link opening, version display, error boundaries, and edge case handling
 
@@ -331,7 +381,7 @@ Project uses monorepo workspace structure:
 
 ---
 
-## Phase 10: Polish & Cross-Cutting Concerns
+## Phase 11: Polish & Cross-Cutting Concerns
 
 **Purpose**: Final improvements and production readiness
 
@@ -354,23 +404,25 @@ Project uses monorepo workspace structure:
 
 - **Setup (Phase 1)**: No dependencies - can start immediately
 - **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Stories (Phase 3-7)**: All depend on Foundational phase completion
+- **User Stories (Phase 3-8)**: All depend on Foundational phase completion
   - US1 (Issue Management): Can start after Foundational
+  - US3 (Comments): Depends on US1 (needs issue detail page)
   - US2 (Filtering): Depends on US1 (extends issue list)
-  - US3 (Labels): Independent of US1/US2, can start after Foundational
-  - US4 (Dashboard): Depends on US1 (needs issues for analytics), can include US3 (label distribution)
-  - US5 (Settings): Independent, can start after Foundational
-- **Sync Engine (Phase 8)**: Depends on US1 (needs issue CRUD), US3 (needs label CRUD)
-- **System Integration (Phase 9)**: Depends on all core features
-- **Polish (Phase 10)**: Depends on all desired features being complete
+  - US4 (Labels): Independent of US1/US2/US3, can start after Foundational
+  - US5 (Dashboard): Depends on US1 (needs issues for analytics), can include US4 (label distribution)
+  - US6 (Settings): Independent, can start after Foundational
+- **Sync Engine (Phase 9)**: Depends on US1 (needs issue CRUD), US3 (needs comment CRUD), US4 (needs label CRUD)
+- **System Integration (Phase 10)**: Depends on all core features
+- **Polish (Phase 11)**: Depends on all desired features being complete
 
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: Issue Management - No dependencies on other stories ✅ MVP
+- **User Story 3 (P2)**: Comments Management - Depends on US1 (needs issue detail page to display comments)
 - **User Story 2 (P2)**: Filtering - Extends US1 issue list
-- **User Story 3 (P3)**: Label Management - Independent, can run parallel with US1/US2
-- **User Story 4 (P4)**: Dashboard Analytics - Needs US1 (issues), benefits from US3 (labels)
-- **User Story 5 (P5)**: Settings - Independent, can run parallel with other stories
+- **User Story 4 (P3)**: Label Management - Independent, can run parallel with US1/US2/US3
+- **User Story 5 (P4)**: Dashboard Analytics - Needs US1 (issues), benefits from US4 (labels)
+- **User Story 6 (P5)**: Settings - Independent, can run parallel with other stories
 
 ### Within Each User Story
 
@@ -400,8 +452,9 @@ All tasks marked [P] can run in parallel:
 
 #### Across User Stories (with team capacity)
 After Foundational phase completes:
-- US3 (Labels) can run parallel with US1 (Issues)
-- US5 (Settings) can run parallel with US1/US3
+- US4 (Labels) can run parallel with US1 (Issues)
+- US6 (Settings) can run parallel with US1/US3/US4
+- US3 (Comments) starts after US1 issue detail page is ready
 
 ---
 
@@ -443,12 +496,13 @@ Task: "Create IssueFilters component"
 
 1. Complete Setup + Foundational → Foundation ready
 2. Add US1 (Issue Management) → Test independently → Deploy/Demo (MVP!)
-3. Add US2 (Filtering) → Test independently → Deploy/Demo
-4. Add US3 (Labels) → Test independently → Deploy/Demo
-5. Add US4 (Dashboard) → Test independently → Deploy/Demo
-6. Add US5 (Settings) → Test independently → Deploy/Demo
-7. Add Sync Engine → Test offline/online scenarios → Deploy/Demo
-8. Polish & Release
+3. Add US3 (Comments) → Test independently → Deploy/Demo
+4. Add US2 (Filtering) → Test independently → Deploy/Demo
+5. Add US4 (Labels) → Test independently → Deploy/Demo
+6. Add US5 (Dashboard) → Test independently → Deploy/Demo
+7. Add US6 (Settings) → Test independently → Deploy/Demo
+8. Add Sync Engine → Test offline/online scenarios → Deploy/Demo
+9. Polish & Release
 
 ### Parallel Team Strategy
 
@@ -457,17 +511,18 @@ With multiple developers:
 1. **Team completes Setup + Foundational together** (CRITICAL - blocks everything)
 2. **Once Foundational is done**:
    - Developer A: US1 (Issue Management) - P1 priority
-   - Developer B: US3 (Label Management) - Independent
-   - Developer C: US5 (Settings) - Independent
+   - Developer B: US4 (Label Management) - Independent
+   - Developer C: US6 (Settings) - Independent
 3. **Sequential after US1**:
-   - Developer A: US2 (Filtering) - Extends US1
-4. **After US1 + US3**:
-   - Any developer: US4 (Dashboard) - Needs both
+   - Developer A: US3 (Comments) - Depends on US1 issue detail page
+   - Developer D: US2 (Filtering) - Extends US1
+4. **After US1 + US3 + US4**:
+   - Any developer: US5 (Dashboard) - Needs issues, comments, labels
 5. **After all user stories**:
-   - Any developer: Sync Engine (Phase 8)
-   - Any developer: System Integration (Phase 9)
+   - Any developer: Sync Engine (Phase 9)
+   - Any developer: System Integration (Phase 10)
 6. **Final**:
-   - Team: Polish (Phase 10)
+   - Team: Polish (Phase 11)
 
 ---
 
@@ -484,18 +539,21 @@ With multiple developers:
 
 ---
 
-## Total Task Count: 128 tasks
+## Total Task Count: 145 tasks
 
 - Setup: 10 tasks
-- Foundational: 28 tasks
+- Foundational: 31 tasks (added 3 comment-related tasks)
 - User Story 1 (Issue Management): 19 tasks
+- User Story 3 (Comments Management): 14 tasks (NEW)
 - User Story 2 (Filtering): 9 tasks
-- User Story 3 (Labels): 12 tasks
-- User Story 4 (Dashboard): 8 tasks
-- User Story 5 (Settings): 9 tasks
+- User Story 4 (Labels): 12 tasks
+- User Story 5 (Dashboard): 8 tasks
+- User Story 6 (Settings): 9 tasks
 - Sync Engine: 12 tasks
 - System Integration: 10 tasks
 - Polish: 10 tasks
 
-**MVP Scope** (US1 only): 57 tasks (Setup + Foundational + US1)
-**Full Feature Set**: 128 tasks
+**MVP Scope** (US1 only): 60 tasks (Setup + Foundational + US1)
+**Full Feature Set**: 145 tasks
+
+````

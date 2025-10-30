@@ -109,6 +109,7 @@ apps/desktop/
 │   │   ├── index.ts            # App lifecycle, window management
 │   │   ├── ipc/                # IPC handlers
 │   │   │   ├── issues.ts       # Issue CRUD handlers
+│   │   │   ├── comments.ts     # Comment CRUD handlers
 │   │   │   ├── labels.ts       # Label CRUD handlers
 │   │   │   ├── sync.ts         # Sync operations
 │   │   │   ├── settings.ts     # Settings handlers
@@ -118,6 +119,7 @@ apps/desktop/
 │   │   │   ├── migrations/     # Schema migrations
 │   │   │   ├── repositories/   # Data access layer
 │   │   │   │   ├── issues.ts
+│   │   │   │   ├── comments.ts
 │   │   │   │   ├── labels.ts
 │   │   │   │   └── sync-queue.ts
 │   │   │   └── schemas/        # SQLite table schemas
@@ -144,6 +146,11 @@ apps/desktop/
 │   │   │   │   │   ├── IssueList.tsx
 │   │   │   │   │   ├── IssueEditor.tsx
 │   │   │   │   │   └── IssueFilters.tsx
+│   │   │   │   ├── comment/
+│   │   │   │   │   ├── CommentCard.tsx
+│   │   │   │   │   ├── CommentList.tsx
+│   │   │   │   │   ├── CommentEditor.tsx
+│   │   │   │   │   └── CommentFilters.tsx
 │   │   │   │   ├── label/
 │   │   │   │   │   ├── LabelCard.tsx
 │   │   │   │   │   ├── LabelList.tsx
@@ -161,6 +168,9 @@ apps/desktop/
 │   │   │   │       └── ThemeProvider.tsx
 │   │   │   ├── hooks/          # React hooks
 │   │   │   │   ├── useIssues.ts
+│   │   │   │   ├── useIssue.ts
+│   │   │   │   ├── useComments.ts
+│   │   │   │   ├── useComment.ts
 │   │   │   │   ├── useLabels.ts
 │   │   │   │   ├── useSync.ts
 │   │   │   │   ├── useSettings.ts
@@ -181,12 +191,14 @@ packages/shared/                # Types, schemas, utilities (zero deps)
 ├── src/
 │   ├── types/
 │   │   ├── issue.ts
+│   │   ├── comment.ts
 │   │   ├── label.ts
 │   │   ├── repository.ts
 │   │   ├── settings.ts
 │   │   └── sync.ts
 │   ├── schemas/                # Zod schemas
 │   │   ├── issue.schema.ts
+│   │   ├── comment.schema.ts
 │   │   ├── label.schema.ts
 │   │   └── settings.schema.ts
 │   └── utils/
@@ -198,6 +210,7 @@ packages/github-api/            # GitHub API client (minimal deps: octokit)
 ├── src/
 │   ├── client.ts               # Octokit wrapper
 │   ├── issues.ts               # Issues API
+│   ├── comments.ts             # Comments API
 │   ├── labels.ts               # Labels API
 │   ├── rate-limit.ts           # Rate limit utilities
 │   └── types.ts                # API-specific types
@@ -205,6 +218,9 @@ packages/github-api/            # GitHub API client (minimal deps: octokit)
 
 tests/
 ├── contract/                   # IPC contract tests
+│   ├── issues.spec.ts
+│   ├── comments.spec.ts
+│   ├── labels.spec.ts
 ├── integration/                # Cross-package tests
 └── unit/                       # Shared package unit tests
 ```
