@@ -22,7 +22,7 @@ import {
  * Check if the Electron API is available
  */
 function isElectronAvailable(): boolean {
-  return typeof window !== 'undefined' && !!(window as any).electronAPI;
+  return typeof window !== 'undefined' && !!window.electronAPI;
 }
 
 /**
@@ -74,7 +74,7 @@ export const ipcClient = {
     }
     
     // Use the real IPC API exposed by preload (window.electronAPI)
-    return (window as any).electronAPI.issues;
+    return window.electronAPI.issues;
   },
   
   get labels() {
@@ -87,7 +87,20 @@ export const ipcClient = {
         delete: async () => ({ success: false }),
       };
     }
-    return (window as any).electronAPI.labels;
+    return window.electronAPI.labels;
+  },
+
+  get comments() {
+    if (!isElectronAvailable()) {
+      return {
+        list: async () => ({ comments: [], totalCount: 0 }),
+        get: async () => ({ comment: null }),
+        create: async () => { throw new Error('Not implemented'); },
+        update: async () => { throw new Error('Not implemented'); },
+        delete: async () => ({ success: false }),
+      };
+    }
+    return window.electronAPI.comments;
   },
   
   get sync() {
@@ -102,7 +115,7 @@ export const ipcClient = {
         resolveConflict: async () => ({ success: false }),
       };
     }
-    return (window as any).electronAPI.sync;
+    return window.electronAPI.sync;
   },
   
   get settings() {
@@ -142,7 +155,7 @@ export const ipcClient = {
         setToken: async () => ({ success: true }),
       };
     }
-    return (window as any).electronAPI.settings;
+    return window.electronAPI.settings;
   },
   
   get analytics() {
@@ -157,7 +170,7 @@ export const ipcClient = {
         }),
       };
     }
-    return (window as any).electronAPI.analytics;
+    return window.electronAPI.analytics;
   },
   
   get system() {
@@ -174,15 +187,20 @@ export const ipcClient = {
         }),
       };
     }
-    return (window as any).electronAPI.system;
+    return window.electronAPI.system;
   },
   
-  on: (channel: string, callback: (...args: any[]) => void) => {
+  on: (
+    channel: 'sync:progress' | 'sync:conflict' | 'rate-limit:warning' | 'token:invalid',
+    callback: (data: any) => void
+  ) => {
     if (!isElectronAvailable()) {
       console.warn(`Event listener not implemented: ${channel}`);
-      return () => {};
+      return () => {
+        // No-op: cleanup function for mock event listener
+      };
     }
-    return (window as any).electronAPI.on(channel, callback);
+    return window.electronAPI.on(channel, callback);
   },
 };
 

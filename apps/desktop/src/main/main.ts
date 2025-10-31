@@ -3,6 +3,7 @@ import { join } from 'path';
 
 import { registerIssuesHandlers } from './ipc/issues';
 import { registerLabelsHandlers } from './ipc/labels';
+import { registerCommentsHandlers } from './ipc/comments';
 import { registerSettingsHandlers } from './ipc/settings';
 import { registerSystemHandlers } from './ipc/system';
 
@@ -72,6 +73,7 @@ app.whenReady().then(() => {
   // Register IPC handlers
   registerIssuesHandlers();
   registerLabelsHandlers();
+  registerCommentsHandlers();
   registerSettingsHandlers(); // Now includes GitHub handlers (non-issue related)
   registerSystemHandlers();
   

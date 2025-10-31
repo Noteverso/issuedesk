@@ -478,6 +478,157 @@ function TrendChart({ data }: { data: Array<{ date: string; count: number }> }) 
 
 ---
 
+### 8. HTML Comment Metadata Parsing for GitHub Comments
+
+**Decision**: Embed metadata as HTML comments in markdown body, parse with regex patterns
+
+**Rationale**:
+- **GitHub compatibility**: HTML comments are valid markdown and GitHub renders them invisibly
+- **Backwards compatibility**: Comments without metadata display normally (graceful degradation)
+- **No GitHub API limitations**: GitHub's comment API only supports markdown body, no custom fields
+- **Local enhancement**: Metadata is local-first feature, enriches app UX without GitHub dependency
+- **Simple parsing**: Regex extraction is fast and reliable for controlled HTML comment format
+
+**Alternatives Considered**:
+- **GitHub API issue metadata**: Only works for issues, not comments; limited to predefined fields
+- **Separate metadata table**: Requires linking strategy, loses data if comment re-synced from GitHub
+- **JSON in markdown code block**: Visible in GitHub, clutters comment body
+- **Issue body footnotes**: Not scalable, breaks with multiple comments
+
+**HTML Comment Format**:
+```html
+<!-- title: Comment Title Here -->
+<!-- description: Brief description of the comment -->
+<!-- tags: tag1, tag2, tag3 -->
+
+Regular markdown content of the comment body...
+```
+
+**Parsing Implementation**:
+```typescript
+// packages/shared/src/utils/comment-metadata.ts
+interface CommentMetadata {
+  title?: string;
+  description?: string;
+  tags: string[];
+}
+
+export function parseCommentMetadata(markdown: string): { metadata: CommentMetadata; body: string } {
+  const titleMatch = markdown.match(/<!--\s*title:\s*(.+?)\s*-->/);
+  const descMatch = markdown.match(/<!--\s*description:\s*(.+?)\s*-->/);
+  const tagsMatch = markdown.match(/<!--\s*tags:\s*(.+?)\s*-->/);
+  
+  const metadata: CommentMetadata = {
+    title: titleMatch?.[1] || '',
+    description: descMatch?.[1] || '',
+    tags: tagsMatch?.[1]?.split(',').map(t => t.trim()).filter(Boolean) || [],
+  };
+  
+  // Remove HTML comments from body for display
+  const body = markdown
+    .replace(/<!--\s*title:.*?-->\s*/g, '')
+    .replace(/<!--\s*description:.*?-->\s*/g, '')
+    .replace(/<!--\s*tags:.*?-->\s*/g, '')
+    .trim();
+  
+  return { metadata, body };
+}
+
+export function embedCommentMetadata(body: string, metadata: CommentMetadata): string {
+  const lines: string[] = [];
+  
+  if (metadata.title) {
+    lines.push(`<!-- title: ${metadata.title} -->`);
+  }
+  if (metadata.description) {
+    lines.push(`<!-- description: ${metadata.description} -->`);
+  }
+  if (metadata.tags.length > 0) {
+    // Enforce maximum 20 tags, truncate if exceeded
+    const limitedTags = metadata.tags.slice(0, 20);
+    lines.push(`<!-- tags: ${limitedTags.join(', ')} -->`);
+  }
+  
+  lines.push(''); // Blank line separator
+  lines.push(body);
+  
+  return lines.join('\n');
+}
+```
+
+**Duplicate Handling**:
+- Parser uses first occurrence of each metadata tag (`title`, `description`, `tags`)
+- Subsequent duplicates are ignored (predictable behavior)
+- Malformed HTML comments (missing closing `-->`) are skipped
+
+**Validation Rules**:
+- Title: max 100 chars
+- Description: max 200 chars  
+- Tags: max 20 tags, each tag max 30 chars
+- Truncation: silently truncate exceeding limits when saving
+
+---
+
+### 9. Comment Filtering and Tag Search
+
+**Decision**: SQLite FTS5 (Full-Text Search) for tag search + compound WHERE clauses
+
+**Rationale**:
+- **FTS5 advantages**: Built into SQLite, fast text search, supports prefix matching
+- **Tag search**: Store tags as JSON array in SQLite, query with `json_each()` function
+- **Multi-tag AND logic**: Filter comments that contain ALL selected tags (intersection)
+- **Performance**: Index on `issue_id` for fast per-issue comment loading
+
+**Alternatives Considered**:
+- **Separate tags table with M:M relationship**: More complex schema, overkill for 20 tags max
+- **String LIKE queries**: Slow for tag matching, false positives (e.g., "bug" matches "debug")
+- **Client-side filtering**: Requires loading all comments, defeats SQLite index benefits
+
+**Schema Extension for Comments**:
+```sql
+CREATE TABLE comments (
+  id TEXT PRIMARY KEY,
+  issue_id TEXT NOT NULL,
+  github_id INTEGER UNIQUE, -- GitHub comment ID
+  body TEXT NOT NULL,
+  title TEXT, -- Parsed from HTML comment
+  description TEXT, -- Parsed from HTML comment
+  tags TEXT, -- JSON array: ["bug", "frontend", "urgent"]
+  author TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  sync_status TEXT CHECK(sync_status IN ('synced', 'pending_create', 'pending_update', 'pending_delete', 'conflict')) NOT NULL,
+  local_updated_at INTEGER NOT NULL,
+  remote_updated_at INTEGER,
+  FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_comments_issue_id ON comments(issue_id);
+CREATE INDEX idx_comments_created_at ON comments(created_at); -- For newest-first display order and since filtering
+```
+
+**Tag Filtering Query**:
+```typescript
+// Find comments with ALL of these tags: ["bug", "urgent"]
+const query = `
+  SELECT * FROM comments
+  WHERE issue_id = ?
+  AND (
+    SELECT COUNT(DISTINCT value)
+    FROM json_each(tags)
+    WHERE value IN (${tags.map(() => '?').join(',')})
+  ) = ?
+  ORDER BY created_at DESC
+`;
+// Params: [issueId, ...tags, tags.length]
+```
+
+**Display Order & Filtering**:
+- Default: newest first (DESC on `created_at`) - natural GitHub API order
+- Since filtering: uses GitHub API 'since' parameter for server-side filtering by timestamp
+
+---
+
 ## Technology Stack Summary
 
 | Category | Technology | Justification |

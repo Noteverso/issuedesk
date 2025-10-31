@@ -3,10 +3,13 @@ import {
   Repository,
   Issue,
   Label,
+  Comment,
   CreateIssueInput,
   UpdateIssueInput,
   CreateLabelInput,
   UpdateLabelInput,
+  CreateCommentInput,
+  UpdateCommentInput,
   ApiResponse,
   ApiError,
   RateLimitState,
@@ -285,6 +288,144 @@ export class GitHubClient {
     } catch (error) {
       return {
         data: null as any,
+        success: false,
+        message: (error as ApiError).message,
+      };
+    }
+  }
+
+  /**
+   * Get comments for an issue
+   */
+  async getComments(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    params?: {
+      sort?: 'created' | 'updated';
+      direction?: 'asc' | 'desc';
+      since?: string; // ISO 8601 timestamp
+      per_page?: number;
+      page?: number;
+    }
+  ): Promise<ApiResponse<Comment[]>> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.sort) queryParams.append('sort', params.sort);
+      if (params?.direction) queryParams.append('direction', params.direction);
+      if (params?.since) queryParams.append('since', params.since);
+      if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+      if (params?.page) queryParams.append('page', params.page.toString());
+
+      const url = params && queryParams.toString()
+        ? `${API_ENDPOINTS.COMMENTS(owner, repo, issueNumber)}?${queryParams.toString()}`
+        : API_ENDPOINTS.COMMENTS(owner, repo, issueNumber);
+
+      const response: AxiosResponse<Comment[]> = await this.client.get(url);
+      return {
+        data: response.data,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        data: [],
+        success: false,
+        message: (error as ApiError).message,
+      };
+    }
+  }
+
+  /**
+   * Get a single comment by ID
+   */
+  async getComment(owner: string, repo: string, commentId: number): Promise<ApiResponse<Comment>> {
+    try {
+      const response: AxiosResponse<Comment> = await this.client.get(
+        API_ENDPOINTS.COMMENT(owner, repo, commentId)
+      );
+      return {
+        data: response.data,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        data: null as any,
+        success: false,
+        message: (error as ApiError).message,
+      };
+    }
+  }
+
+  /**
+   * Create a new comment on an issue
+   */
+  async createComment(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    comment: CreateCommentInput
+  ): Promise<ApiResponse<Comment>> {
+    try {
+      const response: AxiosResponse<Comment> = await this.client.post(
+        API_ENDPOINTS.COMMENTS(owner, repo, issueNumber),
+        comment
+      );
+      return {
+        data: response.data,
+        success: true,
+        message: 'Comment created successfully',
+      };
+    } catch (error) {
+      return {
+        data: null as any,
+        success: false,
+        message: (error as ApiError).message,
+      };
+    }
+  }
+
+  /**
+   * Update a comment
+   */
+  async updateComment(
+    owner: string,
+    repo: string,
+    commentId: number,
+    comment: UpdateCommentInput
+  ): Promise<ApiResponse<Comment>> {
+    try {
+      const response: AxiosResponse<Comment> = await this.client.patch(
+        API_ENDPOINTS.COMMENT(owner, repo, commentId),
+        comment
+      );
+      return {
+        data: response.data,
+        success: true,
+        message: 'Comment updated successfully',
+      };
+    } catch (error) {
+      return {
+        data: null as any,
+        success: false,
+        message: (error as ApiError).message,
+      };
+    }
+  }
+
+  /**
+   * Delete a comment
+   */
+  async deleteComment(owner: string, repo: string, commentId: number): Promise<ApiResponse<void>> {
+    try {
+      await this.client.delete(API_ENDPOINTS.COMMENT(owner, repo, commentId));
+      return {
+        data: undefined,
+        success: true,
+        message: 'Comment deleted successfully',
+      };
+    } catch (error) {
+      return {
+        data: undefined,
         success: false,
         message: (error as ApiError).message,
       };

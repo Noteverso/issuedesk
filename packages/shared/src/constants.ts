@@ -116,6 +116,8 @@ export const API_ENDPOINTS = {
   REPO: (owner: string, repo: string) => `/repos/${owner}/${repo}`,
   ISSUES: (owner: string, repo: string) => `/repos/${owner}/${repo}/issues`,
   ISSUE: (owner: string, repo: string, number: number) => `/repos/${owner}/${repo}/issues/${number}`,
+  COMMENTS: (owner: string, repo: string, issueNumber: number) => `/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
+  COMMENT: (owner: string, repo: string, commentId: number) => `/repos/${owner}/${repo}/issues/comments/${commentId}`,
   LABELS: (owner: string, repo: string) => `/repos/${owner}/${repo}/labels`,
   LABEL: (owner: string, repo: string, name: string) => `/repos/${owner}/${repo}/labels/${name}`,
 } as const;

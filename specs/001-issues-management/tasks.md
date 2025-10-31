@@ -58,7 +58,7 @@ Project uses monorepo workspace structure:
 
 - [X] T011 [P] Define core types in packages/shared/src/types/issue.ts (Issue, IssueState, SyncStatus)
 - [X] T012 [P] Define Label types in packages/shared/src/types/label.ts (Label, LabelColor)
-- [ ] T012a [P] Define Comment types in packages/shared/src/types/comment.ts (Comment, CommentMetadata, parsed HTML metadata structure)
+- [X] T012a [P] Define Comment types in packages/shared/src/types/comment.ts (Comment with title/description/tags max lengths, CommentMetadata interface, parsed HTML structure with validation rules: title max 100 chars, description max 200 chars, tags max 20 with each tag max 30 chars)
 - [X] T013 [P] Define Repository types in packages/shared/src/types/repository.ts (Repository, RepositoryConfig)
 - [X] T014 [P] Define Settings types in packages/shared/src/types/settings.ts (AppSettings, ViewPreferences)
 - [X] T015 [P] Define Sync types in packages/shared/src/types/sync.ts (SyncQueue, ConflictResolution)
@@ -68,7 +68,7 @@ Project uses monorepo workspace structure:
 
 - [X] T017 [P] Create Issue schema in packages/shared/src/schemas/issue.schema.ts
 - [X] T018 [P] Create Label schema in packages/shared/src/schemas/label.schema.ts
-- [ ] T018a [P] Create Comment schema in packages/shared/src/schemas/comment.schema.ts (with HTML metadata validation)
+- [X] T018a [P] Create Comment schema in packages/shared/src/schemas/comment.schema.ts (validate title max 100 chars, description max 200 chars, tags array max 20 items with each tag max 30 chars, body required, enforce sync_status enum)
 - [X] T019 [P] Create Settings schema in packages/shared/src/schemas/settings.schema.ts
 - [X] T020 [P] Create IPC request/response schemas in packages/shared/src/schemas/ipc.schema.ts
 
@@ -93,7 +93,7 @@ Project uses monorepo workspace structure:
 
 - [X] T028 [P] Create Octokit client wrapper in packages/github-api/src/client.ts (authentication, rate limiting)
 - [X] T029 [P] Implement Issues API in packages/github-api/src/issues.ts (list, get, create, update, delete)
-- [ ] T029a [P] Implement Comments API in packages/github-api/src/comments.ts (list, get, create, update, delete for issue comments)
+- [X] T029a [P] Implement Comments API in packages/github-api/src/comments.ts (list, get, create, update, delete for issue comments)
 - [X] T030 [P] Implement Labels API in packages/github-api/src/labels.ts (list, create, update, delete)
 - [X] T031 [P] Implement rate limit tracker in packages/github-api/src/rate-limit.ts (header parsing, warning threshold)
 
@@ -157,46 +157,54 @@ Project uses monorepo workspace structure:
 
 ## Phase 4: User Story 3 - Issue Comments Management (Priority: P2)
 
-**Goal**: Users can view, filter, create, edit, and delete comments on GitHub issues with enhanced metadata (title, description, tags) parsed from HTML comments
+**Goal**: Users can view, filter, create, edit, and delete comments on GitHub issues with enhanced metadata (title, description, tags) stored as HTML comments in markdown body
 
-**Independent Test**: Create comment with metadata on an issue, verify HTML metadata is embedded and synced to GitHub, filter comments by tags, edit comment metadata, verify changes persist
+**Independent Test**: Create comment with metadata on an issue, verify HTML metadata is embedded correctly and synced to GitHub, filter comments by tags (AND logic), edit comment metadata, verify changes persist, test graceful handling of malformed/legacy comments
+
+**Clarifications Applied**:
+- Default display order: newest first (DESC on created_at) - no client-side sorting, uses GitHub API natural order
+- Since filter: preset options (2hrs, 1day, 3days, 1week, 1month) + custom datetime input, uses GitHub API 'since' parameter
+- Tag limit: max 20 tags per comment, silently truncated if exceeded
+- Duplicate metadata: first occurrence wins, subsequent ignored
+- Malformed metadata: display gracefully with empty defaults
+- Legacy comments (no metadata): display normally with empty title/description
 
 ### Utilities for User Story 3
 
-- [ ] T057a [P] [US3-Comments] Create HTML metadata parser utility in packages/shared/src/utils/comment-metadata.ts (parse/serialize title, description, tags from/to HTML comments)
+- [X] T057a [P] [US3] Create HTML metadata parser utility in packages/shared/src/utils/comment-metadata.ts (parseCommentMetadata: extract title/description/tags from HTML comments with first-occurrence-wins for duplicates; embedCommentMetadata: serialize metadata to HTML comments with 20-tag limit enforcement)
 
 ### IPC Handlers for User Story 3
 
-- [ ] T057b [P] [US3-Comments] Implement comments.list IPC handler in apps/desktop/src/main/ipc/comments.ts (by issue ID, pagination) - **GitHub API direct call**
-- [ ] T057c [P] [US3-Comments] Implement comments.get IPC handler in apps/desktop/src/main/ipc/comments.ts - **GitHub API direct call**
-- [ ] T057d [P] [US3-Comments] Implement comments.create IPC handler in apps/desktop/src/main/ipc/comments.ts (embed HTML metadata, queue for sync) - **GitHub API direct call (no queue in Phase 4)**
-- [ ] T057e [P] [US3-Comments] Implement comments.update IPC handler in apps/desktop/src/main/ipc/comments.ts (update HTML metadata, conflict detection) - **GitHub API direct call**
-- [ ] T057f [P] [US3-Comments] Implement comments.delete IPC handler in apps/desktop/src/main/ipc/comments.ts (queue for sync) - **GitHub API direct call (no queue in Phase 4)**
+- [X] T057b [P] [US3] Implement comments.list IPC handler in apps/desktop/src/main/ipc/comments.ts (by issue ID, optional tag filter with AND logic, since filter using GitHub API 'since' parameter, newest-first by default) - **GitHub API direct call**
+- [X] T057c [P] [US3] Implement comments.get IPC handler in apps/desktop/src/main/ipc/comments.ts (parse HTML metadata with graceful fallback for malformed/missing) - **GitHub API direct call**
+- [X] T057d [P] [US3] Implement comments.create IPC handler in apps/desktop/src/main/ipc/comments.ts (embed HTML metadata at start of body, enforce 20-tag limit with silent truncation) - **GitHub API direct call (no queue in Phase 4)**
+- [X] T057e [P] [US3] Implement comments.update IPC handler in apps/desktop/src/main/ipc/comments.ts (update HTML metadata preserving first-occurrence rule, enforce tag limit) - **GitHub API direct call**
+- [X] T057f [P] [US3] Implement comments.delete IPC handler in apps/desktop/src/main/ipc/comments.ts - **GitHub API direct call (no queue in Phase 4)**
 
 ### React Hooks for User Story 3
 
-- [ ] T057g [P] [US3-Comments] Create useComments hook in apps/desktop/src/renderer/src/hooks/useComments.ts (list by issue, pagination, tag filters)
-- [ ] T057h [P] [US3-Comments] Create useComment hook in apps/desktop/src/renderer/src/hooks/useComment.ts (single comment CRUD)
+- [X] T057g [P] [US3] Create useComments hook in apps/desktop/src/renderer/src/hooks/useComments.ts (list by issue, tag filters with AND logic, since filter support)
+- [X] T057h [P] [US3] Create useComment hook in apps/desktop/src/renderer/src/hooks/useComment.ts (single comment CRUD with metadata handling)
 
 ### UI Components for User Story 3
 
-- [ ] T057i [US3-Comments] Create CommentList component in apps/desktop/src/renderer/src/components/comment/CommentList.tsx (table view with metadata display)
-- [ ] T057j [P] [US3-Comments] Create CommentCard component in apps/desktop/src/renderer/src/components/comment/CommentCard.tsx (card view showing title, description, tags, body preview)
-- [ ] T057k [P] [US3-Comments] Create CommentFilters component in apps/desktop/src/renderer/src/components/comment/CommentFilters.tsx (tag multi-select filter, search)
-- [ ] T057l [US3-Comments] Create CommentEditor component in apps/desktop/src/renderer/src/components/comment/CommentEditor.tsx (modal form with title, description, tags inputs, MarkdownEditor for body)
-- [ ] T057m [US3-Comments] Update Issue detail page to include comments section in apps/desktop/src/renderer/src/pages/Issues.tsx (show comment count, comment list/card view toggle)
+- [X] T057i [US3] Create CommentList component in apps/desktop/src/renderer/src/components/comment/CommentList.tsx (table view with metadata display, newest-first display order)
+- [X] T057j [P] [US3] Create CommentCard component in apps/desktop/src/renderer/src/components/comment/CommentCard.tsx (card view showing title, description, tags as chips, body preview)
+- [X] T057k [P] [US3] Create CommentFilters component in apps/desktop/src/renderer/src/components/comment/CommentFilters.tsx (tag multi-select with AND logic, since filter dropdown with preset options, custom datetime input for precise filtering)
+- [X] T057l [US3] Create CommentEditor component in apps/desktop/src/renderer/src/components/comment/CommentEditor.tsx (modal form with title max 100 chars, description max 200 chars, tag input with 20-tag limit warning, MarkdownEditor for body with code/preview toggle)
+- [X] T057m [US3] Update Issue detail page to include comments section in apps/desktop/src/renderer/src/pages/Issues.tsx (show comment count, comment list/card view toggle, add comment button)
 
 ### Tests for User Story 3
 
-- [ ] T057n [P] [US3-Comments] Unit test for HTML metadata parser in tests/unit/comment-metadata.spec.ts (parse valid/invalid HTML, serialize metadata)
-- [ ] T057o [P] [US3-Comments] IPC contract test for comments.list in tests/contract/comments.spec.ts (validates Comment[] response with metadata)
-- [ ] T057p [P] [US3-Comments] IPC contract test for comments.create in tests/contract/comments.spec.ts (validates HTML metadata embedding)
-- [ ] T057q [P] [US3-Comments] IPC contract test for comments.update in tests/contract/comments.spec.ts
-- [ ] T057r [P] [US3-Comments] E2E test for comment creation flow in tests/e2e/comment-management.spec.ts (Playwright: create comment with metadata, verify on GitHub)
-- [ ] T057s [P] [US3-Comments] E2E test for comment filtering in tests/e2e/comment-filtering.spec.ts (filter by tags, verify results)
-- [ ] T057t [P] [US3-Comments] E2E test for legacy comment handling in tests/e2e/comment-legacy.spec.ts (view GitHub comment without metadata, verify empty title/description)
+- [ ] T057n [P] [US3] Unit test for HTML metadata parser in tests/unit/comment-metadata.spec.ts (parse valid HTML comments, handle duplicate tags with first-wins, handle malformed metadata gracefully, enforce 20-tag limit on embed, serialize metadata correctly)
+- [ ] T057o [P] [US3] IPC contract test for comments.list in tests/contract/comments.spec.ts (validates Comment[] response with metadata, verifies newest-first display order, validates tag filtering AND logic, validates since filter parameter)
+- [ ] T057p [P] [US3] IPC contract test for comments.create in tests/contract/comments.spec.ts (validates HTML metadata embedding at body start, verifies 20-tag truncation)
+- [ ] T057q [P] [US3] IPC contract test for comments.update in tests/contract/comments.spec.ts (validates metadata update, verifies tag limit enforcement)
+- [ ] T057r [P] [US3] E2E test for comment creation flow in tests/e2e/comment-management.spec.ts (Playwright: create comment with metadata, verify HTML comments in GitHub, verify 20-tag limit enforced in UI)
+- [ ] T057s [P] [US3] E2E test for comment filtering in tests/e2e/comment-filtering.spec.ts (filter by single tag, filter by multiple tags with AND logic, verify results match all tags)
+- [ ] T057t [P] [US3] E2E test for legacy comment handling in tests/e2e/comment-legacy.spec.ts (view GitHub comment without metadata, verify displays with empty title/description and no tags, verify malformed HTML metadata displays gracefully)
 
-**Checkpoint**: User Stories 1 AND 3 (Comments) complete - can manage issue comments with metadata
+**Checkpoint**: User Stories 1 AND 3 (Comments) complete - can manage issue comments with metadata, tag filtering, and graceful legacy comment handling
 
 ---
 
@@ -332,12 +340,12 @@ Project uses monorepo workspace structure:
 
 ### Database Infrastructure
 
-- [ ] T097 Create SQLite schema definitions in apps/desktop/src/main/database/schemas/initial.sql (issues, labels, issue_labels, comments, sync_queue, _meta tables)
+- [ ] T097 Create SQLite schema definitions in apps/desktop/src/main/database/schemas/initial.sql (issues, labels, issue_labels, comments with title/description/tags columns, sync_queue for issues/comments/labels, _meta tables)
 - [ ] T098 Implement DatabaseManager in apps/desktop/src/main/database/manager.ts (multi-repo connection management, migrations)
 - [ ] T099 [P] Create Issue repository in apps/desktop/src/main/database/repositories/issues.ts (CRUD operations, filtering)
-- [ ] T100 [P] Create Comment repository in apps/desktop/src/main/database/repositories/comments.ts (CRUD operations, tag filtering, HTML metadata parsing)
+- [ ] T100 [P] Create Comment repository in apps/desktop/src/main/database/repositories/comments.ts (CRUD with HTML metadata parsing on save/load, tag filtering with AND logic using json_each(), newest-first display order, since filtering support, graceful handling of malformed metadata)
 - [ ] T101 [P] Create Label repository in apps/desktop/src/main/database/repositories/labels.ts (CRUD operations)
-- [ ] T102 [P] Create SyncQueue repository in apps/desktop/src/main/database/repositories/sync-queue.ts (queue operations)
+- [ ] T102 [P] Create SyncQueue repository in apps/desktop/src/main/database/repositories/sync-queue.ts (queue operations for issues, comments, and labels)
 
 ### Cache Integration
 

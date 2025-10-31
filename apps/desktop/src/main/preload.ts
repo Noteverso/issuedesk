@@ -23,6 +23,15 @@ const api: IpcApi = {
     delete: (req) => ipcRenderer.invoke('labels:delete', req),
   },
 
+  // Comments API
+  comments: {
+    list: (req) => ipcRenderer.invoke('comments:list', req),
+    get: (req) => ipcRenderer.invoke('comments:get', req),
+    create: (req) => ipcRenderer.invoke('comments:create', req),
+    update: (req) => ipcRenderer.invoke('comments:update', req),
+    delete: (req) => ipcRenderer.invoke('comments:delete', req),
+  },
+
   // Sync API
   sync: {
     start: () => ipcRenderer.invoke('sync:start'),

@@ -149,7 +149,92 @@ const LabelSchema = z.object({
 
 ---
 
-### 3. IssueLabel (Junction Table)
+### 3. Comment
+
+Represents a GitHub issue comment with enhanced metadata stored as HTML comments in the markdown body.
+
+**Attributes**:
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | UUID v4 generated locally |
+| `issue_id` | TEXT | FOREIGN KEY → issues(id), NOT NULL | Parent issue ID |
+| `github_id` | INTEGER | UNIQUE, NULLABLE | GitHub comment ID (null for not-yet-synced) |
+| `body` | TEXT | NOT NULL | Raw markdown content with embedded HTML metadata |
+| `title` | TEXT | NULLABLE | Parsed from `<!-- title: ... -->` HTML comment (max 100 chars) |
+| `description` | TEXT | NULLABLE | Parsed from `<!-- description: ... -->` HTML comment (max 200 chars) |
+| `tags` | TEXT | NULLABLE | JSON array of tags parsed from `<!-- tags: ... -->` HTML comment (max 20 tags) |
+| `author` | TEXT | NOT NULL | GitHub username of comment author |
+| `created_at` | INTEGER | NOT NULL | Unix timestamp (milliseconds) when comment created on GitHub |
+| `updated_at` | INTEGER | NOT NULL | Unix timestamp (ms) when comment last updated on GitHub |
+| `sync_status` | TEXT | CHECK IN ('synced', 'pending_create', 'pending_update', 'pending_delete', 'conflict') | Sync state |
+| `local_updated_at` | INTEGER | NOT NULL | Unix timestamp (ms) of last local modification |
+| `remote_updated_at` | INTEGER | NULLABLE | Unix timestamp (ms) from GitHub API (for conflict detection) |
+| `body_checksum` | TEXT | NULLABLE | SHA-256 hash of body content (for conflict detection) |
+
+**Indexes**:
+```sql
+CREATE INDEX idx_comments_issue_id ON comments(issue_id);
+CREATE INDEX idx_comments_created_at ON comments(created_at); -- For newest-first display order and since filtering
+CREATE INDEX idx_comments_sync_status ON comments(sync_status);
+```
+
+**Relationships**:
+- Many-to-One with `Issue` (many comments belong to one issue)
+
+**Validation Rules** (Zod schema):
+```typescript
+const CommentSchema = z.object({
+  id: z.string().uuid(),
+  issue_id: z.string().uuid(),
+  github_id: z.number().int().positive().nullable(),
+  body: z.string().min(1),
+  title: z.string().max(100).nullable(),
+  description: z.string().max(200).nullable(),
+  tags: z.array(z.string().max(30)).max(20), // Max 20 tags, each max 30 chars
+  author: z.string().min(1),
+  created_at: z.number().int().positive(),
+  updated_at: z.number().int().positive(),
+  sync_status: z.enum(['synced', 'pending_create', 'pending_update', 'pending_delete', 'conflict']),
+  local_updated_at: z.number().int().positive(),
+  remote_updated_at: z.number().int().positive().nullable(),
+  body_checksum: z.string().nullable(),
+});
+```
+
+**State Transitions**:
+```
+[Create Locally] → pending_create → [Sync Success] → synced
+                                  → [Sync Fail] → pending_create (retry)
+
+synced → [Edit Locally] → pending_update → [Sync Success] → synced
+                                         → [Sync Conflict] → conflict
+
+synced → [Delete Locally] → pending_delete → [Sync Success] → (removed from DB)
+                                           → [Sync Fail] → pending_delete (retry)
+
+conflict → [User Resolves] → pending_update → synced
+```
+
+**HTML Comment Metadata Handling**:
+- **On Save**: Metadata (title, description, tags) is embedded as HTML comments at start of body
+- **On Load**: Metadata is parsed from HTML comments and stored in separate columns
+- **Duplicate Handling**: Parser uses first occurrence, ignores subsequent duplicates
+- **Malformed Metadata**: Display gracefully with empty title/description and no tags
+- **Tag Limit**: Silently truncate to first 20 tags if user attempts to save more
+
+**HTML Comment Format**:
+```html
+<!-- title: Comment Title Here -->
+<!-- description: Brief description -->
+<!-- tags: bug, frontend, urgent -->
+
+Regular markdown content...
+```
+
+---
+
+### 4. IssueLabel (Junction Table)
 
 Links issues to labels (many-to-many relationship).
 
@@ -177,7 +262,7 @@ CREATE INDEX idx_issue_labels_label ON issue_labels(label_id);
 
 ---
 
-### 4. SyncQueue
+### 5. SyncQueue
 
 Tracks pending operations to sync with GitHub.
 
@@ -186,8 +271,8 @@ Tracks pending operations to sync with GitHub.
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
 | `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | Queue entry ID |
-| `entity_type` | TEXT | CHECK IN ('issue', 'label'), NOT NULL | Type of entity |
-| `entity_id` | TEXT | NOT NULL | ID of entity (issue.id or label.id) |
+| `entity_type` | TEXT | CHECK IN ('issue', 'comment', 'label'), NOT NULL | Type of entity |
+| `entity_id` | TEXT | NOT NULL | ID of entity (issue.id, comment.id, or label.id) |
 | `operation` | TEXT | CHECK IN ('create', 'update', 'delete'), NOT NULL | Operation to perform |
 | `payload` | TEXT | NULLABLE | JSON-serialized data for operation |
 | `created_at` | INTEGER | NOT NULL | Unix timestamp (ms) when queued |
@@ -211,7 +296,7 @@ CREATE INDEX idx_sync_queue_entity ON sync_queue(entity_type, entity_id);
 
 ---
 
-### 5. Repository (Metadata)
+### 6. Repository (Metadata)
 
 Stored per SQLite database (embedded in `_meta` table).
 
@@ -241,7 +326,7 @@ CREATE TABLE _meta (
 
 ---
 
-### 6. Settings (Global)
+### 7. Settings (Global)
 
 Stored in electron-store (not SQLite).
 

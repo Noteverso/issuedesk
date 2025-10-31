@@ -6,6 +6,19 @@ import {
   IssueListResult,
 } from './issue';
 import { Label, CreateLabelInput, UpdateLabelInput } from './label';
+import {
+  Comment,
+  CommentListRequest,
+  CommentListResponse,
+  CommentGetRequest,
+  CommentGetResponse,
+  CommentCreateRequest,
+  CommentCreateResponse,
+  CommentUpdateRequest,
+  CommentUpdateResponse,
+  CommentDeleteRequest,
+  CommentDeleteResponse,
+} from './comment';
 import { AppSettings, ViewPreferences, ThemeMode, EditorMode } from './settings';
 import { SyncEngineStatus, ConflictResolution } from './sync';
 
@@ -186,6 +199,15 @@ export interface IpcApi {
     create: (req: LabelCreateRequest) => Promise<{ label: Label }>;
     update: (req: LabelUpdateRequest) => Promise<{ label: Label }>;
     delete: (req: LabelDeleteRequest) => Promise<{ success: boolean }>;
+  };
+
+  // Comments
+  comments: {
+    list: (req: CommentListRequest) => Promise<CommentListResponse>;
+    get: (req: CommentGetRequest) => Promise<CommentGetResponse>;
+    create: (req: CommentCreateRequest) => Promise<CommentCreateResponse>;
+    update: (req: CommentUpdateRequest) => Promise<CommentUpdateResponse>;
+    delete: (req: CommentDeleteRequest) => Promise<CommentDeleteResponse>;
   };
 
   // Sync

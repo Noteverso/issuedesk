@@ -25,6 +25,7 @@ declare global {
   interface Window {
     api: {
       issues: IssuesAPI;
+      comments: CommentsAPI;
       labels: LabelsAPI;
       sync: SyncAPI;
       settings: SettingsAPI;
@@ -193,7 +194,165 @@ await window.api.issues.delete({ id: 'uuid-here' });
 
 ---
 
-## 2. Labels API
+## 2. Comments API
+
+### `comments.list`
+
+List comments for a specific issue with optional tag filtering.
+
+**Request**:
+```typescript
+interface CommentListRequest {
+  issueId: string; // UUID of parent issue
+  filter?: {
+    tags?: string[]; // Filter by tags (AND logic - all tags must match)
+  };
+  sort?: 'newest' | 'oldest'; // Default: 'newest'
+}
+```
+
+**Response**:
+```typescript
+interface CommentListResponse {
+  comments: Comment[];
+  totalCount: number;
+}
+```
+
+**Example**:
+```typescript
+const { comments } = await window.api.comments.list({
+  issueId: 'issue-uuid',
+  filter: { tags: ['bug', 'urgent'] },
+  sort: 'newest',
+});
+```
+
+---
+
+### `comments.get`
+
+Get a single comment by ID.
+
+**Request**:
+```typescript
+interface CommentGetRequest {
+  id: string; // UUID
+}
+```
+
+**Response**:
+```typescript
+interface CommentGetResponse {
+  comment: Comment | null;
+}
+```
+
+**Example**:
+```typescript
+const { comment } = await window.api.comments.get({ id: 'comment-uuid' });
+```
+
+---
+
+### `comments.create`
+
+Create a new comment (local-first, queued for sync).
+
+**Request**:
+```typescript
+interface CommentCreateRequest {
+  issueId: string; // UUID of parent issue
+  title?: string; // Max 100 chars
+  description?: string; // Max 200 chars
+  tags?: string[]; // Max 20 tags, silently truncated if exceeded
+  body: string; // Markdown content (metadata will be embedded as HTML comments)
+}
+```
+
+**Response**:
+```typescript
+interface CommentCreateResponse {
+  comment: Comment; // With sync_status: 'pending_create'
+}
+```
+
+**Example**:
+```typescript
+const { comment } = await window.api.comments.create({
+  issueId: 'issue-uuid',
+  title: 'Implementation Note',
+  description: 'Details about the bug fix',
+  tags: ['implementation', 'backend'],
+  body: 'Here is the fix explanation...',
+});
+```
+
+---
+
+### `comments.update`
+
+Update an existing comment (local-first, queued for sync).
+
+**Request**:
+```typescript
+interface CommentUpdateRequest {
+  id: string; // UUID
+  data: {
+    title?: string; // Max 100 chars
+    description?: string; // Max 200 chars
+    tags?: string[]; // Max 20 tags, silently truncated if exceeded
+    body?: string; // Markdown content
+  };
+}
+```
+
+**Response**:
+```typescript
+interface CommentUpdateResponse {
+  comment: Comment; // With sync_status: 'pending_update'
+}
+```
+
+**Example**:
+```typescript
+const { comment } = await window.api.comments.update({
+  id: 'comment-uuid',
+  data: { 
+    title: 'Updated title',
+    tags: ['implementation', 'backend', 'tested'],
+  },
+});
+```
+
+---
+
+### `comments.delete`
+
+Delete a comment (local-first, queued for sync).
+
+**Request**:
+```typescript
+interface CommentDeleteRequest {
+  id: string; // UUID
+}
+```
+
+**Response**:
+```typescript
+interface CommentDeleteResponse {
+  success: boolean;
+}
+```
+
+**Example**:
+```typescript
+await window.api.comments.delete({ id: 'comment-uuid' });
+```
+
+---
+
+## 3. Labels API
 
 ### `labels.list`
 
@@ -304,7 +463,7 @@ await window.api.labels.delete({ id: 'uuid-here' });
 
 ---
 
-## 3. Sync API
+## 4. Sync API
 
 ### `sync.start`
 
@@ -394,7 +553,7 @@ await window.api.sync.resolveConflict({
 
 ---
 
-## 4. Settings API
+## 5. Settings API
 
 ### `settings.get`
 
@@ -549,7 +708,7 @@ await window.api.settings.setToken({ token: 'ghp_xxxxx' });
 
 ---
 
-## 5. Analytics API
+## 6. Analytics API
 
 ### `analytics.getDashboard`
 
@@ -590,7 +749,7 @@ const analytics = await window.api.analytics.getDashboard();
 
 ---
 
-## 6. System API
+## 7. System API
 
 ### `system.openExternal`
 

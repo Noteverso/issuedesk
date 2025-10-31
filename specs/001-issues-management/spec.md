@@ -25,6 +25,14 @@
 - **Clarification**: Each label should track an issue count for dashboard analytics and UI display purposes.
 - **Clarification**: External API responses (GitHub API) must be transformed to match internal type contracts - GitHub's label structure differs from the app's Label type.
 
+### Session 2025-10-31
+
+- Q: When viewing comments on an issue, what filtering options should be available for time-based filtering? → A: Since filter with preset options (2 hours ago, 1 day ago, 3 days ago, 1 week ago, 1 month ago) plus custom datetime input
+- Q: The spec mentions handling "very long tag lists (e.g., 50+ tags)" as an edge case. What should be the enforced maximum number of tags allowed per comment? → A: Maximum 20 tags per comment
+- Q: When a comment has duplicate HTML metadata tags (e.g., two `<!-- title: -->` comments), how should the parser handle this? → A: First occurrence wins, ignore duplicates
+- Q: When a user attempts to save a comment with more than 20 tags, what should happen? → A: Silently truncate to first 20 tags
+- Q: When the system encounters malformed HTML comment metadata (missing closing tags, invalid format), how should it handle display? → A: Display gracefully with defaults (empty title/description, no tags)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Issue Management (Priority: P1)
@@ -81,11 +89,14 @@ User can view, filter, create, edit, and delete comments on GitHub issues with e
 1. **Given** user is viewing an issue detail page, **When** user clicks "Add Comment" and fills in title, description, tags, and markdown body, **Then** comment is created with HTML comment metadata embedded in the markdown body and synced to GitHub
 2. **Given** user has created a comment with metadata, **When** viewing the comment, **Then** the title, description, and tags are parsed from HTML comments and displayed in the UI separately from the markdown body
 3. **Given** user is viewing comments on an issue, **When** user toggles between list and card view, **Then** comments are displayed in the selected layout showing title, description, tags, and preview of body
-4. **Given** user is viewing comments, **When** user applies tag filters, **Then** only comments containing all selected tags are displayed
-5. **Given** user selects an existing comment, **When** user edits the title, description, tags, or body and saves, **Then** changes are persisted locally with updated HTML comment metadata and synced to GitHub
-6. **Given** user selects a comment, **When** user clicks delete and confirms, **Then** comment is removed from local database and deleted on GitHub
-7. **Given** user is editing a comment, **When** user toggles between "Code" and "Preview" modes, **Then** markdown body is displayed as raw text or rendered HTML respectively
-8. **Given** a GitHub comment exists without metadata HTML comments, **When** user views the comment, **Then** it displays with empty title/description and no tags, showing only the markdown body
+4. **Given** user is viewing comments on an issue, **When** comments are loaded, **Then** comments are displayed by newest first (most recent at top) by default
+5. **Given** user is viewing comments, **When** user applies tag filters, **Then** only comments containing all selected tags are displayed
+6. **Given** user is viewing comments, **When** user applies since filter (e.g., "1 day ago"), **Then** only comments updated after that timestamp are displayed
+7. **Given** user is viewing comments, **When** user selects "Custom date" in since filter, **Then** a datetime input appears allowing precise timestamp selection
+8. **Given** user selects an existing comment, **When** user edits the title, description, tags, or body and saves, **Then** changes are persisted locally with updated HTML comment metadata and synced to GitHub
+9. **Given** user selects a comment, **When** user clicks delete and confirms, **Then** comment is removed from local database and deleted on GitHub
+10. **Given** user is editing a comment, **When** user toggles between "Code" and "Preview" modes, **Then** markdown body is displayed as raw text or rendered HTML respectively
+11. **Given** a GitHub comment exists without metadata HTML comments, **When** user views the comment, **Then** it displays with empty title/description and no tags, showing only the markdown body
 
 **HTML Comment Format**:
 ```html
@@ -163,9 +174,9 @@ User can configure application settings including editor preferences, GitHub rep
 - What happens when user deletes a label that is assigned to existing issues?
 - How does markdown preview handle malformed markdown syntax?
 - What happens when a GitHub comment exists without HTML metadata comments (legacy comments or comments created outside the app)?
-- How does the system handle malformed HTML comment metadata (missing closing tags, invalid format)?
-- What happens when a comment has duplicate HTML metadata tags (e.g., two `<!-- title: -->` comments)?
-- How does the app handle comments with very long tag lists (e.g., 50+ tags)?
+- How does the system handle malformed HTML comment metadata (missing closing tags, invalid format)? → Display gracefully with defaults (empty title/description, no tags, showing markdown body)
+- What happens when a comment has duplicate HTML metadata tags (e.g., two `<!-- title: -->` comments)? → Parser uses first occurrence and ignores subsequent duplicates
+- How does the app handle comments with very long tag lists (exceeding the maximum of 20 tags)? → System silently truncates to first 20 tags when saving
 - What happens when user deletes an issue that has comments?
 
 ## Requirements *(mandatory)*
@@ -178,8 +189,8 @@ User can configure application settings including editor preferences, GitHub rep
 - **FR-004**: System MUST allow users to delete issues
 - **FR-005**: System MUST filter issues by label, title search, and status (open/closed)
 - **FR-005a**: System MUST allow users to view all comments for a selected issue
-- **FR-005b**: System MUST allow users to create new comments with title, description, tags, and markdown body
-- **FR-005c**: System MUST parse HTML comment metadata (title, description, tags) from GitHub comment markdown body using regex patterns
+- **FR-005b**: System MUST allow users to create new comments with title, description, tags (maximum 20 tags per comment, silently truncated if exceeded), and markdown body
+- **FR-005c**: System MUST parse HTML comment metadata (title, description, tags) from GitHub comment markdown body using regex patterns, taking the first occurrence of each metadata tag and ignoring duplicates; if metadata is malformed or missing, display comment with empty title/description and no tags
 - **FR-005d**: System MUST embed metadata as HTML comments at the beginning of comment markdown body when creating/updating comments
 - **FR-005e**: System MUST allow users to edit existing comments (title, description, tags, body)
 - **FR-005f**: System MUST allow users to delete comments
