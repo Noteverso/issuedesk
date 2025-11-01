@@ -63,6 +63,11 @@ const api: IpcApi = {
     getVersion: () => ipcRenderer.invoke('system:getVersion'),
     getInfo: () => ipcRenderer.invoke('system:getInfo'),
     checkForUpdates: () => ipcRenderer.invoke('system:checkForUpdates'),
+    zoomIn: () => ipcRenderer.invoke('system:zoomIn'),
+    zoomOut: () => ipcRenderer.invoke('system:zoomOut'),
+    resetZoom: () => ipcRenderer.invoke('system:resetZoom'),
+    getZoomLevel: () => ipcRenderer.invoke('system:getZoomLevel'),
+    setWindowTitle: (title) => ipcRenderer.invoke('system:setWindowTitle', title),
   },
 
   // Event listeners

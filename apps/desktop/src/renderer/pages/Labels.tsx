@@ -121,7 +121,7 @@ export default function Labels() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2">标签管理</h1>
+            <h1 className="text-3xl font-bold mb-2">Labels</h1>
             <p className="text-muted-foreground">
               管理仓库 {repoFullName} 的标签
             </p>

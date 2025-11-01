@@ -141,7 +141,7 @@ export default function Dashboard() {
     <div className="p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">仪表板</h1>
+          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
           <p className="text-muted-foreground">
             {settings.activeRepositoryId 
               ? `管理仓库 ${settings.activeRepositoryId} 的 Issues 和标签`

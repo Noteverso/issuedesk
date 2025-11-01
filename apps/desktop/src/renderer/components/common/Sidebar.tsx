@@ -20,7 +20,7 @@ export function Sidebar({ isOpen, onClose, repositoryName }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile sidebar overlay */}
+      {/* Mobile sidebar overlay - only show on mobile when sidebar is open */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -31,12 +31,14 @@ export function Sidebar({ isOpen, onClose, repositoryName }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
+          w-64 h-full bg-card border-r border-border
+          lg:relative lg:transform-none
+          fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-border">
+        <div className="flex items-center justify-between h-12 px-6 border-b border-border">
           <div className="flex items-center space-x-2">
             <Github className="h-6 w-6 text-primary" />
             <span className="text-lg font-semibold">IssueDesk</span>
@@ -66,7 +68,12 @@ export function Sidebar({ isOpen, onClose, repositoryName }: SidebarProps) {
                         : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }
                   `}
-                  onClick={onClose}
+                  onClick={() => {
+                    // Only close on mobile/tablet
+                    if (window.innerWidth < 768) {
+                      onClose();
+                    }
+                  }}
                 >
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}

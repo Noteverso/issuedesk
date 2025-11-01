@@ -221,9 +221,9 @@ export default function Issues() {
                   ← Back to Issues
                 </button>
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground">
+                  <h2 className="text-1xl font-bold text-foreground">
                     #{selectedIssue.number}: {selectedIssue.title}
-                  </h1>
+                  </h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
                   </p>
@@ -317,10 +317,10 @@ export default function Issues() {
         // Issues List View
         <>
           {/* Header */}
-          <div className="flex-shrink-0 px-6 py-4 border-b border-border bg-card">
+          <div className="flex-shrink-0 p-6 bg-card">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Issues</h1>
+                <h1 className="text-3xl font-bold text-foreground">Issues</h1>
                 <p className="text-sm text-muted-foreground mt-1">
                   {total} {total === 1 ? 'issue' : 'issues'} total
                 </p>

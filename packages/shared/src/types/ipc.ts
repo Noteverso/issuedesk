@@ -159,6 +159,11 @@ export interface VersionInfo {
   nodeVersion: string;
 }
 
+export interface ZoomResponse {
+  success: boolean;
+  zoomLevel?: number;
+}
+
 // Events from main to renderer
 export interface SyncProgressEvent {
   total: number;
@@ -241,6 +246,11 @@ export interface IpcApi {
     getVersion: () => Promise<VersionInfo>;
     getInfo: () => Promise<any>;
     checkForUpdates: () => Promise<any>;
+    zoomIn: () => Promise<ZoomResponse>;
+    zoomOut: () => Promise<ZoomResponse>;
+    resetZoom: () => Promise<ZoomResponse>;
+    getZoomLevel: () => Promise<ZoomResponse>;
+    setWindowTitle: (title: string) => Promise<{ success: boolean }>;
   };
 
   // Event listeners

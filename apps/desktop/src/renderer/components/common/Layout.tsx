@@ -3,34 +3,66 @@ import { Outlet } from 'react-router';
 import { Menu } from 'lucide-react';
 import { useConfig } from '../../contexts/ConfigContext';
 import Sidebar from './Sidebar';
+import StatusBar from './StatusBar';
+import { useWindowTitle } from '../../hooks/useWindowTitle';
 
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Default to open on desktop
   const { settings } = useConfig();
+
+  // Update window title when repository changes
+  useWindowTitle({
+    repositoryName: settings?.activeRepositoryId || undefined
+  });
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        repositoryName={settings?.activeRepositoryId || undefined}
-      />
+      {/* Sidebar - conditionally render space on desktop */}
+      {sidebarOpen && (
+        <div className="hidden lg:block w-64 flex-shrink-0">
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            repositoryName={settings?.activeRepositoryId || undefined}
+          />
+        </div>
+      )}
+      
+      {/* Mobile sidebar (overlay) */}
+      <div className="lg:hidden">
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          repositoryName={settings?.activeRepositoryId || undefined}
+        />
+      </div>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-border bg-card">
+        {/* Compact header bar */}
+        <div className="flex items-center h-12 px-4 border-b border-border bg-card/50 backdrop-blur-sm">
           <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-md hover:bg-accent"
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-md hover:bg-accent transition-colors"
+            aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-4 w-4" />
           </button>
+          
+          {/* Repository breadcrumb */}
+          {settings?.activeRepositoryId && (
+            <div className="ml-4 flex items-center text-sm text-muted-foreground">
+              <span className="font-medium">{settings.activeRepositoryId}</span>
+            </div>
+          )}
           
           <div className="flex-1" />
           
-          {/* User info removed - AppSettings doesn't store username */}
+          {/* Optional: Add quick actions here in the future */}
         </div>
 
         {/* Page content */}
@@ -39,6 +71,9 @@ export default function Layout() {
             <Outlet />
           </div>
         </main>
+
+        {/* Status Bar */}
+        <StatusBar />
       </div>
     </div>
   );

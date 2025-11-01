@@ -146,7 +146,7 @@ export default function Settings() {
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">设置</h1>
+          <h1 className="text-3xl font-bold mb-2">Settings</h1>
           <p className="text-muted-foreground">
             配置 GitHub 连接和应用程序设置
           </p>

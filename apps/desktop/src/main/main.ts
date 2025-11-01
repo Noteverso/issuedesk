@@ -29,7 +29,9 @@ function createWindow(): void {
       contextIsolation: true,
       preload: preloadPath,
     },
-    titleBarStyle: 'hiddenInset',
+    // Use native system title bar on all platforms
+    titleBarStyle: 'default',
+    title: 'IssueDesk',
     show: false,
   });
 
@@ -95,9 +97,28 @@ app.on('window-all-closed', () => {
 
 // Create application menu
 function createMenu(): void {
+  const isMac = process.platform === 'darwin';
+  
   const template: Electron.MenuItemConstructorOptions[] = [
-    {
-      label: 'IssueDesk',
+    // macOS specific app menu
+    ...(isMac ? [{
+      label: app.getName(),
+      submenu: [
+        { role: 'about' as const },
+        { type: 'separator' as const },
+        { role: 'services' as const },
+        { type: 'separator' as const },
+        { role: 'hide' as const },
+        { role: 'hideOthers' as const },
+        { role: 'unhide' as const },
+        { type: 'separator' as const },
+        { role: 'quit' as const }
+      ]
+    }] : []),
+    
+    // File menu for non-macOS
+    ...(!isMac ? [{
+      label: 'File',
       submenu: [
         {
           label: 'About IssueDesk',
@@ -110,16 +131,10 @@ function createMenu(): void {
             });
           },
         },
-        { type: 'separator' },
-        {
-          label: 'Quit',
-          accelerator: 'CmdOrCtrl+Q',
-          click: () => {
-            app.quit();
-          },
-        },
-      ],
-    },
+        { type: 'separator' as const },
+        { role: 'quit' as const }
+      ]
+    }] : []),
     {
       label: 'Edit',
       submenu: [
@@ -136,22 +151,64 @@ function createMenu(): void {
       submenu: [
         { label: 'Reload', accelerator: 'CmdOrCtrl+R', role: 'reload' },
         { label: 'Force Reload', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
-        { label: 'Toggle Developer Tools', accelerator: 'F12', role: 'toggleDevTools' },
+        { label: 'Toggle Developer Tools', accelerator: process.platform === 'darwin' ? 'Cmd+Alt+I' : 'F12', role: 'toggleDevTools' },
         { type: 'separator' },
-        { label: 'Actual Size', accelerator: 'CmdOrCtrl+0', role: 'resetZoom' },
-        { label: 'Zoom In', accelerator: 'CmdOrCtrl+Plus', role: 'zoomIn' },
-        { label: 'Zoom Out', accelerator: 'CmdOrCtrl+-', role: 'zoomOut' },
+        {
+          label: 'Appearance',
+          submenu: [
+            { 
+              label: 'Zoom In', 
+              accelerator: process.platform === 'darwin' ? 'Cmd+=' : 'Ctrl+=', 
+              click: () => mainWindow?.webContents.setZoomLevel(mainWindow.webContents.getZoomLevel() + 0.5)
+            },
+            { 
+              label: 'Zoom Out', 
+              accelerator: process.platform === 'darwin' ? 'Cmd+-' : 'Ctrl+-', 
+              click: () => mainWindow?.webContents.setZoomLevel(mainWindow.webContents.getZoomLevel() - 0.5)
+            },
+            { 
+              label: 'Reset Zoom', 
+              accelerator: process.platform === 'darwin' ? 'Cmd+0' : 'Ctrl+0', 
+              click: () => mainWindow?.webContents.setZoomLevel(0)
+            },
+          ]
+        },
         { type: 'separator' },
-        { label: 'Toggle Fullscreen', accelerator: 'F11', role: 'togglefullscreen' },
+        { 
+          label: 'Toggle Fullscreen', 
+          accelerator: process.platform === 'darwin' ? 'Ctrl+Cmd+F' : 'F11', 
+          role: 'togglefullscreen' 
+        },
       ],
     },
     {
       label: 'Window',
       submenu: [
-        { label: 'Minimize', accelerator: 'CmdOrCtrl+M', role: 'minimize' },
-        { label: 'Close', accelerator: 'CmdOrCtrl+W', role: 'close' },
+        { role: 'minimize' },
+        { role: 'zoom' },
+        ...(isMac ? [
+          { type: 'separator' as const },
+          { role: 'front' as const },
+          { type: 'separator' as const },
+          { role: 'window' as const }
+        ] : [
+          { role: 'close' as const }
+        ])
       ],
     },
+    
+    // Help menu
+    {
+      role: 'help',
+      submenu: [
+        {
+          label: 'Learn More',
+          click: async () => {
+            await shell.openExternal('https://github.com/noteverso/issuedesk');
+          }
+        }
+      ]
+    }
   ];
 
   const menu = Menu.buildFromTemplate(template);
