@@ -81,7 +81,7 @@ function mapGitHubCommentToComment(githubComment: GitHubComment, issueId?: strin
   return {
     id: githubComment.id.toString(), // Use GitHub ID as local ID for Phase 4
     issueId,
-    githubId: githubComment.id,
+    commentId: githubComment.id,
     body: githubComment.body || '',
     title: metadata.title,
     description: metadata.description,
@@ -194,7 +194,7 @@ export function registerCommentsHandlers() {
       const response = await client.getComment(
         repo.owner,
         repo.name,
-        validated.githubId
+        validated.commentId
       );
       
       if (!response.success || !response.data) {
@@ -301,7 +301,7 @@ export function registerCommentsHandlers() {
       const response = await client.updateComment(
         repo.owner,
         repo.name,
-        validated.githubId,
+        validated.commentId,
         { body: bodyToUpdate }
       );
       
@@ -342,7 +342,7 @@ export function registerCommentsHandlers() {
       const response = await client.deleteComment(
         repo.owner,
         repo.name,
-        validated.githubId
+        validated.commentId
       );
       
       if (!response.success) {

@@ -12,7 +12,7 @@ interface CreateCommentData {
 }
 
 interface UpdateCommentData {
-  githubId: number;
+  commentId: number;
   title?: string;
   description?: string;
   body?: string;
@@ -91,10 +91,10 @@ export function CommentEditor({ comment, issueNumber, isOpen, onClose, onSave }:
     setError(null);
 
     try {
-      if (comment && comment.githubId !== null) {
+      if (comment && comment.commentId !== null) {
         // Update existing comment
         await onSave({
-          githubId: comment.githubId,
+          commentId: comment.commentId,
           title: title.trim() || undefined,
           description: description.trim() || undefined,
           body: body.trim(),
@@ -139,13 +139,13 @@ export function CommentEditor({ comment, issueNumber, isOpen, onClose, onSave }:
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="relative bg-card rounded-lg shadow-xl w-full max-w-3xl border border-border"
+          className="relative bg-card rounded-lg shadow-xl w-full max-w-6xl h-[90vh] border border-border flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
             <h2 className="text-lg font-semibold text-foreground">
-              {comment ? `Edit Comment #${comment.githubId}` : `Add Comment to Issue #${issueNumber}`}
+              {comment ? `Edit Comment #${comment.commentId}` : `Add Comment to Issue #${issueNumber}`}
             </h2>
             <button
               onClick={handleClose}
@@ -156,127 +156,158 @@ export function CommentEditor({ comment, issueNumber, isOpen, onClose, onSave }:
             </button>
           </div>
 
-          {/* Form */}
-          <div className="px-6 py-4 space-y-4">
-            {/* Error message */}
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-md text-sm flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
+          {/* Form - Two Column Layout */}
+          <div className="flex-1 overflow-hidden">
+            <div className="grid grid-cols-3 gap-6 h-full p-6">
+              {/* Left Column - Main Editor (2/3 width) */}
+              <div className="col-span-2 flex flex-col space-y-4 overflow-y-auto pr-2">
+                {/* Error message */}
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-md text-sm flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
 
-            {/* Title input (optional) */}
-            <div>
-              <label htmlFor="comment-title" className="block text-sm font-medium text-foreground mb-2">
-                Title <span className="text-muted-foreground text-xs">(optional)</span>
-              </label>
-              <input
-                id="comment-title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Brief summary of your comment..."
-                className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                disabled={saving}
-                maxLength={100}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                {title.length}/100 characters
-              </p>
-            </div>
-
-            {/* Description input (optional) */}
-            <div>
-              <label htmlFor="comment-description" className="block text-sm font-medium text-foreground mb-2">
-                Description <span className="text-muted-foreground text-xs">(optional)</span>
-              </label>
-              <textarea
-                id="comment-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Longer description of the comment context..."
-                rows={2}
-                className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
-                disabled={saving}
-                maxLength={200}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                {description.length}/200 characters
-              </p>
-            </div>
-
-            {/* Body markdown editor (required) */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Comment <span className="text-red-500">*</span>
-              </label>
-              <MarkdownEditor
-                content={body}
-                onChange={setBody}
-                placeholder="Write your comment... (supports GitHub Flavored Markdown)"
-              />
-              <p className="mt-2 text-xs text-muted-foreground">
-                Use markdown formatting: **bold**, *italic*, `code`, lists, and more
-              </p>
-            </div>
-
-            {/* Tags input (optional) */}
-            <div>
-              <label htmlFor="comment-tags" className="block text-sm font-medium text-foreground mb-2">
-                Tags <span className="text-muted-foreground text-xs">(optional, max 20)</span>
-              </label>
-              
-              {/* Selected tags */}
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/20 text-primary border border-primary/30"
-                    >
-                      {tag}
-                      <button
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 hover:text-destructive transition-colors"
-                        type="button"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
+                {/* Body markdown editor - takes most space */}
+                <div className="flex-1 flex flex-col min-h-0">
+                  <label className="block text-sm font-medium text-foreground mb-2 flex-shrink-0">
+                    Comment <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex-1 min-h-0">
+                    <MarkdownEditor
+                      content={body}
+                      onChange={setBody}
+                      placeholder="Write your comment... (supports GitHub Flavored Markdown)"
+                      className="h-full"
+                    />
+                  </div>
+                  {/* <p className="mt-2 text-xs text-muted-foreground flex-shrink-0">
+                    Use markdown formatting: **bold**, *italic*, `code`, lists, and more
+                  </p> */}
                 </div>
-              )}
+              </div>
 
-              {/* Tag input */}
-              <form onSubmit={handleAddTag} className="flex gap-2">
-                <input
-                  id="comment-tags"
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  placeholder={tags.length >= 20 ? '20 tag limit reached' : 'Type a tag and press Enter...'}
-                  className="flex-1 px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={saving || tags.length >= 20}
-                  maxLength={30}
-                />
-                <button
-                  type="submit"
-                  disabled={saving || !tagInput.trim() || tags.length >= 20}
-                  className="px-4 py-2 text-sm font-medium bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Add
-                </button>
-              </form>
-              
-              <p className="mt-1 text-xs text-muted-foreground">
-                {tags.length}/20 tags • Max 30 characters per tag
-              </p>
+              {/* Right Column - Metadata (1/3 width) */}
+              <div className="col-span-1 flex flex-col space-y-4 border-l border-border pl-6 overflow-y-auto">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Metadata</h3>
+                </div>
+
+                {/* Title input (optional) */}
+                <div>
+                  <label htmlFor="comment-title" className="block text-sm font-medium text-foreground mb-2">
+                    Title <span className="text-muted-foreground text-xs">(optional)</span>
+                  </label>
+                  <input
+                    id="comment-title"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Brief summary..."
+                    className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                    disabled={saving}
+                    maxLength={100}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {title.length}/100
+                  </p>
+                </div>
+
+                {/* Description input (optional) */}
+                <div>
+                  <label htmlFor="comment-description" className="block text-sm font-medium text-foreground mb-2">
+                    Description <span className="text-muted-foreground text-xs">(optional)</span>
+                  </label>
+                  <textarea
+                    id="comment-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Longer description..."
+                    rows={3}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm resize-none"
+                    disabled={saving}
+                    maxLength={200}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {description.length}/200
+                  </p>
+                </div>
+
+                {/* Tags input (optional) */}
+                <div>
+                  <label htmlFor="comment-tags" className="block text-sm font-medium text-foreground mb-2">
+                    Tags <span className="text-muted-foreground text-xs">(max 20)</span>
+                  </label>
+                  
+                  {/* Selected tags */}
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/20 text-primary border border-primary/30"
+                        >
+                          {tag}
+                          <button
+                            onClick={() => handleRemoveTag(tag)}
+                            className="ml-1 hover:text-destructive transition-colors"
+                            type="button"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Tag input */}
+                  <form onSubmit={handleAddTag} className="space-y-2">
+                    <input
+                      id="comment-tags"
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder={tags.length >= 20 ? '20 tag limit reached' : 'Type a tag...'}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={saving || tags.length >= 20}
+                      maxLength={30}
+                    />
+                    <button
+                      type="submit"
+                      disabled={saving || !tagInput.trim() || tags.length >= 20}
+                      className="w-full px-4 py-2 text-sm font-medium bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add Tag
+                    </button>
+                  </form>
+                  
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {tags.length}/20 tags
+                  </p>
+                </div>
+
+                {/* Comment Info */}
+                {comment && (
+                  <div className="pt-4 border-t border-border space-y-2">
+                    <h4 className="text-sm font-medium text-foreground">Comment Info</h4>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>ID: #{comment.commentId}</p>
+                      {comment.createdAt && (
+                        <p>Created: {new Date(comment.createdAt).toLocaleDateString()}</p>
+                      )}
+                      {comment.updatedAt && (
+                        <p>Updated: {new Date(comment.updatedAt).toLocaleDateString()}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border flex-shrink-0">
             <button
               onClick={handleClose}
               disabled={saving}

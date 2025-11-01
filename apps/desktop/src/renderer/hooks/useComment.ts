@@ -3,8 +3,7 @@ import { Comment, UpdateCommentInput } from '@issuedesk/shared';
 import { ipcClient } from '../services/ipc';
 
 interface UseCommentOptions {
-  id?: string;
-  githubId?: number;
+  commentId?: number;
   autoLoad?: boolean;
 }
 
@@ -33,7 +32,7 @@ interface UseCommentReturn {
  * Hook for managing a single comment with CRUD operations
  * Handles metadata embedding/parsing automatically
  */
-export function useComment({ id, githubId, autoLoad = true }: UseCommentOptions = {}): UseCommentReturn {
+export function useComment({ commentId, autoLoad = true }: UseCommentOptions = {}): UseCommentReturn {
   const [comment, setComment] = useState<Comment | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -42,7 +41,7 @@ export function useComment({ id, githubId, autoLoad = true }: UseCommentOptions 
   const [deleting, setDeleting] = useState(false);
 
   const fetchComment = useCallback(async () => {
-    if (!id || !githubId) {
+    if (!commentId) {
       setComment(null);
       return;
     }
@@ -51,7 +50,7 @@ export function useComment({ id, githubId, autoLoad = true }: UseCommentOptions 
     setError(null);
 
     try {
-      const result = await ipcClient.comments.get({ id, githubId });
+      const result = await ipcClient.comments.get({ commentId });
       setComment(result.comment);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch comment');
@@ -60,13 +59,13 @@ export function useComment({ id, githubId, autoLoad = true }: UseCommentOptions 
     } finally {
       setLoading(false);
     }
-  }, [id, githubId]);
+  }, [commentId]);
 
   useEffect(() => {
-    if (autoLoad && id && githubId) {
+    if (autoLoad && commentId) {
       fetchComment();
     }
-  }, [fetchComment, autoLoad, id, githubId]);
+  }, [fetchComment, autoLoad, commentId]);
 
   const create = useCallback(async (data: CreateCommentData): Promise<Comment> => {
     setCreating(true);
@@ -94,8 +93,8 @@ export function useComment({ id, githubId, autoLoad = true }: UseCommentOptions 
 
   const update = useCallback(
     async (data: UpdateCommentInput): Promise<Comment> => {
-      if (!id || !githubId) {
-        throw new Error('Cannot update comment without id and githubId');
+      if (!commentId) {
+        throw new Error('Cannot update comment without commentId');
       }
 
       setUpdating(true);
@@ -103,8 +102,7 @@ export function useComment({ id, githubId, autoLoad = true }: UseCommentOptions 
 
       try {
         const result = await ipcClient.comments.update({ 
-          id, 
-          githubId, 
+          commentId, 
           data 
         });
         setComment(result.comment);
@@ -118,19 +116,19 @@ export function useComment({ id, githubId, autoLoad = true }: UseCommentOptions 
         setUpdating(false);
       }
     },
-    [id, githubId]
+    [commentId]
   );
 
   const deleteComment = useCallback(async (): Promise<void> => {
-    if (!id || !githubId) {
-      throw new Error('Cannot delete comment without id and githubId');
+    if (!commentId) {
+      throw new Error('Cannot delete comment without commentId');
     }
 
     setDeleting(true);
     setError(null);
 
     try {
-      await ipcClient.comments.delete({ id, githubId });
+      await ipcClient.comments.delete({ commentId });
       setComment(null);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to delete comment');
@@ -140,7 +138,7 @@ export function useComment({ id, githubId, autoLoad = true }: UseCommentOptions 
     } finally {
       setDeleting(false);
     }
-  }, [id, githubId]);
+  }, [commentId]);
 
   return {
     comment,

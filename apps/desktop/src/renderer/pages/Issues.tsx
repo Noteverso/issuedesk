@@ -134,8 +134,13 @@ export default function Issues() {
     autoLoad: !!selectedIssue,
   });
 
-  const { create: createComment, update: updateComment } = useComment({
+  const { create: createComment } = useComment({
     autoLoad: false,
+  });
+
+  const { update: updateComment } = useComment({
+    autoLoad: false,
+    commentId: editingComment?.commentId || null,
   });
 
   // Extract unique tags from comments for filter
@@ -159,7 +164,7 @@ export default function Issues() {
 
   const handleSaveComment = async (data: any) => {
     try {
-      if (editingComment && 'githubId' in data) {
+      if (editingComment && 'commentId' in data) {
         await updateComment(data);
         toast.success('Comment updated', 'Comment has been updated successfully');
       } else {
@@ -177,7 +182,7 @@ export default function Issues() {
   };
 
   const handleDeleteComment = async (comment: any) => {
-    if (!comment.githubId) {
+    if (!comment.commentId) {
       toast.error('Cannot delete comment', 'Comment ID not found');
       return;
     }
@@ -187,8 +192,8 @@ export default function Issues() {
 
     try {
       await ipcClient.comments.delete({
-        id: String(comment.githubId),
-        githubId: comment.githubId,
+        id: String(comment.commentId),
+        commentId: comment.commentId,
       });
       toast.success('Comment deleted', 'Comment has been deleted successfully');
       await refetchComments();

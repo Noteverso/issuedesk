@@ -65,6 +65,7 @@ export function MarkdownEditor({
   const [mode, setMode] = useState<EditorMode>('edit');
   const [codeContent, setCodeContent] = useState(content);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const codeEditorRef = useRef<HTMLDivElement>(null);
   // Force re-render when cursor position changes to update button states
   const [, setEditorState] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -321,11 +322,95 @@ export function MarkdownEditor({
 
   }, [content, editor]);
 
+  // Update contentEditable div when in code mode
+  useEffect(() => {
+    if (mode === 'code' && codeEditorRef.current && codeContent !== codeEditorRef.current.textContent) {
+      // Save cursor position
+      const selection = window.getSelection();
+      const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+      const cursorOffset = range ? range.startOffset : 0;
+      
+      // Update content
+      codeEditorRef.current.textContent = codeContent;
+      
+      // Restore cursor position
+      if (range && codeEditorRef.current.firstChild) {
+        try {
+          const newRange = document.createRange();
+          const textNode = codeEditorRef.current.firstChild;
+          const offset = Math.min(cursorOffset, (textNode.textContent || '').length);
+          newRange.setStart(textNode, offset);
+          newRange.collapse(true);
+          selection?.removeAllRanges();
+          selection?.addRange(newRange);
+        } catch (e) {
+          // Ignore cursor restoration errors
+        }
+      }
+    }
+  }, [codeContent, mode]);
+
   const handleCodeModeChange = (value: string) => {
     setCodeContent(value);
     onChange(value);
     if (editor) {
-      editor.commands.setContent(value);
+      const html = marked(value) as string;
+      editor.commands.setContent(html, { emitUpdate: false });
+    }
+  };
+
+  const handleCodeEditorKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Handle Enter key to insert newline
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      // Insert a newline character
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        
+        // Insert newline as text node
+        const textNode = document.createTextNode('\n');
+        range.insertNode(textNode);
+        
+        // Move cursor after the newline
+        range.setStartAfter(textNode);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Trigger input event to update state
+        if (codeEditorRef.current) {
+          handleCodeModeChange(codeEditorRef.current.textContent || '');
+        }
+      }
+    }
+    
+    // Handle Tab key to insert spaces
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        
+        // Insert 2 spaces
+        const textNode = document.createTextNode('  ');
+        range.insertNode(textNode);
+        
+        // Move cursor after the spaces
+        range.setStartAfter(textNode);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Trigger input event
+        if (codeEditorRef.current) {
+          handleCodeModeChange(codeEditorRef.current.textContent || '');
+        }
+      }
     }
   };
 
@@ -341,7 +426,7 @@ export function MarkdownEditor({
   }
 
   return (
-    <div className={`border border-border rounded-md overflow-hidden ${className}`}>
+    <div className={`border border-border rounded-md overflow-hidden ${className} flex flex-col`}>
       {/* Toolbar */}
       <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border">
         {/* Editor controls - show TipTap toolbar when using the editor */}
@@ -544,17 +629,27 @@ export function MarkdownEditor({
       </div>
 
       {/* Editor content */}
-      <div className="bg-background">
+      <div className="bg-background flex-grow overflow-y-auto">
         {mode === 'code' ? (
-          <textarea
-            value={codeContent}
-            onChange={(e) => handleCodeModeChange(e.target.value)}
-            placeholder={placeholder}
-            className={`w-full ${EDITOR_HEIGHT_CLASS} p-4 font-mono text-sm bg-transparent resize-none focus:outline-none text-foreground`}
-          />
+          <div className='h-full relative'>
+            <div
+              ref={codeEditorRef}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => handleCodeModeChange(e.currentTarget.textContent || '')}
+              onKeyDown={handleCodeEditorKeyDown}
+              className="w-full h-full p-4 font-mono text-sm bg-transparent focus:outline-none text-foreground overflow-y-auto empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground"
+              data-placeholder={placeholder}
+              style={{
+                minHeight: '100%',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}
+            />
+          </div>
         ) : (
           <div 
-            className={`overflow-y-auto ${EDITOR_HEIGHT_CLASS} relative`} 
+            className={`overflow-y-auto relative`} 
             ref={scrollContainerRef}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}

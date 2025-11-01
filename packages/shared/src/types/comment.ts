@@ -25,12 +25,12 @@ export interface CommentMetadata {
  * GitHub issue comment with enhanced metadata
  */
 export interface Comment {
-  /** Local UUID v4 */
-  id: string;
+  /** Local UUID v4 - optional in Phase 4 online-only mode */
+  id?: string;
   /** Parent issue ID (local UUID) - optional in Phase 4 online-only mode */
   issueId?: string;
   /** GitHub comment ID (null for not-yet-synced) */
-  githubId: number | null;
+  commentId: number | null;
   /** Raw markdown content with embedded HTML metadata */
   body: string;
   /** Parsed title from HTML comment (max 100 chars) */
@@ -124,10 +124,10 @@ export interface CommentListResponse {
  * Request to get a single comment
  */
 export interface CommentGetRequest {
-  /** Comment ID (Phase 4: GitHub comment ID as string; Phase 9: UUID) */
-  id: string;
+  /** Comment ID (Phase 4: GitHub comment ID as string; Phase 9: UUID) - optional in Phase 4 */
+  id?: string;
   /** GitHub comment ID for API calls */
-  githubId: number;
+  commentId: number;
 }
 
 /**
@@ -166,10 +166,10 @@ export interface CommentCreateResponse {
  * Request to update a comment
  */
 export interface CommentUpdateRequest {
-  /** Comment ID (Phase 4: GitHub comment ID as string; Phase 9: UUID) */
-  id: string;
+  /** Comment ID (Phase 4: GitHub comment ID as string; Phase 9: UUID) - optional in Phase 4 */
+  id?: string;
   /** GitHub comment ID for API calls */
-  githubId: number;
+  commentId: number;
   data: UpdateCommentInput;
 }
 
@@ -184,10 +184,10 @@ export interface CommentUpdateResponse {
  * Request to delete a comment
  */
 export interface CommentDeleteRequest {
-  /** Comment ID (Phase 4: GitHub comment ID as string; Phase 9: UUID) */
-  id: string;
+  /** Comment ID (Phase 4: GitHub comment ID as string; Phase 9: UUID) - optional in Phase 4 */
+  id?: string;
   /** GitHub comment ID for API calls */
-  githubId: number;
+  commentId: number;
 }
 
 /**

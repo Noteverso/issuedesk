@@ -102,11 +102,11 @@ export function IssueEditor({ issue, isOpen, onClose, onSave, onCloseIssue }: Is
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="relative bg-card rounded-lg shadow-xl w-full max-w-3xl border border-border"
+          className="relative bg-card rounded-lg shadow-xl w-full max-w-6xl h-[90vh] border border-border flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
             <h2 className="text-lg font-semibold text-foreground">
               {issue ? `Edit Issue #${issue.number}` : 'Create New Issue'}
             </h2>
@@ -119,71 +119,103 @@ export function IssueEditor({ issue, isOpen, onClose, onSave, onCloseIssue }: Is
             </button>
           </div>
 
-          {/* Form */}
-          <div className="px-6 py-4 space-y-4">
-            {/* Error message */}
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-md text-sm">
-                {error}
+          {/* Form - Two Column Layout */}
+          <div className="flex-1 overflow-hidden">
+            <div className="grid grid-cols-3 gap-6 h-full p-6">
+              {/* Left Column - Main Editor (2/3 width) */}
+              <div className="col-span-2 flex flex-col space-y-4 overflow-y-auto pr-2">
+                {/* Error message */}
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-md text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {/* Title input */}
+                <div className="flex-shrink-0">
+                  <label htmlFor="issue-title" className="block text-sm font-medium text-foreground mb-2">
+                    Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="issue-title"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter issue title..."
+                    className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                    disabled={saving}
+                    maxLength={256}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {title.length}/256 characters
+                  </p>
+                </div>
+
+                {/* Body markdown editor - takes remaining space */}
+                <div className="flex-1 flex flex-col min-h-0">
+                  <label className="block text-sm font-medium text-foreground mb-2 flex-shrink-0">
+                    Description
+                  </label>
+                  <div className="flex-1 min-h-0">
+                    <MarkdownEditor
+                      content={body}
+                      onChange={setBody}
+                      placeholder="Add a description... (supports GitHub Flavored Markdown)"
+                      className="h-full"
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground flex-shrink-0">
+                    Use markdown formatting: **bold**, *italic*, `code`, lists, and more
+                  </p>
+                </div>
               </div>
-            )}
 
-            {/* Title input */}
-            <div>
-              <label htmlFor="issue-title" className="block text-sm font-medium text-foreground mb-2">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="issue-title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter issue title..."
-                className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                disabled={saving}
-                maxLength={256}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                {title.length}/256 characters
-              </p>
-            </div>
+              {/* Right Column - Metadata (1/3 width) */}
+              <div className="col-span-1 flex flex-col space-y-4 border-l border-border pl-6 overflow-y-auto">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Metadata</h3>
+                </div>
 
-            {/* Body markdown editor */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Description
-              </label>
-              <MarkdownEditor
-                content={body}
-                onChange={setBody}
-                placeholder="Add a description... (supports GitHub Flavored Markdown)"
-              />
-              <p className="mt-2 text-xs text-muted-foreground">
-                Use markdown formatting: **bold**, *italic*, `code`, lists, and more
-              </p>
-            </div>
+                {/* Labels selector */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Labels
+                  </label>
+                  <LabelSelector
+                    labels={labels}
+                    selectedLabels={selectedLabels}
+                    onChange={setSelectedLabels}
+                    disabled={saving || labelsLoading}
+                  />
+                  {labelsLoading && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Loading labels...
+                    </p>
+                  )}
+                </div>
 
-            {/* Labels selector */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Labels
-              </label>
-              <LabelSelector
-                labels={labels}
-                selectedLabels={selectedLabels}
-                onChange={setSelectedLabels}
-                disabled={saving || labelsLoading}
-              />
-              {labelsLoading && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Loading labels...
-                </p>
-              )}
+                {/* Issue Info */}
+                {issue && (
+                  <div className="pt-4 border-t border-border space-y-2">
+                    <h4 className="text-sm font-medium text-foreground">Issue Info</h4>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>Number: #{issue.number}</p>
+                      <p>State: <span className={issue.state === 'open' ? 'text-green-600' : 'text-purple-600'}>{issue.state}</span></p>
+                      {issue.created_at && (
+                        <p>Created: {new Date(issue.created_at).toLocaleDateString()}</p>
+                      )}
+                      {issue.updated_at && (
+                        <p>Updated: {new Date(issue.updated_at).toLocaleDateString()}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border flex-shrink-0">
             {/* Close Issue button - only show when editing open issues */}
             {issue && issue.state === 'open' && onCloseIssue && (
               <button

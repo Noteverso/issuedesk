@@ -24,9 +24,9 @@ const SyncStatusSchema = z.enum([
  * Zod schema for Comment entity
  */
 export const CommentSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().uuid().optional(),
   issueId: z.string().uuid().optional(),
-  githubId: z.number().int().positive().nullable(),
+  commentId: z.number().int().positive().nullable(),
   body: z.string().min(1),
   title: z.string().max(100).optional(),
   description: z.string().max(200).optional(),
@@ -95,8 +95,8 @@ export const CommentListResponseSchema = z.object({
  * Zod schema for CommentGetRequest
  */
 export const CommentGetRequestSchema = z.object({
-  id: z.string(), // For Phase 4: GitHub comment ID as string; Phase 9: UUID
-  githubId: z.number().int().positive(), // GitHub comment ID for API calls
+  id: z.string().optional(), // For Phase 4: GitHub comment ID as string; Phase 9: UUID
+  commentId: z.number().int().positive(), // GitHub comment ID for API calls
 });
 
 /**
@@ -129,8 +129,8 @@ export const CommentCreateResponseSchema = z.object({
  * Zod schema for CommentUpdateRequest
  */
 export const CommentUpdateRequestSchema = z.object({
-  id: z.string(), // For Phase 4: GitHub comment ID as string; Phase 9: UUID
-  githubId: z.number().int().positive(), // GitHub comment ID for API calls
+  id: z.string().optional(), // For Phase 4: GitHub comment ID as string; Phase 9: UUID
+  commentId: z.number().int().positive(), // GitHub comment ID for API calls
   data: UpdateCommentInputSchema,
 });
 
@@ -145,8 +145,8 @@ export const CommentUpdateResponseSchema = z.object({
  * Zod schema for CommentDeleteRequest
  */
 export const CommentDeleteRequestSchema = z.object({
-  id: z.string(), // For Phase 4: GitHub comment ID as string; Phase 9: UUID
-  githubId: z.number().int().positive(), // GitHub comment ID for API calls
+  id: z.string().optional(), // For Phase 4: GitHub comment ID as string; Phase 9: UUID
+  commentId: z.number().int().positive(), // GitHub comment ID for API calls
 });
 
 /**
