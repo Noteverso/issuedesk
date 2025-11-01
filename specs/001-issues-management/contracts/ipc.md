@@ -30,7 +30,7 @@ declare global {
       sync: SyncAPI;
       settings: SettingsAPI;
       analytics: AnalyticsAPI;
-      system: SystemAPI;
+      system: SystemAPI; // Includes openExternal, getVersion, zoom controls, setWindowTitle
     };
   }
 }
@@ -794,6 +794,117 @@ interface GetVersionResponse {
 **Example**:
 ```typescript
 const { version } = await window.api.system.getVersion();
+```
+
+---
+
+### `system.zoomIn`
+
+Increase application zoom level (VS Code-style zoom control).
+
+**Request**: None
+
+**Response**:
+```typescript
+interface ZoomResponse {
+  level: number; // Current zoom level (-2.0 to +3.0)
+  percentage: string; // Formatted percentage (e.g., "125%")
+}
+```
+
+**Example**:
+```typescript
+const { level, percentage } = await window.api.system.zoomIn();
+```
+
+---
+
+### `system.zoomOut`
+
+Decrease application zoom level (VS Code-style zoom control).
+
+**Request**: None
+
+**Response**:
+```typescript
+interface ZoomResponse {
+  level: number; // Current zoom level (-2.0 to +3.0)
+  percentage: string; // Formatted percentage (e.g., "75%")
+}
+```
+
+**Example**:
+```typescript
+const { level, percentage } = await window.api.system.zoomOut();
+```
+
+---
+
+### `system.resetZoom`
+
+Reset application zoom level to 100% (VS Code-style zoom control).
+
+**Request**: None
+
+**Response**:
+```typescript
+interface ZoomResponse {
+  level: number; // Always 0 (100%)
+  percentage: string; // Always "100%"
+}
+```
+
+**Example**:
+```typescript
+const { level, percentage } = await window.api.system.resetZoom();
+```
+
+---
+
+### `system.getZoomLevel`
+
+Get current application zoom level.
+
+**Request**: None
+
+**Response**:
+```typescript
+interface ZoomResponse {
+  level: number; // Current zoom level (-2.0 to +3.0)
+  percentage: string; // Formatted percentage (e.g., "100%")
+}
+```
+
+**Example**:
+```typescript
+const { level, percentage } = await window.api.system.getZoomLevel();
+```
+
+---
+
+### `system.setWindowTitle`
+
+Update native window title with repository context.
+
+**Request**:
+```typescript
+interface SetWindowTitleRequest {
+  title: string; // Window title (e.g., "repository-name - IssueDesk")
+}
+```
+
+**Response**:
+```typescript
+interface SetWindowTitleResponse {
+  success: boolean;
+}
+```
+
+**Example**:
+```typescript
+await window.api.system.setWindowTitle({ 
+  title: "octocat/hello-world - IssueDesk" 
+});
 ```
 
 ---

@@ -33,6 +33,14 @@
 - Q: When a user attempts to save a comment with more than 20 tags, what should happen? → A: Silently truncate to first 20 tags
 - Q: When the system encounters malformed HTML comment metadata (missing closing tags, invalid format), how should it handle display? → A: Display gracefully with defaults (empty title/description, no tags)
 
+### Session 2025-11-01
+
+- **UI/UX Enhancement**: Redesigned app layout with compact header (reduced from 64px to 48px height for 25% more content space), universal sidebar toggle (works on all screen sizes, not just mobile), native system title bar integration with proper safe space, and dynamic window title updates showing repository name
+- **Layout Architecture**: Implemented responsive sidebar behavior where desktop sidebar takes layout space when open but allows content to expand to full width when hidden, while mobile sidebar maintains overlay behavior for optimal UX
+- **Status Bar Integration**: Added VS Code-style status bar with zoom controls (+/- buttons, double-click reset, keyboard shortcuts Cmd/Ctrl+±/0), theme-aware styling, and backdrop blur effects
+- **Native macOS Integration**: Configured native system title bar (titleBarStyle: 'default') instead of custom implementation, added IPC system for dynamic window title updates, and maintained zoom functionality through proper BrowserWindow API integration
+- **Theme System**: Enhanced theme provider with useTheme hook, light theme uses GitHub's white styling, dark theme uses appropriate contrast, status bar adapts to theme changes automatically
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Issue Management (Priority: P1)
@@ -218,6 +226,14 @@ User can configure application settings including editor preferences, GitHub rep
 - **FR-019b**: System MUST display warning notification when rate limit falls below 20% of hourly quota
 - **FR-019c**: System MUST queue operations locally when rate limit exhausted and auto-retry after reset (IMPLEMENTATION: Phase 9+ with SQLite; Phase 1-8: display error and block operations)
 - **FR-020**: System MUST display error messages when operations fail
+- **FR-021**: System MUST provide compact responsive layout with header height ≤48px to maximize content space
+- **FR-022**: System MUST support universal sidebar toggle functionality that works on all screen sizes (desktop, tablet, mobile)
+- **FR-023**: System MUST allow main content to expand to full width when sidebar is hidden on desktop while maintaining overlay behavior on mobile devices
+- **FR-024**: System MUST integrate native system title bar and window controls instead of custom implementation
+- **FR-025**: System MUST update window title dynamically to show current repository name (format: "repository-name - IssueDesk")
+- **FR-026**: System MUST provide VS Code-style zoom controls in status bar including +/- buttons, double-click reset to 100%, and keyboard shortcuts (Cmd/Ctrl + +/-/0)
+- **FR-027**: System MUST implement theme-aware status bar with appropriate styling for light theme (GitHub white) and dark theme (high contrast)
+- **FR-028**: System MUST maintain responsive header design with repository breadcrumb display and modern visual effects (backdrop blur, translucent background)
 
 ### Implementation Phases
 
@@ -277,3 +293,10 @@ User can configure application settings including editor preferences, GitHub rep
 - **SC-006**: View preferences (list/card) persist across app restarts for issues, labels, and comments
 - **SC-007**: Dashboard analytics display accurate counts matching GitHub repository state (Phase 1-8: fetched from GitHub API; Phase 9+: after sync, with trend calculations based on cached timestamps)
 - **SC-008**: Theme changes apply instantly across all app screens within 100ms
+- **SC-009**: Sidebar toggle response time must be ≤200ms with smooth animation transitions on all screen sizes
+- **SC-010**: Main content expands to full width within 300ms of sidebar hiding on desktop layouts
+- **SC-011**: Window title updates within 100ms of repository changes showing correct format "repo-name - IssueDesk"
+- **SC-012**: Zoom controls (keyboard shortcuts and UI buttons) must respond within 50ms and update display smoothly
+- **SC-013**: Header height must not exceed 48px while maintaining full functionality and readability
+- **SC-014**: Status bar must adapt theme styling within 100ms of theme changes with proper contrast ratios
+- **SC-015**: Repository breadcrumb in header must display correctly for repository names up to 50 characters with appropriate truncation

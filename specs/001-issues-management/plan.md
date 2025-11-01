@@ -15,15 +15,16 @@ Desktop application for managing GitHub issues with **API-first architecture** t
 
 **Language/Version**: TypeScript 5.3+, Node.js ≥18.0.0, React 18+  
 **Primary Dependencies**: 
-- Electron 33+ (desktop framework)
-- React 18 + React Router (UI)
-- Tailwind CSS 3 + @primer/css (styling)
+- Electron 33+ (desktop framework with native title bar integration)
+- React 18 + React Router (UI with responsive layout system)
+- Tailwind CSS 3 + @primer/css (styling with theme-aware components)
 - Tiptap + tiptap-markdown (WYSIWYG markdown editor)
 - react-markdown + remark-gfm (read-only markdown preview)
 - better-sqlite3 (SQLite for per-repository caches)
 - electron-store (app settings/preferences)
 - Octokit (GitHub API client via @issuedesk/github-api)
 - Zod (runtime validation in @issuedesk/shared)
+- lucide-react (icon system for UI components)
 
 **Storage**: 
 - **Phase 1-8**: GitHub REST API as primary data source (online-only)
@@ -117,7 +118,8 @@ apps/desktop/
 │   │   │   ├── labels.ts       # Label CRUD handlers
 │   │   │   ├── sync.ts         # Sync operations
 │   │   │   ├── settings.ts     # Settings handlers
-│   │   │   └── analytics.ts    # Dashboard analytics
+│   │   │   ├── analytics.ts    # Dashboard analytics
+│   │   │   └── system.ts       # System operations (zoom, window title)
 │   │   ├── database/           # SQLite database layer
 │   │   │   ├── manager.ts      # Multi-repo cache management
 │   │   │   ├── migrations/     # Schema migrations
@@ -166,10 +168,11 @@ apps/desktop/
 │   │   │   │   ├── markdown/
 │   │   │   │   │   └── MarkdownEditor.tsx
 │   │   │   │   └── common/
-│   │   │   │       ├── Layout.tsx
-│   │   │   │       ├── Sidebar.tsx
+│   │   │   │       ├── Layout.tsx          # Responsive layout with dynamic sidebar
+│   │   │   │       ├── Sidebar.tsx         # Universal toggle sidebar component
+│   │   │   │       ├── StatusBar.tsx       # VS Code-style status bar with zoom
 │   │   │   │       ├── ViewToggle.tsx
-│   │   │   │       └── ThemeProvider.tsx
+│   │   │   │       └── ThemeProvider.tsx   # Enhanced theme system
 │   │   │   ├── hooks/          # React hooks
 │   │   │   │   ├── useIssues.ts
 │   │   │   │   ├── useIssue.ts
@@ -178,7 +181,9 @@ apps/desktop/
 │   │   │   │   ├── useLabels.ts
 │   │   │   │   ├── useSync.ts
 │   │   │   │   ├── useSettings.ts
-│   │   │   │   └── useTheme.ts
+│   │   │   │   ├── useTheme.ts
+│   │   │   │   ├── useZoom.ts          # Zoom state management
+│   │   │   │   └── useWindowTitle.ts   # Dynamic window title
 │   │   │   ├── services/       # Renderer-side services
 │   │   │   │   └── ipc.ts      # Type-safe IPC client
 │   │   │   └── styles/
