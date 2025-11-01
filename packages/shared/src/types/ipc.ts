@@ -164,6 +164,68 @@ export interface ZoomResponse {
   zoomLevel?: number;
 }
 
+// Image upload API
+export interface ImageSelectResponse {
+  success: boolean;
+  message?: string;
+  filePath?: string;
+  data?: {
+    fileName: string;
+    contentType: string;
+    buffer: number[];
+    size: number;
+  };
+}
+
+export interface ImageDataUrlRequest {
+  buffer: number[]; // Image buffer as number array for IPC transfer
+  contentType: string; // MIME type (e.g., 'image/png', 'image/jpeg')
+}
+
+export interface ImageDataUrlResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    url: string;
+    size: number;
+  };
+}
+
+export interface R2UploadRequest {
+  buffer: number[];
+  fileName: string;
+  contentType: string;
+}
+
+export interface R2UploadResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    url: string;
+    key: string;
+    size: number;
+  };
+}
+
+export interface R2ConfigRequest {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucketName: string;
+  publicUrl: string;
+  enabled: boolean;
+}
+
+export interface R2ConfigResponse {
+  success: boolean;
+  message?: string;
+}
+
+export interface R2TestConnectionResponse {
+  success: boolean;
+  message?: string;
+}
+
 // Events from main to renderer
 export interface SyncProgressEvent {
   total: number;
@@ -233,6 +295,10 @@ export interface IpcApi {
     testConnection: (token: string) => Promise<GitHubApiResponse<boolean>>;
     getUser: (token: string) => Promise<GitHubApiResponse<GitHubUser>>;
     getRepositories: (token: string) => Promise<GitHubApiResponse<GitHubRepository[]>>;
+    setR2Config: (req: R2ConfigRequest) => Promise<R2ConfigResponse>;
+    getR2Config: () => Promise<{ config: R2ConfigRequest | null }>;
+    testR2Connection: () => Promise<R2TestConnectionResponse>;
+    uploadToR2: (req: R2UploadRequest) => Promise<R2UploadResponse>;
   };
 
   // Analytics
@@ -251,6 +317,8 @@ export interface IpcApi {
     resetZoom: () => Promise<ZoomResponse>;
     getZoomLevel: () => Promise<ZoomResponse>;
     setWindowTitle: (title: string) => Promise<{ success: boolean }>;
+    selectImage: () => Promise<ImageSelectResponse>;
+    imageToDataUrl: (req: ImageDataUrlRequest) => Promise<ImageDataUrlResponse>;
   };
 
   // Event listeners

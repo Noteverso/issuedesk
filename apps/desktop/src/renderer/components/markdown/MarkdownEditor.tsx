@@ -7,9 +7,10 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
-import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
 import TurndownService from 'turndown';
 import { marked } from 'marked';
+import { useConfig } from '../../contexts/ConfigContext';
 import {
   Code,
   Eye,
@@ -26,6 +27,9 @@ import {
   CodeSquare,
   Link2,
   Minus,
+  Image as ImageIcon,
+  Upload,
+  X,
 } from 'lucide-react';
 
 // Initialize Turndown for HTML to Markdown conversion
@@ -63,13 +67,207 @@ export function MarkdownEditor({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   // Force re-render when cursor position changes to update button states
   const [, setEditorState] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const { settings } = useConfig();
+
+  const handleImageUpload = async () => {
+    try {
+      setIsUploading(true);
+      const result = await window.electronAPI.system.selectImage();
+      
+      if (result.success && result.filePath && result.data) {
+        let imageUrl = '';
+        const fileName = result.data.fileName || 'image';
+        
+        // Check if R2 is configured and enabled
+        if (settings?.r2Config?.enabled) {
+          try {
+            // Upload to R2
+            const uploadResult = await window.electronAPI.settings.uploadToR2({
+              buffer: result.data.buffer,
+              fileName: fileName,
+              contentType: result.data.contentType
+            });
+            
+            if (uploadResult.success && uploadResult.data?.url) {
+              imageUrl = uploadResult.data.url;
+            } else {
+              console.warn('R2 upload failed, falling back to data URL');
+              // Fallback to data URL
+              const dataUrlResult = await window.electronAPI.system.imageToDataUrl({
+                buffer: result.data.buffer,
+                contentType: result.data.contentType
+              });
+              if (dataUrlResult.success && dataUrlResult.data?.url) {
+                imageUrl = dataUrlResult.data.url;
+              }
+            }
+          } catch (r2Error) {
+            console.warn('R2 upload error, falling back to data URL:', r2Error);
+            // Fallback to data URL
+            const dataUrlResult = await window.electronAPI.system.imageToDataUrl({
+              buffer: result.data.buffer,
+              contentType: result.data.contentType
+            });
+            if (dataUrlResult.success && dataUrlResult.data?.url) {
+              imageUrl = dataUrlResult.data.url;
+            }
+          }
+        } else {
+          // Use data URL as default
+          const dataUrlResult = await window.electronAPI.system.imageToDataUrl({
+            buffer: result.data.buffer,
+            contentType: result.data.contentType
+          });
+          if (dataUrlResult.success && dataUrlResult.data?.url) {
+            imageUrl = dataUrlResult.data.url;
+          }
+        }
+        
+        // Insert image if we have a URL
+        if (imageUrl) {
+          if (mode === 'edit' && editor) {
+            // Insert image in WYSIWYG mode
+            editor.chain().focus().insertContent({
+              type: 'image',
+              attrs: {
+                src: imageUrl,
+                alt: fileName,
+                title: fileName
+              }
+            }).run();
+          } else {
+            // Insert image markdown in code mode
+            const imageMarkdown = `![${fileName}](${imageUrl})`;
+            const newContent = codeContent + '\n' + imageMarkdown;
+            setCodeContent(newContent);
+            onChange(newContent);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) return;
+    
+    try {
+      setIsUploading(true);
+      
+      for (const file of imageFiles) {
+        let imageUrl = '';
+        
+        // Check if R2 is configured and enabled
+        if (settings?.r2Config?.enabled) {
+          try {
+            // Convert File to Buffer
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            
+            // Upload to R2
+            const uploadResult = await window.electronAPI.settings.uploadToR2({
+              buffer: Array.from(buffer),
+              fileName: file.name,
+              contentType: file.type
+            });
+            
+            if (uploadResult.success && uploadResult.data?.url) {
+              imageUrl = uploadResult.data.url;
+            } else {
+              console.warn('R2 upload failed for dropped image, falling back to data URL');
+              // Fallback to data URL
+              imageUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  resolve(event.target?.result as string || '');
+                };
+                reader.readAsDataURL(file);
+              });
+            }
+          } catch (r2Error) {
+            console.warn('R2 upload error for dropped image, falling back to data URL:', r2Error);
+            // Fallback to data URL
+            imageUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                resolve(event.target?.result as string || '');
+              };
+              reader.readAsDataURL(file);
+            });
+          }
+        } else {
+          // Use data URL as default
+          imageUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              resolve(event.target?.result as string || '');
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+        
+        // Insert image if we have a URL
+        if (imageUrl) {
+          if (mode === 'edit' && editor) {
+            // Insert image in WYSIWYG mode
+            editor.chain().focus().insertContent({
+              type: 'image',
+              attrs: {
+                src: imageUrl,
+                alt: file.name,
+                title: file.name
+              }
+            }).run();
+          } else {
+            // Insert image markdown in code mode
+            const imageMarkdown = `![${file.name}](${imageUrl})`;
+            const newContent = codeContent + '\n' + imageMarkdown;
+            setCodeContent(newContent);
+            onChange(newContent);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling dropped images:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Only update editor when content changes from external source (not from user editing)
   const isInternalUpdate = useRef(false);
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        link: {
+          openOnClick: false,
+          HTMLAttributes: {
+            class: 'text-primary underline cursor-pointer',
+          }
+        }
+      }),
       TaskList,
       TaskItem.configure({
         nested: true,
@@ -80,10 +278,9 @@ export function MarkdownEditor({
       TableRow,
       TableCell,
       TableHeader,
-      Link.configure({
-        openOnClick: false,
+      Image.configure({
         HTMLAttributes: {
-          class: 'text-primary underline cursor-pointer',
+          class: 'max-w-full h-auto',
         },
       }),
     ],
@@ -292,6 +489,22 @@ export function MarkdownEditor({
             >
               <Link2 className="h-4 w-4" />
             </button>
+
+            {/* Image Upload */}
+            <button
+              onClick={handleImageUpload}
+              disabled={isUploading}
+              className={`p-1.5 rounded hover:bg-accent transition-colors ${
+                isUploading ? 'opacity-50 cursor-not-allowed' : 'text-muted-foreground'
+              }`}
+              title="Upload Image"
+            >
+              {isUploading ? (
+                <Upload className="h-4 w-4 animate-spin" />
+              ) : (
+                <ImageIcon className="h-4 w-4" />
+              )}
+            </button>
           </div>
         )}
 
@@ -340,7 +553,21 @@ export function MarkdownEditor({
             className={`w-full ${EDITOR_HEIGHT_CLASS} p-4 font-mono text-sm bg-transparent resize-none focus:outline-none text-foreground`}
           />
         ) : (
-          <div className={`overflow-y-auto ${EDITOR_HEIGHT_CLASS}`} ref={scrollContainerRef}>
+          <div 
+            className={`overflow-y-auto ${EDITOR_HEIGHT_CLASS} relative`} 
+            ref={scrollContainerRef}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {dragOver && (
+              <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary/30 rounded-md flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-2 text-primary">
+                  <Upload className="h-8 w-8" />
+                  <span className="text-sm font-medium">Drop images here to upload</span>
+                </div>
+              </div>
+            )}
             <EditorContent editor={editor} key={mode} />
           </div>
         )}

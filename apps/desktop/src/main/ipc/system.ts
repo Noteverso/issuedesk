@@ -1,4 +1,6 @@
-import { ipcMain, app, shell, BrowserWindow } from 'electron';
+import { ipcMain, app, shell, BrowserWindow, dialog } from 'electron';
+import { readFile } from 'fs/promises';
+import path from 'path';
 
 /**
  * Register all system-related IPC handlers
@@ -161,6 +163,92 @@ export function registerSystemHandlers() {
     } catch (error) {
       console.error('❌ Error setting window title:', error);
       return { success: false };
+    }
+  });
+
+  // Image upload functionality
+  ipcMain.handle('system:selectImage', async () => {
+    try {
+      const focusedWindow = BrowserWindow.getFocusedWindow();
+      if (!focusedWindow) {
+        return { success: false, message: 'No focused window' };
+      }
+
+      const result = await dialog.showOpenDialog(focusedWindow, {
+        title: 'Select Image',
+        filters: [
+          {
+            name: 'Images',
+            extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']
+          }
+        ],
+        properties: ['openFile']
+      });
+
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false, message: 'No file selected' };
+      }
+
+      const filePath = result.filePaths[0];
+      const fileName = path.basename(filePath);
+      const fileBuffer = await readFile(filePath);
+      const fileExtension = path.extname(filePath).toLowerCase();
+      
+      // Determine content type
+      const contentTypeMap: Record<string, string> = {
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.bmp': 'image/bmp',
+        '.svg': 'image/svg+xml',
+      };
+      const contentType = contentTypeMap[fileExtension] || 'image/png';
+
+      console.log('📁 Selected image:', fileName, `(${fileBuffer.length} bytes)`);
+
+      return {
+        success: true,
+        filePath, // Add filePath for compatibility with MarkdownEditor
+        data: {
+          fileName,
+          contentType,
+          buffer: Array.from(fileBuffer), // Convert Buffer to array for IPC
+          size: fileBuffer.length
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error selecting image:', error);
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  });
+
+  // Convert image file to data URL for immediate preview
+  ipcMain.handle('system:imageToDataUrl', async (_event, { buffer, contentType }: { buffer: number[]; contentType: string }) => {
+    try {
+      const bufferData = Buffer.from(buffer);
+      const base64Data = bufferData.toString('base64');
+      const dataUrl = `data:${contentType};base64,${base64Data}`;
+      
+      console.log('🖼️ Created data URL for image:', contentType, `(${bufferData.length} bytes)`);
+      
+      return {
+        success: true,
+        data: {
+          url: dataUrl,
+          size: bufferData.length
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error creating data URL:', error);
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Unknown error' 
+      };
     }
   });
 

@@ -1,8 +1,8 @@
 import { ipcMain } from 'electron';
 import { GitHubClient } from '@issuedesk/github-api';
-import type { AppSettings } from '@issuedesk/shared';
 import { SettingsManager } from '../settings/manager';
 import { KeychainManager } from '../security/keychain';
+import { r2Service } from '../services/r2';
 
 // Initialize managers
 const settingsManager = new SettingsManager();
@@ -231,6 +231,64 @@ export function registerSettingsHandlers() {
     }
   });
 
+  // Set R2 configuration
+  ipcMain.handle('settings:setR2Config', async (event, req) => {
+    try {
+      // Save R2 config to settings
+      settingsManager.setR2Config(req);
+      
+      // Configure the R2 service
+      r2Service.setConfig(req);
+      
+      console.log('✅ R2 configuration saved');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error saving R2 configuration:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to save R2 configuration',
+      };
+    }
+  });
+
+  // Get R2 configuration
+  ipcMain.handle('settings:getR2Config', async () => {
+    try {
+      const settings = settingsManager.getAll();
+      return { config: settings.r2Config || null };
+    } catch (error) {
+      console.error('❌ Error getting R2 configuration:', error);
+      return { config: null };
+    }
+  });
+
+  // Test R2 connection
+  ipcMain.handle('settings:testR2Connection', async () => {
+    try {
+      return await r2Service.testConnection();
+    } catch (error) {
+      console.error('❌ Error testing R2 connection:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to test R2 connection',
+      };
+    }
+  });
+
+  // Upload to R2
+  ipcMain.handle('settings:uploadToR2', async (event, req) => {
+    try {
+      const buffer = Buffer.from(req.buffer);
+      return await r2Service.uploadImage(buffer, req.fileName, req.contentType);
+    } catch (error) {
+      console.error('❌ Error uploading to R2:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to upload to R2',
+      };
+    }
+  });
+
   console.log('✅ Settings IPC handlers registered successfully');
   console.log('   - settings:get ✓');
   console.log('   - settings:update ✓');
@@ -241,4 +299,8 @@ export function registerSettingsHandlers() {
   console.log('   - settings:testConnection ✓');
   console.log('   - settings:getUser ✓');
   console.log('   - settings:getRepositories ✓');
+  console.log('   - settings:setR2Config ✓');
+  console.log('   - settings:getR2Config ✓');
+  console.log('   - settings:testR2Connection ✓');
+  console.log('   - settings:uploadToR2 ✓');
 }

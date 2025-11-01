@@ -16,6 +16,15 @@ export interface RateLimitState {
   reset: number; // Unix timestamp (seconds)
 }
 
+export interface R2Config {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucketName: string;
+  publicUrl: string; // Custom domain or R2.dev public URL
+  enabled: boolean;
+}
+
 export interface AppSettings {
   activeRepositoryId: string | null;
   repositories: RepositoryConfig[];
@@ -23,6 +32,7 @@ export interface AppSettings {
   editorMode: EditorMode;
   viewPreferences: ViewPreferences;
   rateLimit: RateLimitState | null;
+  r2Config: R2Config | null;
 }
 
 // Legacy AppConfig for backward compatibility with electron-store

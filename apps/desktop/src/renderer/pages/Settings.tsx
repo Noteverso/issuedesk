@@ -10,7 +10,9 @@ import {
   CheckCircle, 
   AlertCircle,
   RefreshCw,
-  Save
+  Save,
+  Cloud,
+  Upload
 } from 'lucide-react';
 
 export default function Settings() {
@@ -38,6 +40,17 @@ export default function Settings() {
   const [showLineNumbers, setShowLineNumbers] = useState(true);
   const [wordWrap, setWordWrap] = useState(true);
 
+  // R2 Configuration states
+  const [r2Enabled, setR2Enabled] = useState(false);
+  const [r2AccountId, setR2AccountId] = useState('');
+  const [r2AccessKeyId, setR2AccessKeyId] = useState('');
+  const [r2SecretAccessKey, setR2SecretAccessKey] = useState('');
+  const [r2BucketName, setR2BucketName] = useState('');
+  const [r2PublicUrl, setR2PublicUrl] = useState('');
+  const [r2Testing, setR2Testing] = useState(false);
+  const [r2Status, setR2Status] = useState<'idle' | 'success' | 'error'>('idle');
+  const [r2Message, setR2Message] = useState('');
+
   useEffect(() => {
     // Load token on mount
     window.electronAPI.settings.getToken().then((response) => {
@@ -52,6 +65,20 @@ export default function Settings() {
       loadRepositories();
     }
   }, [githubToken]);
+
+  // Load R2 configuration on mount
+  useEffect(() => {
+    window.electronAPI.settings.getR2Config().then((response) => {
+      if (response.config) {
+        setR2Enabled(response.config.enabled);
+        setR2AccountId(response.config.accountId);
+        setR2AccessKeyId(response.config.accessKeyId);
+        setR2SecretAccessKey(response.config.secretAccessKey);
+        setR2BucketName(response.config.bucketName);
+        setR2PublicUrl(response.config.publicUrl);
+      }
+    });
+  }, []);
 
   const loadRepositories = async () => {
     if (!githubToken) return;
@@ -102,6 +129,61 @@ export default function Settings() {
     }
   };
 
+  const testR2Connection = async () => {
+    try {
+      setR2Testing(true);
+      setR2Status('idle');
+      setR2Message('');
+
+      // First save the config (temporarily) so the test can use it
+      const config = {
+        accountId: r2AccountId,
+        accessKeyId: r2AccessKeyId,
+        secretAccessKey: r2SecretAccessKey,
+        bucketName: r2BucketName,
+        publicUrl: r2PublicUrl,
+        enabled: r2Enabled,
+      };
+
+      await window.electronAPI.settings.setR2Config(config);
+
+      // Now test the connection
+      const response = await window.electronAPI.settings.testR2Connection();
+      
+      if (response.success) {
+        setR2Status('success');
+        setR2Message('连接成功');
+      } else {
+        setR2Status('error');
+        setR2Message(response.message || '连接失败');
+      }
+    } catch (error) {
+      setR2Status('error');
+      setR2Message('连接测试失败');
+    } finally {
+      setR2Testing(false);
+    }
+  };
+
+  const saveR2Config = async () => {
+    try {
+      const config = {
+        accountId: r2AccountId,
+        accessKeyId: r2AccessKeyId,
+        secretAccessKey: r2SecretAccessKey,
+        bucketName: r2BucketName,
+        publicUrl: r2PublicUrl,
+        enabled: r2Enabled,
+      };
+
+      await window.electronAPI.settings.setR2Config(config);
+      console.log('R2 configuration saved');
+    } catch (error) {
+      console.error('Failed to save R2 configuration:', error);
+      throw error;
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -122,6 +204,9 @@ export default function Settings() {
 
       // Update theme
       await updateSettings({ theme });
+      
+      // Save R2 configuration
+      await saveR2Config();
       
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
@@ -360,6 +445,140 @@ export default function Settings() {
                   <span className="text-sm font-medium">自动换行</span>
                 </label>
               </div>
+            </div>
+          </div>
+
+          {/* Cloudflare R2 Settings */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <Cloud className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Cloudflare R2 图片存储</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <input
+                  type="checkbox"
+                  id="r2-enabled"
+                  checked={r2Enabled}
+                  onChange={(e) => setR2Enabled(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <label htmlFor="r2-enabled" className="text-sm font-medium">
+                  启用 R2 图片上传
+                </label>
+              </div>
+
+              {r2Enabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Account ID
+                    </label>
+                    <input
+                      type="text"
+                      value={r2AccountId}
+                      onChange={(e) => setR2AccountId(e.target.value)}
+                      placeholder="你的 Cloudflare Account ID"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Access Key ID
+                    </label>
+                    <input
+                      type="text"
+                      value={r2AccessKeyId}
+                      onChange={(e) => setR2AccessKeyId(e.target.value)}
+                      placeholder="R2 Access Key ID"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Secret Access Key
+                    </label>
+                    <input
+                      type="password"
+                      value={r2SecretAccessKey}
+                      onChange={(e) => setR2SecretAccessKey(e.target.value)}
+                      placeholder="R2 Secret Access Key"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Bucket Name
+                    </label>
+                    <input
+                      type="text"
+                      value={r2BucketName}
+                      onChange={(e) => setR2BucketName(e.target.value)}
+                      placeholder="R2 存储桶名称"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-2">
+                      Public URL
+                    </label>
+                    <input
+                      type="url"
+                      value={r2PublicUrl}
+                      onChange={(e) => setR2PublicUrl(e.target.value)}
+                      placeholder="https://your-domain.com 或 https://pub-xxx.r2.dev"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      自定义域名或 R2.dev 公共 URL
+                    </p>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <button
+                      onClick={testR2Connection}
+                      disabled={r2Testing || !r2AccountId || !r2AccessKeyId || !r2SecretAccessKey || !r2BucketName}
+                      className="inline-flex items-center px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {r2Testing ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          测试中...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          测试连接
+                        </>
+                      )}
+                    </button>
+
+                    {r2Status !== 'idle' && (
+                      <div className={`mt-2 flex items-center space-x-2 p-2 rounded-md ${
+                        r2Status === 'success' 
+                          ? 'bg-green-50 border border-green-200' 
+                          : 'bg-red-50 border border-red-200'
+                      }`}>
+                        {r2Status === 'success' ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-red-600" />
+                        )}
+                        <span className={`text-sm ${
+                          r2Status === 'success' ? 'text-green-800' : 'text-red-800'
+                        }`}>
+                          {r2Message}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

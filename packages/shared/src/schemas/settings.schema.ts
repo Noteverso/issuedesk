@@ -24,6 +24,15 @@ export const RepositoryConfigSchema = z.object({
   lastSyncAt: z.number().nullable(),
 });
 
+export const R2ConfigSchema = z.object({
+  accountId: z.string(),
+  accessKeyId: z.string(),
+  secretAccessKey: z.string(),
+  bucketName: z.string(),
+  publicUrl: z.string().url(),
+  enabled: z.boolean(),
+});
+
 export const AppSettingsSchema = z.object({
   activeRepositoryId: z.string().nullable(),
   repositories: z.array(RepositoryConfigSchema),
@@ -31,4 +40,5 @@ export const AppSettingsSchema = z.object({
   editorMode: EditorModeSchema,
   viewPreferences: ViewPreferencesSchema,
   rateLimit: RateLimitStateSchema.nullable(),
+  r2Config: R2ConfigSchema.nullable(),
 });

@@ -7,6 +7,7 @@ interface SettingsStore {
   theme: ThemeMode;
   editorMode: EditorMode;
   viewPreferences: ViewPreferences;
+  r2Config: AppSettings['r2Config'];
 }
 
 const store = new Store<SettingsStore>({
@@ -20,6 +21,7 @@ const store = new Store<SettingsStore>({
       issues: 'list',
       labels: 'list',
     },
+    r2Config: null,
   },
 });
 
@@ -39,6 +41,7 @@ export class SettingsManager {
       editorMode: store.get('editorMode'),
       viewPreferences: store.get('viewPreferences'),
       rateLimit: null, // Runtime state, not persisted
+      r2Config: store.get('r2Config'),
     };
   }
 
@@ -132,6 +135,20 @@ export class SettingsManager {
     if (store.get('activeRepositoryId') === id) {
       store.set('activeRepositoryId', repos.length > 0 ? repos[0].id : null);
     }
+  }
+
+  /**
+   * Set R2 configuration
+   */
+  setR2Config(config: AppSettings['r2Config']): void {
+    store.set('r2Config', config);
+  }
+
+  /**
+   * Get R2 configuration
+   */
+  getR2Config(): AppSettings['r2Config'] {
+    return store.get('r2Config');
   }
 }
 

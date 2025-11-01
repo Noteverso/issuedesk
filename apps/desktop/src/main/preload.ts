@@ -50,6 +50,10 @@ const api: IpcApi = {
     testConnection: (token) => ipcRenderer.invoke('settings:testConnection', token),
     getUser: (token) => ipcRenderer.invoke('settings:getUser', token),
     getRepositories: (token) => ipcRenderer.invoke('settings:getRepositories', token),
+    setR2Config: (req) => ipcRenderer.invoke('settings:setR2Config', req),
+    getR2Config: () => ipcRenderer.invoke('settings:getR2Config'),
+    testR2Connection: () => ipcRenderer.invoke('settings:testR2Connection'),
+    uploadToR2: (req) => ipcRenderer.invoke('settings:uploadToR2', req),
   },
 
   // Analytics API
@@ -68,6 +72,8 @@ const api: IpcApi = {
     resetZoom: () => ipcRenderer.invoke('system:resetZoom'),
     getZoomLevel: () => ipcRenderer.invoke('system:getZoomLevel'),
     setWindowTitle: (title) => ipcRenderer.invoke('system:setWindowTitle', title),
+    selectImage: () => ipcRenderer.invoke('system:selectImage'),
+    imageToDataUrl: (req) => ipcRenderer.invoke('system:imageToDataUrl', req),
   },
 
   // Event listeners
