@@ -36,7 +36,7 @@ function createWindow(): void {
   });
 
   // Load the app
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+  if (isDev && MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
