@@ -37,6 +37,7 @@ function App() {
             labels: 'list',
           },
           rateLimit: null,
+          r2Config: null,
         });
       } finally {
         setLoading(false);

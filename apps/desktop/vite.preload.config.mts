@@ -9,7 +9,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 // Vite config for Electron preload script
 export default defineConfig({
   build: {
-    outDir: 'dist/main',
+    outDir: '.vite/build',
     emptyOutDir: false,
     sourcemap: true,
     target: 'node20',
@@ -23,14 +23,8 @@ export default defineConfig({
         'electron',
         ...builtinModules,
         ...builtinModules.map((m) => `node:${m}`),
-        '@issuedesk/shared',
       ],
     },
     minify: false,
-  },
-  resolve: {
-    alias: {
-      '@shared': resolve(__dirname, '../../packages/shared/src'),
-    },
   },
 });

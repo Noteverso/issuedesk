@@ -9,7 +9,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 // Vite config for Electron main process
 export default defineConfig({
   build: {
-    outDir: 'dist/main',
+    outDir: '.vite/build',
     emptyOutDir: false,
     sourcemap: true,
     target: 'node20',
@@ -21,20 +21,12 @@ export default defineConfig({
       },
       external: [
         'electron',
-        'uuid',
-        // 'better-sqlite3',
         ...builtinModules,
         ...builtinModules.map((m) => `node:${m}`),
-        '@issuedesk/shared',
-        '@issuedesk/github-api',
+        // '@issuedesk/shared',
+        // '@issuedesk/github-api',
       ],
     },
     minify: false,
-  },
-  resolve: {
-    alias: {
-      '@shared': resolve(__dirname, '../../packages/shared/src'),
-      '@github-api': resolve(__dirname, '../../packages/github-api/src'),
-    },
   },
 });

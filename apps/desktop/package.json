@@ -2,7 +2,7 @@
   "name": "@issuedesk/desktop",
   "version": "0.0.1",
   "description": "GitHub Issues Blog Desktop Client",
-  "main": "dist/main/main.js",
+  "main": ".vite/build/main.js",
   "scripts": {
     "dev": "electron-forge start",
     "start": "electron-forge start",
@@ -90,7 +90,7 @@
       "output": "release"
     },
     "files": [
-      "dist/**/*",
+      ".vite/**/*",
       "node_modules/**/*"
     ],
     "mac": {

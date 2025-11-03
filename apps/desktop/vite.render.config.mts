@@ -12,7 +12,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   root: 'src/renderer',
   build: {
-    outDir: '../../dist/renderer',
+    outDir: '../../.vite/renderer',
     emptyOutDir: true,
     sourcemap: true,
   },

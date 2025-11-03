@@ -24,6 +24,7 @@
     "dist:desktop:mac:universal": "npm run dist:mac:universal --workspace @issuedesk/desktop",
     "dist:desktop:win": "npm run dist:win --workspace @issuedesk/desktop",
     "dist:desktop:linux": "npm run dist:linux --workspace @issuedesk/desktop",
+    "dist:desktop:make": "npm run make --workspace @issuedesk/desktop",
     "clean": "bash -c 'rm -rf node_modules apps/*/node_modules packages/*/node_modules'",
     "lint": "npm run lint --workspaces --if-present",
     "type-check": "npm run type-check --workspaces --if-present",
