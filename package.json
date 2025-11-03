@@ -9,26 +9,26 @@
     ]
   },
   "scripts": {
-    "dev:mobile": "npm run start --workspace @issuedesk/mobile",
-    "dev:desktop": "npm run dev --workspace @issuedesk/desktop",
-    "dev:all": "concurrently \"npm run dev --workspace @issuedesk/shared\" \"npm run dev --workspace @issuedesk/github-api\" \"npm run dev --workspace @issuedesk/desktop\"",
-    "build:mobile": "npm run build --workspace @issuedesk/mobile",
-    "build:desktop": "npm run build --workspace @issuedesk/desktop",
-    "build:shared": "npm run build --workspace @issuedesk/shared",
-    "build:github-api": "npm run build --workspace @issuedesk/github-api",
-    "build:packages": "npm run build:shared && npm run build:github-api",
-    "build:all": "npm run build:shared && npm run build:github-api && npm run build:desktop",
-    "dist:desktop": "npm run dist --workspace @issuedesk/desktop",
-    "dist:desktop:mac": "npm run dist:mac --workspace @issuedesk/desktop",
-    "dist:desktop:mac:arm64": "npm run dist:mac:arm64 --workspace @issuedesk/desktop",
-    "dist:desktop:mac:universal": "npm run dist:mac:universal --workspace @issuedesk/desktop",
-    "dist:desktop:win": "npm run dist:win --workspace @issuedesk/desktop",
-    "dist:desktop:linux": "npm run dist:linux --workspace @issuedesk/desktop",
-    "dist:desktop:make": "npm run make --workspace @issuedesk/desktop",
+    "dev:mobile": "pnpm --filter @issuedesk/mobile start",
+    "dev:desktop": "pnpm --filter @issuedesk/desktop dev",
+    "dev:all": "concurrently \"pnpm --filter @issuedesk/shared dev\" \"pnpm --filter @issuedesk/github-api dev\" \"pnpm --filter @issuedesk/desktop dev\"",
+    "build:mobile": "pnpm --filter @issuedesk/mobile build",
+    "build:desktop": "pnpm --filter @issuedesk/desktop build",
+    "build:shared": "pnpm --filter @issuedesk/shared build",
+    "build:github-api": "pnpm --filter @issuedesk/github-api build",
+    "build:packages": "pnpm build:shared && pnpm build:github-api",
+    "build:all": "pnpm build:shared && pnpm build:github-api && pnpm build:desktop",
+    "dist:desktop": "pnpm --filter @issuedesk/desktop dist",
+    "dist:desktop:mac": "pnpm --filter @issuedesk/desktop dist:mac",
+    "dist:desktop:mac:arm64": "pnpm --filter @issuedesk/desktop dist:mac:arm64",
+    "dist:desktop:mac:universal": "pnpm --filter @issuedesk/desktop dist:mac:universal",
+    "dist:desktop:win": "pnpm --filter @issuedesk/desktop dist:win",
+    "dist:desktop:linux": "pnpm --filter @issuedesk/desktop dist:linux",
+    "dist:desktop:make": "pnpm --filter @issuedesk/desktop make",
     "clean": "bash -c 'rm -rf node_modules apps/*/node_modules packages/*/node_modules'",
-    "lint": "npm run lint --workspaces --if-present",
-    "type-check": "npm run type-check --workspaces --if-present",
-    "install:all": "npm install"
+    "lint": "pnpm -r --if-present lint",
+    "type-check": "pnpm -r --if-present type-check",
+    "install:all": "pnpm install"
   },
   "devDependencies": {
     "@types/node": "^24.5.0",
@@ -37,7 +37,7 @@
   },
   "engines": {
     "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "pnpm": ">=8.0.0"
   },
-  "packageManager": "npm@10.9.0"
+  "packageManager": "pnpm@9.15.0"
 }

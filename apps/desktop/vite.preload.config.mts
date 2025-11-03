@@ -8,6 +8,12 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 // Vite config for Electron preload script
 export default defineConfig({
+  resolve: {
+    alias: {
+      // Bundle workspace packages instead of relying on runtime resolution
+      '@issuedesk/shared': resolve(__dirname, '../../packages/shared/src'),
+    },
+  },
   build: {
     outDir: '.vite/build',
     emptyOutDir: false,

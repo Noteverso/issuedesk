@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { RouterProvider, createBrowserRouter, redirect } from 'react-router';
+import { RouterProvider, createBrowserRouter, createHashRouter, redirect } from 'react-router-dom';
 import App from './App';
 import Dashboard from './pages/Dashboard';
 import Issues from './pages/Issues';
@@ -8,7 +8,7 @@ import Labels from './pages/Labels';
 import Settings from './pages/Settings';
 import './styles/globals.css';
 
-const router = createBrowserRouter([
+const routes = [
   {
     path: '/',
     element: <App />,
@@ -35,7 +35,11 @@ const router = createBrowserRouter([
       },
     ],
   },
-]);
+];
+
+// Electron packages load via file://, so switch to hash routing to keep URLs working
+const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+const router = isFileProtocol ? createHashRouter(routes) : createBrowserRouter(routes);
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

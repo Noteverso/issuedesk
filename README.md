@@ -4,7 +4,7 @@
 
 ## 项目结构
 
-这是一个使用 npm workspaces 管理的 mono repo，包含以下包：
+这是一个使用 pnpm workspaces 管理的 mono repo，包含以下包：
 
 ```
 issuedesk/
@@ -20,13 +20,16 @@ issuedesk/
 ## 环境要求
 
 - Node.js >= 18.0.0
-- npm >= 9.0.0（Node.js 附带）
+- pnpm >= 8.0.0
 
 ## 安装依赖
 
 ```bash
+# 安装 pnpm (如果还未安装)
+npm install -g pnpm
+
 # 安装所有包的依赖
-npm install
+pnpm install
 ```
 
 ## 开发
@@ -35,39 +38,39 @@ npm install
 
 ```bash
 # 开发模式
-npm run dev:desktop
+pnpm dev:desktop
 
 # 构建
-npm run build:desktop
+pnpm build:desktop
 
 # 打包分发
-npm run dist:desktop        # 当前平台
-npm run dist:desktop:mac    # macOS
-npm run dist:desktop:win    # Windows
-npm run dist:desktop:linux  # Linux
+pnpm dist:desktop        # 当前平台
+pnpm dist:desktop:mac    # macOS
+pnpm dist:desktop:win    # Windows
+pnpm dist:desktop:linux  # Linux
 ```
 
 ### 移动应用 (React Native)
 
 ```bash
 # 开发模式
-npm run dev:mobile
+pnpm dev:mobile
 
 # 构建
-npm run build:mobile
+pnpm build:mobile
 ```
 
 ### 共享包
 
 ```bash
 # 构建共享包
-npm run build:shared
+pnpm build:shared
 
 # 构建 GitHub API 包
-npm run build:github-api
+pnpm build:github-api
 
 # 构建所有包
-npm run build:all
+pnpm build:all
 ```
 
 ## 功能特性
@@ -121,17 +124,17 @@ npm run build:all
 
 ```bash
 # 运行 lint
-npm run lint
+pnpm lint
 
 # 类型检查
-npm run type-check
+pnpm type-check
 ```
 
 ### 清理
 
 ```bash
 # 清理所有 node_modules
-npm run clean
+pnpm clean
 ```
 
 ## 技术栈
@@ -140,7 +143,7 @@ npm run clean
 - **移动应用**: React Native + Expo + TypeScript
 - **共享包**: TypeScript + Zod
 - **API 客户端**: Axios + TypeScript
-- **包管理**: npm workspaces
+- **包管理**: pnpm workspaces
 
 ## 许可证
 

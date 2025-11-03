@@ -12,6 +12,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     executableName: 'IssueDesk',
+    name: 'IssueDesk',
   },
   rebuildConfig: {},
   makers: [
