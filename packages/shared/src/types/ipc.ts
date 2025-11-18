@@ -21,6 +21,7 @@ import {
 } from './comment';
 import { AppSettings, ViewPreferences, ThemeMode, EditorMode } from './settings';
 import { SyncEngineStatus, ConflictResolution } from './sync';
+import { UserSession, User, Installation } from './auth';
 
 // IPC API types - defines the contract between main and renderer processes
 
@@ -146,6 +147,48 @@ export interface DashboardAnalytics {
     created: number;
     closed: number;
   }>;
+}
+
+// Auth API (Feature: 002-github-app-auth)
+export interface AuthGetSessionResponse {
+  session: UserSession | null;
+}
+
+export interface AuthLoginSuccessEvent {
+  user: User;
+  installations: Installation[];
+}
+
+export interface AuthUserCodeEvent {
+  userCode: string;
+  verificationUri: string;
+  expiresIn: number;
+}
+
+export interface AuthLoginErrorEvent {
+  code: 'NETWORK_ERROR' | 'TIMEOUT' | 'ACCESS_DENIED' | 'RATE_LIMIT' | 'UNKNOWN';
+  message: string;
+  retryable: boolean;
+}
+
+export interface AuthSelectInstallationRequest {
+  installationId: number;
+}
+
+export interface AuthSelectInstallationResponse {
+  success: boolean;
+}
+
+export interface AuthRefreshInstallationTokenRequest {
+  installationId: number;
+}
+
+export interface AuthRefreshInstallationTokenResponse {
+  success: boolean;
+}
+
+export interface AuthLogoutResponse {
+  success: boolean;
 }
 
 // System API
@@ -306,6 +349,15 @@ export interface IpcApi {
     getDashboard: () => Promise<DashboardAnalytics>;
   };
 
+  // Auth (Feature: 002-github-app-auth)
+  auth: {
+    githubLogin: () => Promise<void>;
+    getSession: () => Promise<AuthGetSessionResponse>;
+    selectInstallation: (req: AuthSelectInstallationRequest) => Promise<AuthSelectInstallationResponse>;
+    refreshInstallationToken: (req: AuthRefreshInstallationTokenRequest) => Promise<AuthRefreshInstallationTokenResponse>;
+    logout: () => Promise<AuthLogoutResponse>;
+  };
+
   // System
   system: {
     openExternal: (req: OpenExternalRequest) => Promise<{ success: boolean }>;
@@ -323,7 +375,8 @@ export interface IpcApi {
 
   // Event listeners
   on: (
-    channel: 'sync:progress' | 'sync:conflict' | 'rate-limit:warning' | 'token:invalid',
+    channel: 'sync:progress' | 'sync:conflict' | 'rate-limit:warning' | 'token:invalid' 
+      | 'auth:user-code' | 'auth:login-success' | 'auth:login-error' | 'auth:token-refreshed' | 'auth:session-expired',
     callback: (data: any) => void
   ) => void;
 }

@@ -1,0 +1,25 @@
+# Auth Worker Dependencies
+node_modules/
+.wrangler/
+dist/
+worker/
+
+# Environment variables
+.env
+.env.local
+.dev.vars
+
+# Logs
+*.log
+wrangler.log
+
+# Build artifacts
+*.js.map
+*.d.ts.map
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

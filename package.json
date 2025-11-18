@@ -11,6 +11,7 @@
   "scripts": {
     "dev:mobile": "pnpm --filter @issuedesk/mobile start",
     "dev:desktop": "pnpm --filter @issuedesk/desktop dev",
+    "dev:auth": "pnpm --filter @issuedesk/auth-worker dev",
     "dev:all": "concurrently \"pnpm --filter @issuedesk/shared dev\" \"pnpm --filter @issuedesk/github-api dev\" \"pnpm --filter @issuedesk/desktop dev\"",
     "build:mobile": "pnpm --filter @issuedesk/mobile build",
     "build:desktop": "pnpm --filter @issuedesk/desktop build",

@@ -61,6 +61,15 @@ const api: IpcApi = {
     getDashboard: () => ipcRenderer.invoke('analytics:getDashboard'),
   },
 
+  // Auth API (Feature: 002-github-app-auth)
+  auth: {
+    githubLogin: () => ipcRenderer.invoke('auth:github-login'),
+    getSession: () => ipcRenderer.invoke('auth:get-session'),
+    selectInstallation: (req) => ipcRenderer.invoke('auth:select-installation', req),
+    refreshInstallationToken: (req) => ipcRenderer.invoke('auth:refresh-installation-token', req),
+    logout: () => ipcRenderer.invoke('auth:logout'),
+  },
+
   // System API
   system: {
     openExternal: (req) => ipcRenderer.invoke('system:openExternal', req),
@@ -78,7 +87,17 @@ const api: IpcApi = {
 
   // Event listeners
   on: (channel, callback) => {
-    const validChannels = ['sync:progress', 'sync:conflict', 'rate-limit:warning', 'token:invalid'];
+    const validChannels = [
+      'sync:progress', 
+      'sync:conflict', 
+      'rate-limit:warning', 
+      'token:invalid',
+      'auth:user-code',
+      'auth:login-success',
+      'auth:login-error',
+      'auth:token-refreshed',
+      'auth:session-expired'
+    ];
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (_, data) => callback(data));
     }

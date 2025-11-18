@@ -6,6 +6,7 @@ import { registerLabelsHandlers } from './ipc/labels';
 import { registerCommentsHandlers } from './ipc/comments';
 import { registerSettingsHandlers } from './ipc/settings';
 import { registerSystemHandlers } from './ipc/system';
+import { registerAuthHandlers } from './ipc/auth';
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
 
@@ -78,6 +79,7 @@ app.whenReady().then(() => {
   registerCommentsHandlers();
   registerSettingsHandlers(); // Now includes GitHub handlers (non-issue related)
   registerSystemHandlers();
+  registerAuthHandlers(); // Feature: 002-github-app-auth
   
   createWindow();
   createMenu();

@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { AppSettings } from '@issuedesk/shared';
 import Layout from './components/common/Layout';
 import { ConfigProvider } from './contexts/ConfigContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './components/common/ThemeProvider';
+import { Login } from './pages/Login';
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +59,12 @@ function App() {
     }
   };
 
-  if (loading) {
+  // Show login if not authenticated
+  if (!isAuthenticated && !authLoading) {
+    return <Login />;
+  }
+
+  if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -83,6 +91,14 @@ function App() {
         <Layout />
       </ConfigProvider>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

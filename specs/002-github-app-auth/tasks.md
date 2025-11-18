@@ -19,13 +19,13 @@
 
 **Purpose**: Project initialization and basic structure for both backend and desktop app
 
-- [ ] T001 Create Cloudflare Worker project structure in `workers/auth/`
-- [ ] T002 Initialize Worker with `wrangler.toml` configuration (KV namespaces, environment variables)
-- [ ] T003 [P] Create shared auth types in `packages/shared/src/types/auth.ts` (User, Installation, UserSession, InstallationToken, Account)
-- [ ] T004 [P] Create shared auth Zod schemas in `packages/shared/src/schemas/auth.schema.ts` (UserSchema, InstallationSchema, UserSessionSchema, etc.)
-- [ ] T005 [P] Add electron-store dependency to `apps/desktop/package.json` for encrypted storage
-- [ ] T006 [P] Configure TypeScript for Worker project in `workers/auth/tsconfig.json`
-- [ ] T007 Update desktop app preload script in `apps/desktop/src/main/preload.ts` to add auth IPC bridge stub
+- [x] T001 Create Cloudflare Worker project structure in `workers/auth/`
+- [x] T002 Initialize Worker with `wrangler.toml` configuration (KV namespaces, environment variables)
+- [x] T003 [P] Create shared auth types in `packages/shared/src/types/auth.ts` (User, Installation, UserSession, InstallationToken, Account)
+- [x] T004 [P] Create shared auth Zod schemas in `packages/shared/src/schemas/auth.schema.ts` (UserSchema, InstallationSchema, UserSessionSchema, etc.)
+- [x] T005 [P] Add electron-store dependency to `apps/desktop/package.json` for encrypted storage
+- [x] T006 [P] Configure TypeScript for Worker project in `workers/auth/tsconfig.json`
+- [x] T007 Update desktop app preload script in `apps/desktop/src/main/preload.ts` to add auth IPC bridge stub
 
 ---
 
@@ -35,15 +35,15 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T008 Create Worker utility for rate limiting in `workers/auth/src/utils/rate-limit.ts` (5 req/min/user, KV-based)
-- [ ] T009 [P] Create Worker utility for retry logic in `workers/auth/src/utils/retry.ts` (3 attempts, exponential backoff: 1s, 2s, 4s)
-- [ ] T010 [P] Create Worker utility for error handling in `workers/auth/src/utils/errors.ts` (ErrorResponse schema, error codes)
-- [ ] T011 [P] Create Worker JWT generator in `workers/auth/src/auth/jwt.ts` (Web Crypto API, GitHub App JWT signing)
-- [ ] T012 [P] Create Worker GitHub API client in `workers/auth/src/auth/github.ts` (device flow, user info, installations API wrapper)
-- [ ] T013 Create Worker KV session storage in `workers/auth/src/storage/sessions.ts` (BackendSession CRUD, 30-day TTL)
-- [ ] T014 Create desktop IPC auth handlers stub in `apps/desktop/src/main/ipc/auth.ts` (empty handler functions)
-- [ ] T015 [P] Create desktop auth service in `apps/desktop/src/renderer/services/auth.service.ts` (IPC wrapper for renderer)
-- [ ] T016 Setup electron-store configuration in `apps/desktop/src/main/storage/auth-store.ts` (encryption enabled, schema validation)
+- [x] T008 Create Worker utility for rate limiting in `workers/auth/src/utils/rate-limit.ts` (5 req/min/user, KV-based)
+- [x] T009 [P] Create Worker utility for retry logic in `workers/auth/src/utils/retry.ts` (3 attempts, exponential backoff: 1s, 2s, 4s)
+- [x] T010 [P] Create Worker utility for error handling in `workers/auth/src/utils/errors.ts` (ErrorResponse schema, error codes)
+- [x] T011 [P] Create Worker JWT generator in `workers/auth/src/auth/jwt.ts` (Web Crypto API, GitHub App JWT signing)
+- [x] T012 [P] Create Worker GitHub API client in `workers/auth/src/auth/github.ts` (device flow, user info, installations API wrapper)
+- [x] T013 Create Worker KV session storage in `workers/auth/src/storage/sessions.ts` (BackendSession CRUD, 30-day TTL)
+- [x] T014 Create desktop IPC auth handlers stub in `apps/desktop/src/main/ipc/auth.ts` (empty handler functions)
+- [x] T015 [P] Create desktop auth service in `apps/desktop/src/renderer/services/auth.service.ts` (IPC wrapper for renderer)
+- [x] T016 Setup electron-store configuration in `apps/desktop/src/main/storage/auth-store.ts` (encryption enabled, schema validation)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -59,31 +59,31 @@
 
 #### Backend: Device Flow & Session Creation
 
-- [ ] T017 [P] [US1] Implement POST /auth/device endpoint in `workers/auth/src/handlers/device-flow.ts` (calls GitHub device flow API, returns device_code and user_code)
-- [ ] T018 [P] [US1] Implement POST /auth/poll endpoint in `workers/auth/src/handlers/device-flow.ts` (polls GitHub for authorization, creates BackendSession on success)
-- [ ] T019 [US1] Add request validation middleware to device flow handlers (Zod schema validation for PollRequest)
-- [ ] T020 [US1] Implement session token generation in `workers/auth/src/storage/sessions.ts` (crypto.getRandomValues for 64-byte tokens)
-- [ ] T021 [US1] Add error handling to device flow handlers (GITHUB_API_ERROR, RATE_LIMIT, ACCESS_DENIED, SLOW_DOWN)
+- [x] T017 [P] [US1] Implement POST /auth/device endpoint in `workers/auth/src/handlers/device-flow.ts` (calls GitHub device flow API, returns device_code and user_code)
+- [x] T018 [P] [US1] Implement POST /auth/poll endpoint in `workers/auth/src/handlers/device-flow.ts` (polls GitHub for authorization, creates BackendSession on success)
+- [x] T019 [US1] Add request validation middleware to device flow handlers (Zod schema validation for PollRequest)
+- [x] T020 [US1] Implement session token generation in `workers/auth/src/storage/sessions.ts` (crypto.getRandomValues for 64-byte tokens)
+- [x] T021 [US1] Add error handling to device flow handlers (GITHUB_API_ERROR, RATE_LIMIT, ACCESS_DENIED, SLOW_DOWN)
 
 #### Desktop: IPC Handlers
 
-- [ ] T022 [P] [US1] Implement auth:github-login IPC handler in `apps/desktop/src/main/ipc/auth.ts` (calls backend /auth/device, opens browser, starts polling)
-- [ ] T023 [US1] Add polling logic to auth:github-login handler (5-second intervals, 15-minute timeout, exponential backoff on 429)
-- [ ] T024 [US1] Implement session storage on successful login in `apps/desktop/src/main/ipc/auth.ts` (save UserSession to electron-store)
-- [ ] T025 [US1] Add event emitters to auth handler (auth:user-code, auth:login-success, auth:login-error)
+- [x] T022 [P] [US1] Implement auth:github-login IPC handler in `apps/desktop/src/main/ipc/auth.ts` (calls backend /auth/device, opens browser, starts polling)
+- [x] T023 [US1] Add polling logic to auth:github-login handler (5-second intervals, 15-minute timeout, exponential backoff on 429)
+- [x] T024 [US1] Implement session storage on successful login in `apps/desktop/src/main/ipc/auth.ts` (save UserSession to electron-store)
+- [x] T025 [US1] Add event emitters to auth handler (auth:user-code, auth:login-success, auth:login-error)
 
 #### Desktop: UI Components
 
-- [ ] T026 [P] [US1] Create Login page in `apps/desktop/src/renderer/pages/Login.tsx` (login button, loading state)
-- [ ] T027 [P] [US1] Create DeviceCodeModal component in `apps/desktop/src/renderer/components/auth/DeviceCodeModal.tsx` (displays user_code, copy button, verification link)
-- [ ] T028 [US1] Add auth service methods in `apps/desktop/src/renderer/services/auth.service.ts` (githubLogin, event subscriptions)
-- [ ] T029 [US1] Connect Login page to auth service (handle login click, show modal on auth:user-code event)
-- [ ] T030 [US1] Add error handling to Login page (display LoginErrorEvent messages with retry button)
+- [x] T026 [P] [US1] Create Login page in `apps/desktop/src/renderer/pages/Login.tsx` (login button, loading state)
+- [x] T027 [P] [US1] Create DeviceCodeModal component in `apps/desktop/src/renderer/components/auth/DeviceCodeModal.tsx` (displays user_code, copy button, verification link)
+- [x] T028 [US1] Add auth service methods in `apps/desktop/src/renderer/services/auth.service.ts` (githubLogin, event subscriptions)
+- [x] T029 [US1] Connect Login page to auth service (handle login click, show modal on auth:user-code event)
+- [x] T030 [US1] Add error handling to Login page (display LoginErrorEvent messages with retry button)
 
 #### Desktop: Session Display
 
-- [ ] T031 [P] [US1] Create user profile component in `apps/desktop/src/renderer/components/auth/UserProfile.tsx` (avatar, name, login)
-- [ ] T032 [US1] Update app layout to show user profile after successful login in `apps/desktop/src/renderer/App.tsx`
+- [x] T031 [P] [US1] Create user profile component in `apps/desktop/src/renderer/components/auth/UserProfile.tsx` (avatar, name, login)
+- [x] T032 [US1] Update app layout to show user profile after successful login in `apps/desktop/src/renderer/App.tsx`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can authenticate and see their profile
 
