@@ -15,6 +15,7 @@ import type {
   AuthUserCodeEvent,
   AuthLoginSuccessEvent,
   AuthLoginErrorEvent,
+  Installation,
 } from '@issuedesk/shared';
 
 /**
@@ -51,6 +52,14 @@ export class AuthService {
    */
   async selectInstallation(installationId: number): Promise<AuthSelectInstallationResponse> {
     return window.electronAPI.auth.selectInstallation({ installationId });
+  }
+
+  /**
+   * Check for new installations after user installs the app.
+   * Returns updated list of installations.
+   */
+  async checkInstallations(): Promise<{ installations: Installation[] }> {
+    return window.electronAPI.auth.checkInstallations();
   }
 
   /**

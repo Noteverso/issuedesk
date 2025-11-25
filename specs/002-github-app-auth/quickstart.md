@@ -131,7 +131,7 @@ Edit `workers/auth/wrangler.toml`:
 name = "issuedesk-auth"
 main = "src/index.ts"
 compatibility_date = "2025-11-06"
-node_compat = true
+nodejs_compat = true
 
 [env.production]
 kv_namespaces = [

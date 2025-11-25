@@ -5,11 +5,13 @@ import { ConfigProvider } from './contexts/ConfigContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './components/common/ThemeProvider';
 import { Login } from './pages/Login';
+import { InstallAppPrompt } from './components/auth/InstallAppPrompt';
 
 function AppContent() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, session, refreshSession } = useAuth();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkingInstallations, setCheckingInstallations] = useState(false);
 
   useEffect(() => {
     // Debug: Check if electronAPI is available
@@ -59,9 +61,26 @@ function AppContent() {
     }
   };
 
+  const handleCheckInstallations = async () => {
+    setCheckingInstallations(true);
+    try {
+      await window.electronAPI.auth.checkInstallations();
+      await refreshSession();
+    } catch (error) {
+      console.error('Failed to check installations:', error);
+    } finally {
+      setCheckingInstallations(false);
+    }
+  };
+
   // Show login if not authenticated
   if (!isAuthenticated && !authLoading) {
     return <Login />;
+  }
+
+  // Show install prompt if authenticated but no installations
+  if (isAuthenticated && session && (!session.installations || session.installations.length === 0)) {
+    return <InstallAppPrompt onRetry={handleCheckInstallations} isRetrying={checkingInstallations} />;
   }
 
   if (loading || authLoading) {

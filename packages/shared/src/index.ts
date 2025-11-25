@@ -9,6 +9,7 @@ export * from './types/sync';
 export * from './types/ipc';
 export * from './types/auth';
 export * from './types/github';
+export * from './types/worker';
 
 // Export all schemas
 export * from './schemas/issue.schema';

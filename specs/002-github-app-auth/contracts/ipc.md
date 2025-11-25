@@ -213,8 +213,9 @@ interface LogoutRequest {
 **Main Process Actions**:
 1. Call backend `POST /auth/logout` to invalidate session
 2. Delete `UserSession` from electron-store
-3. Clear any in-memory auth state
-4. Emit `auth:logout-success` event
+3. **Clear TokenCache** (all installation tokens, FR-013b)
+4. Clear any in-memory auth state
+5. Emit `auth:logout-success` event
 
 #### Response
 
@@ -225,8 +226,41 @@ interface LogoutResponse {
 ```
 
 **Error Handling**:
-- Even if backend call fails, still clear local session
+- Even if backend call fails, still clear local session and token cache
 - Always emit `auth:logout-success`
+
+---
+
+### 6. Check Offline Status **NEW (2025-11-20)**
+
+**Channel**: `auth:check-offline-status`  
+**Direction**: Renderer → Main  
+**Priority**: P3 (FR-029b/c)
+
+#### Request
+
+```typescript
+interface CheckOfflineStatusRequest {
+  // No parameters
+}
+```
+
+**Trigger**: UI component needs to check current connectivity status
+
+**Main Process Actions**:
+1. Return current backend connectivity state
+2. Include cached token expiration if in offline mode
+
+#### Response
+
+```typescript
+interface CheckOfflineStatusResponse {
+  isOffline: boolean;
+  reason?: 'BACKEND_UNREACHABLE' | 'NETWORK_ERROR';
+  cachedTokenExpiresAt?: string; // Present if offline mode active
+  lastSuccessfulConnection?: string; // ISO 8601 timestamp
+}
+```
 
 ---
 
@@ -252,6 +286,18 @@ window.electron.auth.on('session-expired', () => void);
 
 // Logout successful
 window.electron.auth.on('logout-success', () => void);
+
+// **NEW (2025-11-20)**: Offline mode enabled (backend unreachable, FR-029b/c)
+window.electron.auth.on('offline-mode-enabled', (event: OfflineModeEvent) => void);
+
+// **NEW (2025-11-20)**: Offline mode disabled (backend reconnected)
+window.electron.auth.on('offline-mode-disabled', () => void);
+
+// **NEW (2025-11-20)**: Device code expired (15-minute timeout, FR-004a)
+window.electron.auth.on('device-code-expired', (event: DeviceCodeExpiredEvent) => void);
+
+// **NEW (2025-11-20)**: Installation token cached (instant switch ready, FR-013a)
+window.electron.auth.on('installation-token-cached', (event: TokenCachedEvent) => void);
 ```
 
 ---
@@ -303,6 +349,28 @@ export interface LoginErrorEvent {
 }
 
 export interface TokenRefreshedEvent {
+  expiresAt: string;
+  // **NEW (2025-11-20)**: Indicates if deduplication occurred
+  deduplicated?: boolean;
+}
+
+// **NEW (2025-11-20)**: Offline mode event (FR-029b/c)
+export interface OfflineModeEvent {
+  reason: 'BACKEND_UNREACHABLE' | 'NETWORK_ERROR';
+  message: string;
+  cachedTokenExpiresAt: string; // When cached token expires
+}
+
+// **NEW (2025-11-20)**: Device code timeout event (FR-004a)
+export interface DeviceCodeExpiredEvent {
+  message: string;
+  canRetry: true; // Always true - user can generate new code
+}
+
+// **NEW (2025-11-20)**: Token cached event (FR-013a)
+export interface TokenCachedEvent {
+  installationId: number;
+  accountLogin: string;
   expiresAt: string;
 }
 

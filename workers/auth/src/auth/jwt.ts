@@ -6,7 +6,7 @@
  * GitHub requires RS256 algorithm (RSA + SHA-256).
  */
 
-import type { Env } from '../index';
+import type { WorkerEnv } from '@issuedesk/shared';
 
 /**
  * Generate a GitHub App JWT for API authentication.
@@ -19,7 +19,7 @@ import type { Env } from '../index';
  * @param env - Cloudflare Worker environment with GITHUB_APP_ID and GITHUB_PRIVATE_KEY
  * @returns JWT string
  */
-export async function generateGitHubAppJWT(env: Env): Promise<string> {
+export async function generateGitHubAppJWT(env: WorkerEnv): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   
   // JWT claims
@@ -129,7 +129,7 @@ function base64urlEncode(input: string | ArrayBuffer): string {
 /**
  * Verify that private key is valid by attempting to generate a JWT
  */
-export async function validatePrivateKey(env: Env): Promise<boolean> {
+export async function validatePrivateKey(env: WorkerEnv): Promise<boolean> {
   try {
     await generateGitHubAppJWT(env);
     return true;

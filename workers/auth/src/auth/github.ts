@@ -5,7 +5,7 @@
  * Wraps GitHub Device Flow, User Info, and Installations API endpoints.
  */
 
-import type { Env } from '../index';
+import type { WorkerEnv } from '@issuedesk/shared';
 import type { DeviceAuthorization, User, Installation, GitHubDeviceFlowResponse } from '@issuedesk/shared';
 import { generateGitHubAppJWT } from './jwt';
 import { retry, isDefaultRetryableError } from '../utils/retry';
@@ -18,7 +18,7 @@ const USER_AGENT = 'IssueDesk/1.0.0'; // GitHub requires User-Agent header
  * GitHub API client with automatic retry and JWT generation
  */
 export class GitHubClient {
-  constructor(private env: Env) {}
+  constructor(private env: WorkerEnv) {}
 
   /**
    * Initiate device flow authorization.

@@ -5,7 +5,7 @@
  * Implements the auth IPC contract defined in packages/shared/src/types/ipc.ts
  */
 
-import { ipcMain, shell, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, clipboard } from 'electron';
 import type {
   AuthGetSessionResponse,
   AuthSelectInstallationRequest,
@@ -16,6 +16,8 @@ import type {
   AuthUserCodeEvent,
   AuthLoginSuccessEvent,
   AuthLoginErrorEvent,
+  UserSession,
+  Installation
 } from '@issuedesk/shared';
 import { getStoredSession, setStoredSession, clearStoredSession } from '../storage/auth-store';
 
@@ -48,7 +50,11 @@ export function registerAuthHandlers(): void {
 
       const deviceAuth = await deviceResponse.json();
 
-      // Step 2: Emit user code event for UI to display
+      // Step 2: Copy device code to clipboard
+      clipboard.writeText(deviceAuth.user_code);
+      console.log(`[Auth] Device code copied to clipboard: ${deviceAuth.user_code}`);
+
+      // Step 3: Emit user code event for UI to display
       const userCodeEvent: AuthUserCodeEvent = {
         userCode: deviceAuth.user_code,
         verificationUri: deviceAuth.verification_uri,
@@ -56,10 +62,7 @@ export function registerAuthHandlers(): void {
       };
       BrowserWindow.fromWebContents(event.sender)?.webContents.send('auth:user-code', userCodeEvent);
 
-      // Step 3: Open browser to GitHub authorization page
-      await shell.openExternal(deviceAuth.verification_uri);
-
-      // Step 4: Start polling for authorization
+      // Step 4: Start polling for authorization (browser opens when user clicks "Open GitHub")
       await pollForAuthorization(
         event,
         deviceAuth.device_code,
@@ -82,9 +85,129 @@ export function registerAuthHandlers(): void {
   });
 
   // auth:select-installation - Select a GitHub App installation
-  ipcMain.handle('auth:select-installation', async (_event, _req: AuthSelectInstallationRequest): Promise<AuthSelectInstallationResponse> => {
-    // TODO: Implement in Phase 5 (T046)
-    throw new Error('auth:select-installation not implemented yet');
+  ipcMain.handle('auth:select-installation', async (_event, req: AuthSelectInstallationRequest): Promise<AuthSelectInstallationResponse> => {
+    try {
+      const session = getStoredSession();
+      if (!session) {
+        throw new Error('No active session. Please login first.');
+      }
+
+      // Call backend to exchange installation ID for access token
+      const tokenResponse = await fetch(`${BACKEND_URL}/auth/installation-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': session.userToken,
+        },
+        body: JSON.stringify({ installation_id: req.installationId }),
+      });
+
+      if (!tokenResponse.ok) {
+        const error = await tokenResponse.json();
+        throw new Error(error.message || 'Failed to get installation token');
+      }
+
+      const tokenData = await tokenResponse.json();
+      console.log('[Auth] Received installation token:', tokenData);
+
+      // Find the installation from the stored installations list
+      const installation = session.installations.find(i => i.id === req.installationId);
+      if (!installation) {
+        throw new Error(`Installation ${req.installationId} not found in session`);
+      }
+
+      // Update session with installation token
+      session.installationToken = {
+        token: tokenData.token,
+        expires_at: tokenData.expires_at,
+        permissions: tokenData.permissions || installation.permissions || {},
+        repository_selection: tokenData.repository_selection || installation.repository_selection || 'all',
+      };
+      
+      // Store the selected installation
+      session.currentInstallation = installation;
+
+      // Save updated session
+      setStoredSession(session);
+
+      console.log(`[Auth] Selected installation ${req.installationId}`);
+      return { success: true };
+    } catch (error) {
+      console.error('[Auth] Select installation error:', error);
+      throw error;
+    }
+  });
+
+  // auth:check-installations - Check for new installations after user installs the app
+  ipcMain.handle('auth:check-installations', async (): Promise<{ installations: Installation[] }> => {
+    try {
+      console.log('[Auth] Checking for installations...');
+      const session = getStoredSession();
+
+      if (!session) {
+        throw new Error('No active session. Please login first.');
+      }
+
+      // Call backend to refresh installations from GitHub API
+      const response = await fetch(`${BACKEND_URL}/auth/installations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': session.userToken,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || 'Failed to fetch installations');
+      }
+
+      const data = await response.json();
+      const installations = data.installations || [];
+
+      // Update session with new installations
+      session.installations = installations;
+      
+      // If installations found and none currently selected, auto-select the first one
+      if (installations.length > 0 && !session.currentInstallation) {
+        const firstInstallation = installations[0];
+        console.log(`[Auth] Auto-selecting first installation: ${firstInstallation.id}`);
+        
+        try {
+          // Exchange for installation token
+          const tokenResponse = await fetch(`${BACKEND_URL}/auth/installation-token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Session-Token': session.userToken,
+            },
+            body: JSON.stringify({ installation_id: firstInstallation.id }),
+          });
+
+          if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json();
+            session.installationToken = {
+              token: tokenData.token,
+              expires_at: tokenData.expires_at,
+              permissions: tokenData.permissions || firstInstallation.permissions || {},
+              repository_selection: tokenData.repository_selection || firstInstallation.repository_selection || 'all',
+            };
+            session.currentInstallation = firstInstallation;
+            console.log(`[Auth] ✅ Auto-selected installation ${firstInstallation.id} with token`);
+          }
+        } catch (error) {
+          console.error('[Auth] Failed to auto-select installation:', error);
+        }
+      }
+      
+      setStoredSession(session);
+
+      console.log(`[Auth] Found ${installations.length} installations`);
+      return { installations };
+    } catch (error) {
+      console.error('[Auth] Check installations error:', error);
+      throw error;
+    }
   });
 
   // auth:refresh-installation-token - Refresh the installation access token
@@ -166,23 +289,91 @@ async function pollForAuthorization(
       // Success! Parse response and save session
       const authData = await pollResponse.json();
 
-      // Create user session
-      const session = {
+      // Create user session with proper typing
+      const session: UserSession = {
         userToken: authData.session_token,
         user: authData.user,
+        installations: authData.installations || [],
         currentInstallation: null,
         installationToken: null,
       };
 
-      // Save to encrypted storage
+      // Automatically select first installation if available
+      if (authData.installations && authData.installations.length > 0) {
+        const firstInstallation = authData.installations[0];
+        console.log(`[Auth] Auto-selecting first installation: ${firstInstallation.id}`);
+        console.log(`[Auth] Backend URL: ${BACKEND_URL}/auth/installation-token`);
+        console.log(`[Auth] Session token: ${authData.session_token.substring(0, 20)}...`);
+        
+        try {
+          // Exchange for installation token
+          console.log(`[Auth] Sending POST request to ${BACKEND_URL}/auth/installation-token`);
+          const tokenResponse = await fetch(`${BACKEND_URL}/auth/installation-token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Session-Token': authData.session_token,
+            },
+            body: JSON.stringify({ installation_id: firstInstallation.id }),
+          });
+
+          console.log(`[Auth] Token response status: ${tokenResponse.status}`);
+          
+          if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json();
+            console.log('[Auth] Successfully received installation token', tokenData);
+            console.log('[Auth] Token data:', {
+              hasToken: !!tokenData.token,
+              tokenLength: tokenData.token?.length,
+              expiresAt: tokenData.expires_at,
+              hasPermissions: !!tokenData.permissions,
+              repositorySelection: tokenData.repository_selection,
+            });
+            
+            // Update session with installation token
+            // Use data from backend if available, otherwise use installation data
+            session.installationToken = {
+              token: tokenData.token,
+              expires_at: tokenData.expires_at,
+              permissions: tokenData.permissions || firstInstallation.permissions || {},
+              repository_selection: tokenData.repository_selection || firstInstallation.repository_selection || 'all',
+            };
+            session.currentInstallation = firstInstallation;
+            
+            // Save updated session
+            setStoredSession(session);
+            console.log(`[Auth] ✅ Auto-selected installation ${firstInstallation.id} with token`);
+            console.log('[Auth] Session now contains:', {
+              hasUser: !!session.user,
+              hasInstallationToken: !!session.installationToken,
+              hasCurrentInstallation: !!session.currentInstallation,
+            });
+          } else {
+            const errorData = await tokenResponse.json().catch(() => ({ message: 'Unknown error' }));
+            console.error(`[Auth] ❌ Failed to get installation token: ${tokenResponse.status} - ${JSON.stringify(errorData)}`);
+          }
+        } catch (error) {
+          console.error('[Auth] ❌ Failed to auto-select installation:', error);
+          console.error('[Auth] Error details:', error instanceof Error ? error.message : String(error));
+          // Non-fatal - user can select manually later
+        }
+      } else {
+        console.warn('[Auth] ⚠️  No installations available to auto-select');
+      }
+
+      // Save session to encrypted storage (after installation token is fetched)
       setStoredSession(session);
 
-      // Emit success event
+      // Emit success event (after installation token is ready)
       const successEvent: AuthLoginSuccessEvent = {
         user: authData.user,
         installations: authData.installations,
       };
-      console.log('Auth Success Event:', successEvent, session);
+      console.log('[Auth] Emitting login success event with session:', {
+        hasUser: !!session.user,
+        hasInstallationToken: !!session.installationToken,
+        installationId: session.currentInstallation?.id,
+      });
       BrowserWindow.fromWebContents(event.sender)?.webContents.send('auth:login-success', successEvent);
 
       return;

@@ -42,9 +42,9 @@ TypeScript 5.3+, Node.js ≥18.0.0, React 18+: Follow standard conventions
 
 ## Recent Changes
 - 002-github-app-auth: Added TypeScript 5.3+, Node.js ≥18.0.0 (Electron 33+), JavaScript ES2020+ (Cloudflare Workers)
+- 002-github-app-auth: Added TypeScript 5.3+, Node.js ≥18.0.0 (Electron 33+), JavaScript ES2020+ (Cloudflare Workers)
 
 - 001-issues-management: Added TypeScript 5.3+, Node.js ≥18.0.0, React 18+
-- 001-issues-management: Added comment management feature with HTML metadata embedding (2025-10-31)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

@@ -8,12 +8,14 @@
 import { useState, useEffect } from 'react';
 import { authService } from '../services/auth.service';
 import { DeviceCodeModal } from '../components/auth/DeviceCodeModal';
+import { useToast, ToastContainer } from '../components/common/Toast';
 import type { AuthUserCodeEvent, AuthLoginErrorEvent } from '@issuedesk/shared';
 
 export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [deviceCode, setDeviceCode] = useState<AuthUserCodeEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     // Listen for device code event
@@ -27,19 +29,28 @@ export function Login() {
       setError(event.message);
       setIsLoading(false);
       setDeviceCode(null);
+      toast.error('Login Failed', event.message);
     });
 
-    // Login success is handled by App.tsx (navigation)
-  }, []);
+    // Listen for login success
+    authService.onLoginSuccess(() => {
+      toast.success('Login Successful', 'Welcome to IssueDesk!');
+      setIsLoading(false);
+      setDeviceCode(null);
+    });
+  }, [toast]);
 
   const handleLogin = async () => {
     setError(null);
     setIsLoading(true);
     try {
       await authService.githubLogin();
+      toast.info('Starting authentication', 'Opening GitHub device flow...');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      const errorMsg = err instanceof Error ? err.message : 'Login failed';
+      setError(errorMsg);
       setIsLoading(false);
+      toast.error('Login Failed', errorMsg);
     }
   };
 
@@ -127,8 +138,11 @@ export function Login() {
           verificationUri={deviceCode.verificationUri}
           expiresIn={deviceCode.expiresIn}
           onClose={handleCloseModal}
+          onRetry={handleRetry}
         />
       )}
+
+      <ToastContainer messages={toast.messages} onClose={toast.closeToast} />
     </div>
   );
 }

@@ -354,6 +354,7 @@ export interface IpcApi {
     githubLogin: () => Promise<void>;
     getSession: () => Promise<AuthGetSessionResponse>;
     selectInstallation: (req: AuthSelectInstallationRequest) => Promise<AuthSelectInstallationResponse>;
+    checkInstallations: () => Promise<{ installations: Installation[] }>;
     refreshInstallationToken: (req: AuthRefreshInstallationTokenRequest) => Promise<AuthRefreshInstallationTokenResponse>;
     logout: () => Promise<AuthLogoutResponse>;
   };

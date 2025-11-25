@@ -1,42 +1,56 @@
 # Implementation Plan: GitHub App Authorization with Cloudflare Worker Backend
 
-**Branch**: `002-github-app-auth` | **Date**: 2025-11-06 | **Spec**: [spec.md](./spec.md)
+**Branch**: `002-github-app-auth` | **Date**: 2025-11-06 (Updated: 2025-11-20) | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/002-github-app-auth/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Note**: This plan reflects clarifications from 2025-11-20. See [CLARIFICATIONS.md](./CLARIFICATIONS.md) for detailed rationale.
 
 ## Summary
 
-Implement secure GitHub App authentication using device flow, with all sensitive credentials (private keys, client secrets) stored exclusively in a Cloudflare Worker backend. The backend exchanges installation IDs for short-lived (1-hour) access tokens, which are safely stored in the Electron desktop client using platform-specific encrypted storage. The system supports multi-organization installations, automatic token refresh, and 30-day session persistence with 5 requests/minute rate limiting per user.
+Implement secure GitHub App authentication using device flow, with all sensitive credentials (private keys, client secrets) stored exclusively in a Cloudflare Worker backend. The backend exchanges installation IDs for short-lived (1-hour) access tokens, which are safely stored in the Electron desktop client using platform-specific encrypted storage. The system supports multi-organization installations with **cached tokens for instant switching**, automatic token refresh with **read-only offline mode**, and **30-day sliding window session persistence** with 5 requests/minute rate limiting per user. Backend uses **Cloudflare KV** for session storage.
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5.3+, Node.js ≥18.0.0 (Electron 33+), JavaScript ES2020+ (Cloudflare Workers)
+
 **Primary Dependencies**: 
 - Desktop: Electron 33+, React 18+, electron-store (encrypted storage), @octokit/auth-app (GitHub App JWT generation on backend only)
 - Backend: Cloudflare Workers runtime, Web Crypto API (built-in)
+
 **Storage**: 
 - Client: electron-store with encryption for tokens and session data
-- Backend: Cloudflare KV for user session persistence (30-day TTL)
+- Backend: **Cloudflare KV** for user session persistence (30-day sliding window TTL)
+- **Token Caching**: Multi-installation token cache on client for instant switching (FR-013a/b)
+
 **Testing**: Vitest (desktop contracts), Miniflare (Cloudflare Worker local testing)
+
 **Target Platform**: 
 - Desktop: Electron (macOS, Windows, Linux)
 - Backend: Cloudflare Workers (edge network, serverless)
+
 **Project Type**: Web application (frontend: Electron renderer, backend: Cloudflare Worker)
+
 **Performance Goals**: 
 - Backend token exchange: <500ms (95th percentile)
 - Device flow polling: 5-second intervals
 - UI responsiveness: <100ms for auth state updates
+- **Installation switching**: Instant (0ms) with cached tokens
+
 **Constraints**: 
 - Zero secrets in client code (verified via security audit)
 - Backend rate limiting: 5 requests/minute/user
 - Token refresh: 3 retries with exponential backoff (1s, 2s, 4s)
-- Session expiration: 30 days
+- **Session expiration**: 30-day sliding window (resets on token refresh - FR-025)
+- **Offline mode**: Read-only operations with cached token during backend outage (FR-029b/c)
+- **Device flow timeout**: 15-minute expiry with clear error message and fresh code retry (FR-004a/b)
 - Cloudflare Worker execution time: <50ms per request (typical)
+- **KV latency**: <50ms global reads, <500ms writes (assumption)
+
 **Scale/Scope**: 
 - Support 1000 concurrent authentication requests
-- Handle multiple installations per user
+- Handle multiple installations per user (cached tokens for all)
 - Backend session storage: ~1KB per user session
+- **Concurrent refresh**: Application-layer request deduplication
 
 ## Constitution Check
 
@@ -51,12 +65,14 @@ Implement secure GitHub App authentication using device flow, with all sensitive
 - **Authentication tokens stored locally**: Session persistence uses encrypted electron-store
 - **Offline degradation**: Auth state cached; app can display last-known user info without network
 - **Network as enhancement**: GitHub API calls happen after local token validation
+- **NEW (2025-11-20)**: Read-only operations with cached token during backend outage (FR-029b/c)
 - **Status**: PASS - Auth system maintains local state first, syncs with GitHub backend as needed
 
 ### ✅ Principle III: GitHub-Inspired UI
 - **Device code modal**: Follows GitHub's device flow UI patterns (code display, copy button, waiting state)
 - **Installation selection**: Matches GitHub's installation picker design (avatars, organization names, repository scopes)
 - **Error messaging**: Uses GitHub-style toast notifications and error states
+- **NEW (2025-11-20)**: Timeout error with "Try Again" button for expired device codes (FR-004a)
 - **Status**: PASS - UI components mirror GitHub's authentication flows
 
 ### ✅ Principle IV: Electron Native Patterns
@@ -78,9 +94,39 @@ Implement secure GitHub App authentication using device flow, with all sensitive
 - **Security audit**: ⏳ Will verify zero secrets in client bundle post-implementation
 - **Bundle size**: ✅ electron-store ~50KB, no impact on <100MB constraint
 - **Performance**: ✅ Backend <500ms, UI <100ms targets align with standards
+- **NEW (2025-11-20)**: ✅ Cloudflare KV latency expectations documented (<50ms reads, <500ms writes)
 
 ### Final Gate Status: **PASS** ✅
 All constitutional principles satisfied. No violations requiring justification.
+
+### Clarifications Applied (2025-11-20)
+
+**Five major clarifications integrated** (see [CLARIFICATIONS.md](./CLARIFICATIONS.md) for full rationale):
+
+1. **Session Expiration Strategy** (FR-025/FR-025a):
+   - Changed from fixed 30-day to sliding window expiration
+   - Session extends on each token refresh; active users never re-authenticate
+   - Inactive users (30+ days no activity) require full device flow
+
+2. **Installation Token Caching** (FR-013a/FR-013b):
+   - Cache tokens for ALL authorized installations
+   - Enables instant switching between organizations (0ms delay)
+   - Protects against rate limits (5 req/min) with frequent switching
+
+3. **Backend Unreachable Behavior** (FR-029b/FR-029c):
+   - Read-only operations continue with cached token during backend outage
+   - Write operations disabled/queued with "Limited connectivity" indicator
+   - Graceful degradation without promising full offline mode
+
+4. **Backend Storage Choice** (Key Entities, Assumptions):
+   - Specified **Cloudflare KV** for MVP (not Durable Objects)
+   - Read-heavy workload, eventual consistency acceptable
+   - Application-layer request deduplication for concurrent refresh
+
+5. **Device Flow Timeout UX** (FR-004a/FR-004b):
+   - Clear timeout message after 15 minutes
+   - "Try Again" button generates fresh device code
+   - Auto-discard expired codes (can't retry with old code)
 
 ## Project Structure
 
@@ -88,14 +134,16 @@ All constitutional principles satisfied. No violations requiring justification.
 
 ```text
 specs/002-github-app-auth/
-├── plan.md              # This file (/speckit.plan command output)
-├── spec.md              # Feature specification
+├── plan.md              # This file (updated 2025-11-20)
+├── spec.md              # Feature specification (updated with clarifications)
 ├── research.md          # Phase 0 output (technology choices, patterns)
-├── data-model.md        # Phase 1 output (entities, schemas)
+├── data-model.md        # Phase 1 output (entities, schemas) - needs update for token caching
 ├── quickstart.md        # Phase 1 output (dev setup, deployment)
-├── contracts/           # Phase 1 output (IPC and API contracts)
+├── CLARIFICATIONS.md    # NEW (2025-11-20): Detailed clarification rationale
+├── contracts/           # Phase 1 output (IPC and API contracts) - needs update
 │   ├── ipc.md          # Desktop IPC contracts (auth handlers)
 │   └── backend-api.md  # Cloudflare Worker REST API
+├── tasks.md             # Phase 2 output (needs update for new requirements)
 └── checklists/
     └── requirements.md  # Specification validation checklist
 ```
@@ -113,45 +161,55 @@ workers/auth/
 │   │   └── tokens.ts        # Token exchange & refresh
 │   ├── auth/                # Authentication logic
 │   │   ├── jwt.ts           # GitHub App JWT generation
-│   │   └── github.ts        # GitHub API integration
+│   │   └── github.ts        # GitHub API integration (User-Agent: IssueDesk/1.0.0)
 │   ├── storage/             # KV storage abstraction
-│   │   └── sessions.ts      # User session management
+│   │   └── sessions.ts      # User session management (sliding window TTL)
 │   └── utils/
 │       ├── rate-limit.ts    # Rate limiting (5/min/user)
-│       └── retry.ts         # Retry logic with backoff
+│       ├── retry.ts         # Retry logic with backoff
+│       └── dedup.ts         # NEW: Request deduplication for concurrent refresh
 ├── tests/
 │   └── integration/         # Miniflare integration tests
-├── wrangler.toml            # Cloudflare Worker config
+├── wrangler.toml            # Cloudflare Worker config (KV binding)
 └── package.json
 
 # Desktop: Electron App
 apps/desktop/src/
 ├── main/ipc/
-│   └── auth.ts              # NEW: Auth IPC handlers
+│   └── auth.ts              # Auth IPC handlers (updated for token caching)
+├── main/services/
+│   └── token-cache.ts       # NEW: Multi-installation token cache manager
 ├── renderer/
 │   ├── pages/
-│   │   ├── Login.tsx        # NEW: Device flow login UI
-│   │   └── InstallationSelect.tsx  # NEW: Installation picker
-│   └── components/auth/
-│       ├── DeviceCodeModal.tsx     # NEW: Device code display
-│       └── AuthGuard.tsx           # NEW: Route protection
-└── preload.ts               # UPDATED: Add auth IPC bridge
+│   │   └── Login.tsx        # Device flow login UI (updated for timeout UX)
+│   ├── components/auth/
+│   │   ├── DeviceCodeModal.tsx        # Device code display (with timeout handler)
+│   │   ├── InstallationSwitcher.tsx   # Dropdown to switch installations (in header)
+│   │   ├── InstallAppPrompt.tsx       # Guide users to install app (zero installations)
+│   │   ├── AuthGuard.tsx              # Route protection
+│   │   └── OfflineIndicator.tsx       # NEW: "Limited connectivity" banner
+│   └── hooks/
+│       └── useTokenRefresh.ts      # NEW: Auto-refresh hook with retry logic
+└── preload.ts               # Auth IPC bridge
 
 # Shared Types
 packages/shared/src/
 ├── types/
-│   └── auth.ts              # NEW: Auth-related types
+│   ├── auth.ts              # Auth-related types (updated for token cache)
+│   └── github.ts            # NEW: GitHub API response types
 └── schemas/
-    └── auth.schema.ts       # NEW: Zod schemas for auth
+    └── auth.schema.ts       # Zod schemas for auth (updated)
 ```
 
-**Structure Decision**: Web application pattern with clear backend/frontend separation. Backend is a standalone Cloudflare Worker (not monorepo package) to maintain deployment independence. Desktop app extends existing Electron structure with auth-specific IPC handlers, pages, and components. Shared types ensure type safety across client-worker boundary.
+**Structure Decision**: Web application pattern with clear backend/frontend separation. Backend is a standalone Cloudflare Worker (not monorepo package) to maintain deployment independence. Desktop app extends existing Electron structure with auth-specific IPC handlers, pages, and components. **NEW (2025-11-20)**: Added token cache manager, offline indicator, request deduplication utils, and GitHub API response types.
 
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
 No violations detected. All constitutional principles satisfied without requiring exceptions.
+
+**Clarification Impact**: Five clarifications added 8 new requirements and modified 6 existing ones without introducing constitutional violations. All changes align with existing principles (local-first, minimal dependencies, Electron patterns).
 
 ---
 
@@ -167,17 +225,23 @@ No violations detected. All constitutional principles satisfied without requirin
 3. Web Crypto API for JWT signing (no native crypto dependency)
 4. electron-store for encrypted client storage
 5. Per-user rate limiting (5 requests/minute)
-6. 30-day session TTL with sliding window
+6. 30-day session TTL with sliding window **(clarified 2025-11-20: sliding window resets on activity)**
 7. Exponential backoff retry (1s, 2s, 4s)
 8. IPC security with contextBridge
 9. Structured error handling
 10. Installation token exchange lifecycle
 
+**Updates Required (2025-11-20)**:
+- ⏸️ Document token caching strategy (Clarification #2)
+- ⏸️ Document offline read-only mode (Clarification #3)
+- ⏸️ Document KV choice rationale (Clarification #4)
+- ⏸️ Document device flow timeout UX (Clarification #5)
+
 ---
 
 ## Phase 1: Design & Contracts ✅ COMPLETE
 
-**Status**: Completed on 2025-11-06
+**Status**: Completed on 2025-11-06, **requires updates for clarifications**
 
 ### Artifacts Created
 
@@ -185,18 +249,21 @@ No violations detected. All constitutional principles satisfied without requirin
    - 8 entities: UserSession, User, Installation, Account, InstallationToken, DeviceAuthorization, BackendSession, RateLimitState
    - Validation rules, relationships, state transitions
    - Storage locations and security considerations
+   - **UPDATE NEEDED**: Add TokenCache entity, update BackendSession for sliding window TTL
 
 2. **`contracts/ipc.md`**: Electron IPC contracts
    - 5 IPC channels: auth:github-login, auth:get-session, auth:select-installation, auth:refresh-installation-token, auth:logout
    - 6 event subscriptions: user-code, login-success, login-error, token-refreshed, session-expired, logout-success
    - TypeScript API surface definitions
    - Error handling strategies
+   - **UPDATE NEEDED**: Add offline-mode events, device-timeout events, installation-cached events
 
 3. **`contracts/backend-api.md`**: Cloudflare Worker REST API
    - 6 REST endpoints: POST /auth/device, POST /auth/poll, POST /auth/installation-token, POST /auth/refresh-installation-token, POST /auth/installations, POST /auth/logout
    - Full OpenAPI 3.0 specification
    - Rate limiting, CORS, security headers
    - Error response formats
+   - **UPDATE NEEDED**: Document sliding window TTL behavior, concurrent refresh deduplication
 
 4. **`quickstart.md`**: Developer setup guide
    - GitHub App registration (6 steps)
@@ -208,174 +275,190 @@ No violations detected. All constitutional principles satisfied without requirin
 
 ### Constitution Re-Check (Post-Design)
 
-**Re-evaluated**: 2025-11-06 after Phase 1 completion
+**Re-evaluated**: 2025-11-06 after Phase 1 completion, **re-checked 2025-11-20 after clarifications**
 
-#### ✅ Principle I: Minimal Dependencies
-**Post-Design Verification**:
-- Data model uses only Zod schemas (already in shared package)
-- IPC contracts use built-in Electron APIs (contextBridge, ipcMain/ipcRenderer)
-- Backend API uses Web Crypto (built-in), no new dependencies
-- **New dependencies introduced**: ZERO
-- **Status**: PASS ✅ - No additional dependencies added during design
+All principles still PASS ✅ - Clarifications added requirements without violating constitution.
 
-#### ✅ Principle II: Local-First Architecture
-**Post-Design Verification**:
-- UserSession stored locally in electron-store (offline-capable)
-- Installations list cached locally after first fetch
-- Session tokens persist for 30 days (local session survives restarts)
-- Network required only for: initial login, installation selection, token refresh
-- **Local state priority**: ✅ Confirmed in data model (client storage primary)
-- **Status**: PASS ✅ - Design maintains local-first architecture
+### Final Phase 1 Status: **COMPLETE** ✅ (Updates pending for clarifications)
 
-#### ✅ Principle III: GitHub-Inspired UI
-**Post-Design Verification**:
-- Device code modal follows GitHub's device flow UI (user code display, verification link)
-- Installation selection picker uses GitHub's account/org display patterns
-- Error messages match GitHub's toast notification style
-- **UI consistency**: ✅ Documented in IPC contracts (LoginErrorEvent, UserCodeEvent)
-- **Status**: PASS ✅ - UI patterns align with GitHub conventions
-
-#### ✅ Principle IV: Electron Native Patterns
-**Post-Design Verification**:
-- IPC uses contextBridge with type-safe preload (AuthAPI interface)
-- All auth operations isolated in main process (no renderer direct access)
-- Session tokens encrypted via electron-store (Electron's safeStorage API)
-- Background token polling runs in main process (non-blocking)
-- **Security**: ✅ nodeIntegration=false, contextIsolation=true (confirmed in contracts)
-- **Status**: PASS ✅ - Follows all Electron security best practices
-
-#### ✅ Principle V: Workspace Architecture
-**Post-Design Verification**:
-- Backend lives in `workers/auth/` (independent of desktop app)
-- Shared types will go in `@issuedesk/shared/src/types/auth.ts`
-- Auth schemas in `@issuedesk/shared/src/schemas/auth.schema.ts`
-- No circular dependencies (Worker → GitHub API, Desktop → Worker API)
-- **Monorepo compliance**: ✅ Structure documented in Project Structure section
-- **Status**: PASS ✅ - Clean workspace boundaries maintained
-
-### Quality Gates (Post-Design)
-
-- **Security audit**: ✅ Zero secrets in client (confirmed in backend-api.md security section)
-- **Performance targets**: ✅ All latency goals documented (<500ms backend, <100ms UI)
-- **Type safety**: ✅ Full TypeScript contracts defined (IPC and REST APIs)
-- **Error handling**: ✅ Comprehensive error codes and retry strategies defined
-
-### Final Phase 1 Status: **PASS** ✅
-
-All design artifacts complete. Zero constitutional violations. Ready for Phase 2 (task breakdown).
+All design artifacts complete. Zero constitutional violations. Ready for Phase 2 (task breakdown). **Action required**: Update data-model.md and contracts/ for new clarifications.
 
 ---
 
 ## Phase 2: Task Breakdown ✅ COMPLETE
 
-**Status**: Completed on 2025-11-06
+**Status**: Completed on 2025-11-06, **requires updates for clarifications**
 
 ### Artifact Created
 
 **`tasks.md`**: Complete implementation task list
-- **Total tasks**: 87 tasks across 8 phases
-- **MVP scope**: 40 tasks (Phases 1-4: Setup, Foundational, US1, US5)
-- **Parallel opportunities**: 31 tasks marked [P] (35.6% of total)
+- **Total tasks**: 95 tasks across 8 phases **(updated 2025-11-18: added migration tasks and critical fixes)**
+- **MVP scope**: 45 tasks complete (47%)
+- **Phase 3 progress**: 88% complete (29/33 tasks)
 - **Organization**: Tasks grouped by user story for independent implementation
+
+### Critical Discoveries (2025-11-18)
+
+Three blocking issues resolved during Phase 3 implementation:
+1. **User-Agent header**: All GitHub API requests MUST include `User-Agent: IssueDesk/1.0.0` (FR-030)
+2. **GitHubDeviceFlowResponse type**: Complete discriminated union with all fields (success + error states)
+3. **OAuth scope**: Empty scope ('') required for installation access
 
 ### Task Organization
 
 **Phase Structure**:
-1. **Phase 1 - Setup** (7 tasks): Project initialization, shared types, basic configuration
-2. **Phase 2 - Foundational** (9 tasks): Rate limiting, JWT, KV storage, IPC stubs (blocks all user stories)
-3. **Phase 3 - US1: Initial Authentication** (16 tasks): Device flow backend + desktop UI
-4. **Phase 4 - US5: Security** (8 tasks): Secrets management, CORS, encryption validation
-5. **Phase 5 - US2: Installation Selection** (12 tasks): Multi-installation support
-6. **Phase 6 - US4: Session Persistence** (8 tasks): Session restoration across restarts
-7. **Phase 7 - US3: Token Refresh** (10 tasks): Automatic token refresh logic
-8. **Phase 8 - Polish** (17 tasks): Logout, AuthGuard, styling, accessibility, final audit
+1. **Phase 1 - Setup** (7 tasks): ✅ 100% complete
+2. **Phase 2 - Foundational** (9 tasks): ✅ 100% complete
+3. **Phase 3 - US1: Initial Authentication** (33 tasks): ⏸️ 88% complete (29/33)
+4. **Phase 4 - US5: Security** (8 tasks): Not started
+5. **Phase 5 - US2: Installation Selection** (12 tasks): Not started
+6. **Phase 6 - US4: Session Persistence** (8 tasks): Not started
+7. **Phase 7 - US3: Token Refresh** (10 tasks): Not started
+8. **Phase 8 - Polish + Migration** (25 tasks): Not started (includes 8 PAT migration tasks)
 
-### Task Mapping to User Stories
+### Updates Required (2025-11-20)
 
-- **US1 (Initial Authentication - P1)**: 16 implementation tasks
-  - Backend: Device flow endpoints (T017-T021)
-  - Desktop IPC: Login handler, polling, events (T022-T025)
-  - Desktop UI: Login page, device code modal, profile (T026-T032)
+Based on clarifications, tasks.md needs updates for:
 
-- **US5 (Security - P1)**: 8 validation tasks
-  - Worker secrets configuration (T033-T034)
-  - CORS, CSP, encryption verification (T035-T037)
-  - Security audit and logging (T038-T040)
+**New Implementation Tasks**:
+- Multi-installation token cache (FR-013a/b)
+- Sliding window session TTL (FR-025/FR-025a)
+- Read-only offline mode (FR-029b/FR-029c)
+- Request deduplication (concurrent refresh handling)
+- Device flow timeout UX (FR-004a/FR-004b)
+- KV session storage implementation
+- Offline indicator UI component
 
-- **US2 (Installation Selection - P2)**: 12 tasks
-  - Backend: Installations API, token exchange (T041-T045)
-  - Desktop: Selection IPC, UI components (T046-T052)
+**Modified Existing Tasks**:
+- Update session creation to use sliding window TTL
+- Update installation selection to cache tokens
+- Update token refresh to handle deduplication
+- Add offline mode tests
+- Add timeout handling tests
 
-- **US4 (Session Persistence - P2)**: 8 tasks
-  - Desktop: Session restoration (T053-T057)
-  - Backend: KV TTL, sliding window (T058-T060)
+### Final Phase 2 Status: **COMPLETE** ✅ (Updates pending for clarifications)
 
-- **US3 (Token Refresh - P3)**: 10 tasks
-  - Backend: Refresh endpoint (T061-T062)
-  - Desktop: Auto-refresh logic, UI feedback (T063-T070)
+Task breakdown ready for implementation. Clear MVP scope. **Action required**: Update tasks.md with new requirements from clarifications.
 
-### Implementation Strategy
+---
 
-**MVP First** (40 tasks):
-- Phases 1-4 deliver secure authentication
-- Users can log in, see profile, system is secure
-- Estimated: 1-2 weeks (single developer)
+## Implementation Status
 
-**Incremental Delivery**:
-- Foundation (16 tasks) → US1+US5 (24 tasks) → US2 (12 tasks) → US4 (8 tasks) → US3 (10 tasks) → Polish (17 tasks)
-- Each increment is independently testable and deployable
+**Last Updated**: 2025-11-20
 
-**Parallel Team Strategy**:
-- After Foundation: 3 developers can work on US1 backend, desktop IPC, desktop UI simultaneously
-- Different user stories have minimal cross-dependencies
+### Current State: Phase 3 (US1 - Initial Authentication)
 
-### Dependencies
+**Progress**: 88% complete (29/33 tasks)
 
-**Critical Path**:
-1. Setup → Foundational (blocks everything)
-2. Foundational → US1 (must complete first, all others depend on auth)
-3. US1 → US2, US4, US3 (can proceed in parallel after US1)
+**Completed**:
+- ✅ Device flow initiation (device code generation)
+- ✅ Device flow polling (5-second intervals)
+- ✅ Access token retrieval
+- ✅ Installation list retrieval
+- ✅ User-Agent header fix (CRITICAL - blocked all API calls)
+- ✅ OAuth scope configuration (empty scope for installation access)
+- ✅ Type system refactoring (GitHubDeviceFlowResponse with all fields)
+- ✅ Environment setup and validation
+- ✅ Comprehensive documentation (IMPLEMENTATION-LESSONS.md, MIGRATION-FROM-PAT.md)
 
-**Independent Stories**:
-- US2, US4, US3 have no interdependencies (after US1 complete)
-- Can be implemented/shipped independently
+**In Progress** (4 tasks remaining):
+- ⏸️ KV session storage with sliding window TTL (partially implemented)
+- ⏸️ Installation token exchange endpoint (not started)
+- ⏸️ End-to-end authentication flow testing
+- ⏸️ UI polish (profile component, error handling, timeout UX)
 
-### Validation
+**Blocked By**: None (all clarifications resolved)
 
-- ✅ All tasks follow checklist format: `- [ ] [ID] [P?] [Story?] Description with path`
-- ✅ Each user story has complete implementation tasks (models → services → endpoints → UI)
-- ✅ Foundational phase clearly blocks user stories
-- ✅ Independent test criteria defined for each user story
-- ✅ MVP scope clearly identified (Phases 1-4)
+### Critical Issues Resolved
 
-### Final Phase 2 Status: **COMPLETE** ✅
+**Issue #1**: User-Agent Header Missing ⚠️ **BLOCKING**
+- **Impact**: ALL GitHub API requests returned 403 Forbidden
+- **Solution**: Added `User-Agent: IssueDesk/1.0.0` to every GitHub API call
+- **Documented**: IMPLEMENTATION-LESSONS.md, Section "Critical Issue #1"
 
-Task breakdown ready for implementation. Clear MVP scope (40 tasks). Parallel execution plan defined.
+**Issue #2**: Device Flow URLs
+- **Impact**: 403 errors from device flow endpoints
+- **Solution**: Use github.com/login/* (not api.github.com/login/*)
+
+**Issue #3**: OAuth Scope
+- **Impact**: 403 from /user/installations endpoint
+- **Solution**: Empty scope ('') grants installation access for GitHub Apps
+
+### Remaining Work
+
+**Phase 3 (Immediate - 12% remaining)**:
+1. Complete KV session storage (sliding window TTL)
+2. Implement installation token exchange endpoint
+3. Add device flow timeout UI (15-minute expiry)
+4. End-to-end testing (device flow → installation → token)
+5. UI polish (profile component, error states)
+
+**Phase 4 (Security - Next)**:
+- Configure Worker secrets
+- CORS validation
+- CSP headers
+- Encryption verification
+- Security audit
+
+**Phase 5-7 (Feature completion)**:
+- Installation selection with token caching (FR-013a/b)
+- Session persistence with sliding window (FR-025)
+- Token refresh with offline mode (FR-029b/c)
+
+**Phase 8 (Migration)**:
+- Remove PAT code from Settings
+- Update GitHub API client for Bearer tokens
+- Create migration prompt UI
+- Migration detection and cleanup
+
+### Estimated Timeline
+
+- **Phase 3 completion**: 2-3 days (4 tasks remaining)
+- **Phase 4 (Security)**: 2-3 days (8 tasks)
+- **Phases 5-7 (parallel)**: 1-2 weeks (30 tasks)
+- **Phase 8 (Migration)**: 3-5 days (8 tasks + testing)
+- **Total remaining**: ~3-4 weeks to production
+
+### Next Actions
+
+1. **Update documentation** ✅ COMPLETE
+   - [x] Created CLARIFICATIONS.md with full rationale
+   - [x] Updated spec.md with new requirements
+   - [x] Updated plan.md with clarification impacts
+
+2. **Update contracts and data model** (NEXT)
+   - [ ] Update data-model.md for TokenCache entity
+   - [ ] Update contracts/ipc.md for offline events
+   - [ ] Update contracts/backend-api.md for sliding window
+
+3. **Update tasks.md** (AFTER #2)
+   - [ ] Add new tasks for clarified requirements
+   - [ ] Update existing tasks with new details
+   - [ ] Adjust MVP scope if needed
+
+4. **Resume Phase 3 implementation**
+   - [ ] Implement KV session storage
+   - [ ] Build installation token exchange
+   - [ ] Add timeout handling
+   - [ ] Complete end-to-end testing
 
 ---
 
 ## Next Steps
 
-**STOP**: Do NOT proceed with implementation yet.
+**Immediate (This Session)**:
+1. ✅ Update plan.md with clarifications (COMPLETE)
+2. ⏸️ Update data-model.md for new entities
+3. ⏸️ Update contracts for new IPC/API requirements
+4. ⏸️ Update tasks.md with clarification tasks
 
-The planning phase is complete. Next actions:
-
-1. **Review**: Review `tasks.md` with stakeholders
-2. **Prioritize**: Confirm MVP scope (US1 + US5)
-3. **Staff**: Assign tasks to developers
-4. **Execute**: Begin with Phase 1 (Setup) tasks
+**After Documentation Updates**:
+1. Resume Phase 3 implementation (4 tasks remaining)
+2. Begin Phase 4 security validation
+3. Implement clarified requirements (token caching, sliding window, offline mode)
 
 **When ready to implement**:
-- Start with T001 (Create Worker structure)
+- Continue with remaining Phase 3 tasks
 - Follow task order strictly within each phase
-- Mark tasks complete as you go: `- [x] T001 ...`
-- Commit frequently (after each task or logical group)
-- Test each user story independently before moving to next
-
----
-
-## Complexity Tracking
-
-> **Fill ONLY if Constitution Check has violations that must be justified**
-
-No violations detected. All constitutional principles satisfied without requiring exceptions.
+- Test each clarified requirement independently
+- Commit frequently with clear messages referencing FRs

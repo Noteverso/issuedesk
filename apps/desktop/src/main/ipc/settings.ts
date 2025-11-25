@@ -19,7 +19,7 @@ export function registerSettingsHandlers() {
     try {
       const settings = settingsManager.getAll();
       
-      console.log('✅ Settings retrieved:', settings);
+      // console.log('✅ Settings retrieved:', settings);
       return { settings };
     } catch (error) {
       console.error('❌ Error getting settings:', error);

@@ -2,8 +2,10 @@
 
 **Feature Branch**: `002-github-app-auth`  
 **Created**: 2025-11-06  
-**Status**: Draft  
+**Status**: In Progress (Phase 3)  
 **Input**: User description: "Add GitHub App authorization with Cloudflare Worker backend. Use private key and installationId to exchange for temporary tokens. Store all sensitive secrets in backend, safely store temporary tokens in client."
+
+**Migration Note**: This feature replaces the Personal Access Token (PAT) authentication from 001-issues-management. See `MIGRATION-FROM-PAT.md` for details on the migration strategy, breaking changes, and user impact.
 
 ## Clarifications
 
@@ -12,6 +14,14 @@
 - Q: How long should backend user sessions persist before requiring full re-authentication? → A: 30 days - Industry standard, balances security and UX
 - Q: What rate limiting strategy should the backend use for token generation endpoints? → A: 5 requests per minute per user - Fair per-user limit
 - Q: What retry strategy should be used when the backend service is unreachable during token operations? → A: 3 retries with exponential backoff (1s, 2s, 4s) - Industry standard
+
+### Session 2025-11-20
+
+- Q: Should backend sessions use fixed 30-day expiration or sliding window that resets on activity? → A: Sliding window - extends 30 days on each token refresh; active users never re-authenticate, inactive users (30+ days) require full device flow
+- Q: Should system cache access tokens for multiple installations to enable instant switching? → A: Yes, cache all installation tokens - enables instant switching without backend requests; evict on expiration (1 hour) or logout
+- Q: What operations should work when backend is unreachable after retry attempts fail? → A: Limited offline - continue read-only operations with cached token until rejected by GitHub; disable/queue write operations with user notification
+- Q: Should backend use Cloudflare KV or Durable Objects for session storage? → A: Cloudflare KV for MVP - simpler, cheaper, read-optimized; use application-layer request deduplication for concurrent refresh handling
+- Q: What should happen when device flow polling times out after 15 minutes? → A: Show clear timeout message with "Try Again" button that generates fresh device code; automatically discard expired codes
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -25,10 +35,12 @@ A user opens the desktop application for the first time and needs to authenticat
 
 **Acceptance Scenarios**:
 
-1. **Given** a user opens the desktop application for the first time, **When** they click "Login with GitHub", **Then** they are shown a unique device code and a link to GitHub's authorization page
-2. **Given** a user has received a device code, **When** they navigate to GitHub's authorization page and enter the code, **Then** they see a list of organizations/accounts where the GitHub App is installed
-3. **Given** a user has authorized the application on GitHub, **When** the application detects the authorization, **Then** the user is automatically logged in and sees their profile information
-4. **Given** a user has completed authentication, **When** the application requests access to repositories, **Then** a temporary access token is obtained from the backend without exposing any secrets to the client
+1. **Given** a user opens the desktop application for the first time, **When** they click "Login with GitHub", **Then** they are shown a unique device code (automatically copied to clipboard) and a modal with "Open GitHub" button
+2. **Given** a user has received a device code, **When** they click "Open GitHub" button and navigate to the authorization page, **Then** they can paste the code (already in clipboard) to authorize the application
+3. **Given** a user has authorized the application on GitHub, **When** the application detects the authorization, **Then** the first available installation is automatically selected and its token is fetched
+4. **Given** a user has completed authentication, **When** the application requests access to repositories, **Then** the installation token is used for GitHub API calls (visible in console logs)
+5. **Given** a user receives a device code but does not complete authorization within 15 minutes, **When** the polling timeout occurs, **Then** the user sees a clear "Authorization timeout" message with explanation and a "Try Again" button that generates a new device code
+6. **Given** a user completes device flow authorization but has not installed the GitHub App (zero installations), **When** authentication completes, **Then** the backend creates session using GitHub User API for profile data and the application displays InstallAppPrompt with installation guidance, direct link to installation page, and "Check Again" button that refreshes installations without re-authentication (IMPLEMENTED 2025-12-07)
 
 ---
 
@@ -116,7 +128,7 @@ The application must protect sensitive credentials (GitHub App private keys, cli
   - Existing sessions should continue to work until tokens expire, then seamlessly use new secrets for refresh without user intervention
   
 - What happens when a user has no GitHub App installations (never installed the app)?
-  - After device flow completes, show clear message with button to install the GitHub App, linking to GitHub App installation page
+  - After device flow completes, backend creates session with empty installations array using GitHub User API for profile data; frontend displays InstallAppPrompt with step-by-step installation guide, direct link to GitHub App installation page, and "Check Again" button that triggers POST /auth/installations to refresh installations without re-authentication; first installation is auto-selected after refresh (✅ IMPLEMENTED 2025-12-07)
   
 - What happens when network connection is lost during device flow authorization?
   - Application should handle polling failures gracefully, show connection status, and resume polling when connection is restored
@@ -134,6 +146,11 @@ The application must protect sensitive credentials (GitHub App private keys, cli
 - **FR-002**: System MUST display a unique device code to users and provide a link to GitHub's device authorization page
 - **FR-003**: System MUST poll the backend service at regular intervals to detect when user completes authorization on GitHub
 - **FR-004**: System MUST stop polling after authorization is complete or after a maximum timeout period of 15 minutes
+- **FR-004a**: When device flow polling times out after 15 minutes, System MUST display a clear timeout message explaining the device code has expired and provide a "Try Again" action that initiates a new device flow with a fresh device code
+- **FR-004b**: System MUST automatically discard expired device codes and ensure users cannot attempt authorization with codes older than 15 minutes
+- **FR-004c**: System MUST allow authentication session creation when user has zero GitHub App installations and MUST fetch user profile from GitHub User API instead of installation account data (IMPLEMENTED 2025-12-07)
+- **FR-004d**: System MUST provide POST /auth/installations endpoint that refreshes installations list from GitHub API using stored access token without requiring full re-authentication (IMPLEMENTED 2025-12-07)
+- **FR-004e**: System MUST display installation guidance UI when authenticated user has zero installations, including clear explanation, direct link to GitHub App installation page, step-by-step instructions, and retry mechanism to refresh installations after user installs app (IMPLEMENTED 2025-12-07)
 - **FR-005**: Desktop application MUST NOT store or have access to GitHub App private keys or client secrets at any time
 
 **Backend Service:**
@@ -150,6 +167,8 @@ The application must protect sensitive credentials (GitHub App private keys, cli
 **Token Management:**
 
 - **FR-013**: System MUST obtain temporary access tokens that expire in 1 hour (GitHub's default for installation tokens)
+- **FR-013a**: System MUST cache valid installation access tokens for all authorized installations to enable instant switching without repeated backend requests
+- **FR-013b**: System MUST evict cached installation tokens when they expire (1-hour lifetime) or when user logs out, requiring fresh tokens on next use
 - **FR-014**: Desktop application MUST store access tokens in encrypted platform-specific secure storage (Electron's safeStorage or similar)
 - **FR-015**: System MUST check token expiration before making API requests and refresh if expiring within 5 minutes
 - **FR-016**: System MUST automatically request new tokens from backend when current token is about to expire
@@ -167,8 +186,8 @@ The application must protect sensitive credentials (GitHub App private keys, cli
 - **FR-022**: System MUST persist user authentication session across application restarts
 - **FR-023**: System MUST validate stored session on application startup and refresh tokens if needed
 - **FR-024**: System MUST redirect users to login if stored session cannot be validated or refreshed
-- **FR-025**: System MUST implement a backend session token separate from GitHub access tokens for user session management with 30-day expiration
-- **FR-025a**: Backend MUST automatically invalidate and purge user sessions after 30 days of inactivity requiring full re-authentication
+- **FR-025**: System MUST implement a backend session token separate from GitHub access tokens for user session management with 30-day sliding window expiration that resets on each successful token refresh
+- **FR-025a**: Backend MUST automatically invalidate and purge user sessions after 30 days of complete inactivity (no token refreshes) requiring full re-authentication through device flow
 
 **Error Handling:**
 
@@ -177,6 +196,8 @@ The application must protect sensitive credentials (GitHub App private keys, cli
 - **FR-028**: System MUST provide clear error messages when authentication or authorization fails
 - **FR-029**: System MUST implement retry logic with 3 attempts using exponential backoff (1 second, 2 seconds, 4 seconds) for transient backend failures
 - **FR-029a**: System MUST display appropriate user feedback during retry attempts without blocking the UI
+- **FR-029b**: When backend is unreachable after all retry attempts, System MUST continue using the last valid access token for read-only GitHub API operations until token is rejected by GitHub API or backend becomes reachable
+- **FR-029c**: When backend is unreachable, System MUST display persistent "Limited connectivity" indicator and disable or queue write operations (create/update/delete) with user notification
 
 **Security:**
 
@@ -185,13 +206,19 @@ The application must protect sensitive credentials (GitHub App private keys, cli
 - **FR-032**: Desktop application MUST use Content Security Policy to prevent XSS attacks on auth UI
 - **FR-033**: System MUST implement CORS headers on backend to restrict access to legitimate clients only
 
+**Type System & Configuration:**
+
+- **FR-034**: System MUST define WorkerEnv interface in shared package as single source of truth for Cloudflare Worker environment types, imported as @issuedesk/shared (IMPLEMENTED 2025-12-07)
+- **FR-035**: Desktop application MUST use Vite environment variables with VITE_ prefix for configuration values exposed to renderer process, with proper TypeScript definitions in vite-env.d.ts (IMPLEMENTED 2025-12-07)
+- **FR-036**: System MUST provide default fallback values for optional environment variables to ensure application functions without manual configuration during development (IMPLEMENTED 2025-12-07)
+
 ### Key Entities
 
 - **User Session**: Represents an authenticated user's session, including user ID, username, avatar, and backend session token for re-authentication
 - **Installation**: Represents a GitHub App installation with installation ID, account name, account type (user/organization), and repository access scope
 - **Access Token**: Temporary GitHub API token with the token string, expiration timestamp, associated installation ID, and permissions granted
 - **Device Authorization**: Temporary authorization state with device code, user code, verification URL, polling interval, and expiration timestamp
-- **Backend Session**: Server-side session record linking a user to their authorized installations, stored in Cloudflare KV or Durable Objects for persistence with 30-day TTL (time-to-live) expiration
+- **Backend Session**: Server-side session record linking a user to their authorized installations, stored in Cloudflare KV for persistence with 30-day sliding window TTL; application-layer request deduplication handles concurrent token refresh scenarios
 
 ## Success Criteria *(mandatory)*
 
@@ -214,13 +241,15 @@ The application must protect sensitive credentials (GitHub App private keys, cli
 - GitHub App has been registered and configured with appropriate permissions before deployment
 - Users have stable internet connectivity during authentication (offline use comes after initial auth)
 - Installation tokens from GitHub have a consistent 1-hour expiration period as per current GitHub API documentation
-- Backend can use Cloudflare KV storage for session persistence with acceptable read/write latency
+- Cloudflare KV storage provides acceptable read/write latency for session persistence (typically <50ms global reads, <500ms writes)
+- Vite-based build system is used for desktop renderer process with proper environment variable configuration (confirmed 2025-12-07)
+- TypeScript compilation targets support import.meta.env for Vite environment variables (confirmed 2025-12-07)
 
 ## Dependencies
 
 - GitHub App must be created and registered in GitHub's developer settings
 - Cloudflare Workers account with ability to create workers and set environment secrets
-- Cloudflare KV namespace for storing user session data (or alternative persistence mechanism)
+- Cloudflare KV namespace for storing user session data with appropriate read/write capacity
 - Desktop application framework with secure storage capabilities (e.g., Electron's safeStorage API)
 - GitHub's device flow API and installation token APIs must remain stable and available
 
@@ -230,7 +259,7 @@ The application must protect sensitive credentials (GitHub App private keys, cli
 - Custom user permission systems - uses GitHub App's repository access controls
 - OAuth web flow as alternative to device flow - device flow is primary authentication method
 - Support for GitHub Enterprise Server - focuses on GitHub.com cloud service initially
-- Offline mode functionality - users must authenticate online first
+- Offline mode functionality - users must authenticate online first; limited read-only functionality with cached tokens during temporary backend outages is supported
 - Migration from other authentication methods - assumes greenfield implementation
 - Custom GitHub App installation UI - users install via GitHub's standard installation flow
 - Backend monitoring and alerting infrastructure - assumes Cloudflare's built-in monitoring

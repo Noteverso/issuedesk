@@ -7,20 +7,12 @@
  */
 
 import { handleDeviceFlow, handlePollDeviceFlow } from './handlers/device-flow';
-
-export interface Env {
-  // KV namespace for session storage
-  SESSIONS: KVNamespace;
-  
-  // GitHub App credentials (set via wrangler secret)
-  GITHUB_APP_ID: string;
-  GITHUB_PRIVATE_KEY: string;
-  GITHUB_CLIENT_ID: string;
-  GITHUB_CLIENT_SECRET: string;
-}
+import { handleInstallationToken, handleRefreshInstallationToken } from './handlers/tokens';
+import { handleRefreshInstallations } from './handlers/installations';
+import type { WorkerEnv } from '@issuedesk/shared';
 
 export default {
-  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv, _ctx: ExecutionContext): Promise<Response> {
     // Validate environment variables on startup
     if (!env.GITHUB_APP_ID || !env.GITHUB_PRIVATE_KEY || !env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET) {
       return new Response(
@@ -51,6 +43,18 @@ export default {
     
     if (url.pathname === '/auth/poll' && request.method === 'POST') {
       return handlePollDeviceFlow(request, env, corsHeaders);
+    }
+    
+    if (url.pathname === '/auth/installation-token' && request.method === 'POST') {
+      return handleInstallationToken(request, env, corsHeaders);
+    }
+    
+    if (url.pathname === '/auth/installations' && request.method === 'POST') {
+      return handleRefreshInstallations(request, env, corsHeaders);
+    }
+    
+    if (url.pathname === '/auth/refresh-installation-token' && request.method === 'POST') {
+      return handleRefreshInstallationToken(request, env, corsHeaders);
     }
 
     // 404 for unimplemented routes

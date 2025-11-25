@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router';
 import { Menu } from 'lucide-react';
 import { useConfig } from '../../contexts/ConfigContext';
+import { useAuth } from '../../contexts/AuthContext';
 import Sidebar from './Sidebar';
 import StatusBar from './StatusBar';
+import { UserProfile } from '../auth/UserProfile';
+import { InstallationSwitcher } from '../auth/InstallationSwitcher';
 import { useWindowTitle } from '../../hooks/useWindowTitle';
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Default to open on desktop
   const { settings } = useConfig();
+  const { session, logout, refreshSession } = useAuth();
 
   // Update window title when repository changes
   useWindowTitle({
@@ -17,6 +21,15 @@ export default function Layout() {
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleInstallationSwitch = async () => {
+    // Refresh session to get updated installation token
+    await refreshSession();
+    
+    // Optionally reload the page to fetch new data with new token
+    // This ensures all data is fetched with the correct installation context
+    window.location.reload();
   };
 
   return (
@@ -62,7 +75,17 @@ export default function Layout() {
           
           <div className="flex-1" />
           
-          {/* Optional: Add quick actions here in the future */}
+          {/* Installation Switcher */}
+          {session?.installations && session.installations.length > 1 && session.currentInstallation && (
+            <InstallationSwitcher
+              installations={session.installations}
+              currentInstallationId={session.currentInstallation.id}
+              onSwitch={handleInstallationSwitch}
+            />
+          )}
+          
+          {/* User Profile */}
+          {session && <UserProfile user={session.user} onLogout={logout} />}
         </div>
 
         {/* Page content */}

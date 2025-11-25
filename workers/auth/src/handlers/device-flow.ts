@@ -11,7 +11,7 @@
  * 4. On success, returns session_token, user data, and installations
  */
 
-import type { Env } from '../index';
+import type { WorkerEnv } from '@issuedesk/shared';
 import { GitHubClient } from '../auth/github';
 import { createSession } from '../storage/sessions';
 import { errorResponse, validateRequest, mapGitHubError, ErrorCode } from '../utils/errors';
@@ -26,7 +26,7 @@ import { PollRequestSchema } from '@issuedesk/shared';
  */
 export async function handleDeviceFlow(
   _request: Request,
-  env: Env,
+  env: WorkerEnv,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   try {
@@ -65,7 +65,7 @@ export async function handleDeviceFlow(
  */
 export async function handlePollDeviceFlow(
   request: Request,
-  env: Env,
+  env: WorkerEnv,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   // Validate request body
@@ -106,26 +106,31 @@ export async function handlePollDeviceFlow(
     const installations = await client.getUserInstallations(tokenResponse.access_token);
     console.log('[DeviceFlow] Got installations:', installations.length);
 
-    if (installations.length === 0) {
-      return errorResponse(
-        ErrorCode.INVALID_REQUEST,
-        'No installations found. Please install the GitHub App on at least one account.',
-        400,
-        false,
-        corsHeaders
-      );
-    }
-
     // For issue management apps, we can use the first installation account as user info
-    const firstInstallation = installations[0]!;
-    const user = {
-      id: firstInstallation.account.id,
-      login: firstInstallation.account.login,
-      name: firstInstallation.account.login, // Use login as name fallback
-      avatar_url: firstInstallation.account.avatar_url,
-      email: null, // Email not needed for issue management
-    };
-    console.log('[DeviceFlow] Using installation account as user:', user.login);
+    // If no installations, we'll need to get user info from GitHub API
+    let user;
+    if (installations.length === 0) {
+      // Fetch user profile when no installations exist
+      const githubUser = await client.getUser(tokenResponse.access_token);
+      user = {
+        id: githubUser.id,
+        login: githubUser.login,
+        name: githubUser.name || githubUser.login,
+        avatar_url: githubUser.avatar_url,
+        email: githubUser.email,
+      };
+      console.log('[DeviceFlow] No installations, using GitHub user profile:', user.login);
+    } else {
+      const firstInstallation = installations[0]!;
+      user = {
+        id: firstInstallation.account.id,
+        login: firstInstallation.account.login,
+        name: firstInstallation.account.login, // Use login as name fallback
+        avatar_url: firstInstallation.account.avatar_url,
+        email: null, // Email not needed for issue management
+      };
+      console.log('[DeviceFlow] Using installation account as user:', user.login);
+    }
 
     // Apply rate limiting based on user ID
     const rateLimitResult = await rateLimitMiddleware(

@@ -152,6 +152,48 @@ const InstallationTokenSchema = z.object({
 
 ---
 
+### 5a. Token Cache (Client-Side) **NEW (2025-11-20)**
+
+Multi-installation token cache for instant switching without backend requests (FR-013a/b).
+
+**Entity**: `TokenCache`
+
+| Field | Type | Required | Validation | Description |
+|-------|------|----------|------------|-------------|
+| `installationId` | number | Yes | Positive integer | Installation ID this token belongs to |
+| `token` | string | Yes | Starts with "ghs_" | GitHub installation access token |
+| `expiresAt` | string | Yes | ISO 8601 datetime | Token expiration timestamp |
+
+**Zod Schema**:
+```typescript
+const TokenCacheSchema = z.object({
+  installationId: z.number().int().positive(),
+  token: z.string().startsWith('ghs_'),
+  expiresAt: z.string().datetime() // ISO 8601 format
+});
+
+// Cache structure: Map<installationId, TokenCache>
+const TokenCacheMapSchema = z.record(
+  z.string(), // installationId as string key
+  TokenCacheSchema
+);
+```
+
+**Validation Rules**:
+- Cache all valid tokens for all authorized installations
+- Evict token when it expires (1-hour lifetime)
+- Clear entire cache on logout
+- Check expiration before use (lazy eviction)
+
+**Lifecycle**:
+- Created: When user selects an installation (first token fetch)
+- Updated: On automatic refresh for any cached installation
+- Deleted: Individual token eviction on expiry, or all tokens on logout
+
+**Purpose**: Enables instant installation switching (0ms delay) by keeping valid tokens for all installations in memory/storage. Protects against rate limits (5 req/min) with frequent switching.
+
+---
+
 ### 6. Device Authorization (Transient)
 
 Temporary state during device flow authentication.
@@ -188,7 +230,7 @@ const DeviceAuthorizationSchema = z.object({
 
 ### 7. Backend Session (Server-Side)
 
-Stored in Cloudflare KV with 30-day TTL.
+Stored in Cloudflare KV with **30-day sliding window TTL** (FR-025/FR-025a).
 
 **Entity**: `BackendSession`
 
@@ -200,6 +242,7 @@ Stored in Cloudflare KV with 30-day TTL.
 | `installations` | Installation[] | Yes | Array of installations | User's GitHub App installations |
 | `createdAt` | number | Yes | Unix timestamp | Session creation time |
 | `lastAccessedAt` | number | Yes | Unix timestamp | Last request using this session |
+| `lastRefreshAt` | number | Yes | Unix timestamp | **NEW (2025-11-20)**: Last token refresh time |
 
 **Zod Schema**:
 ```typescript
@@ -209,18 +252,25 @@ const BackendSessionSchema = z.object({
   accessToken: z.string().min(1),
   installations: z.array(InstallationSchema),
   createdAt: z.number().int().positive(),
-  lastAccessedAt: z.number().int().positive()
+  lastAccessedAt: z.number().int().positive(),
+  lastRefreshAt: z.number().int().positive() // NEW: tracks activity for sliding window
 });
 ```
 
 **Storage Key**: `session:${sessionToken}` where `sessionToken` is 128-char hex string
 
-**TTL**: 30 days (2,592,000 seconds)
+**TTL**: 30 days (2,592,000 seconds) - **Sliding Window** (resets on each token refresh)
+
+**Sliding Window Behavior** (2025-11-20 Clarification):
+- TTL extends by 30 days on each successful token refresh (FR-016)
+- Active users (regular token refreshes) never need to re-authenticate
+- Inactive users (30+ days no token refresh) require full device flow
+- Implementation: Update `lastRefreshAt` and reset KV TTL on every refresh
 
 **Lifecycle**:
 - Created: After successful device flow authorization
-- Updated: `lastAccessedAt` on every request
-- Deleted: After 30 days (automatic KV expiration) or on explicit logout
+- Updated: `lastAccessedAt` on every request, `lastRefreshAt` on token refresh, **TTL reset on refresh**
+- Deleted: After 30 days of complete inactivity (no refreshes) or on explicit logout
 
 ---
 
@@ -310,6 +360,37 @@ RateLimitState (server)
   → [Token refreshed, API call proceeds]
 ```
 
+### Token Refresh with Sliding Window **NEW (2025-11-20)**
+
+```
+[Token refresh triggered]
+  → Backend validates session token
+  → Backend re-exchanges installation_id for new token
+  → InstallationToken updated with new expiry
+  → TokenCache updated for this installation (FR-013a)
+  → BackendSession.lastRefreshAt updated
+  → BackendSession TTL reset to 30 days (sliding window, FR-025)
+  → [Token refreshed, session extended]
+```
+
+### Offline Mode Transition **NEW (2025-11-20)**
+
+```
+[Backend unreachable after 3 retries]
+  → Continue using cached token for read-only operations (FR-029b)
+  → Display "Limited connectivity" indicator (FR-029c)
+  → Disable/queue write operations
+  → Test backend connectivity every 30 seconds
+  → [Read-only mode until backend recovers]
+
+[Backend becomes reachable]
+  → Resume normal mode
+  → Hide offline indicator
+  → Re-enable write operations
+  → Process queued operations
+  → [Normal mode restored]
+```
+
 ### Logout
 
 ```
@@ -317,6 +398,7 @@ RateLimitState (server)
   → (User clicks logout)
   → BackendSession deleted from KV
   → UserSession cleared from electron-store
+  → TokenCache cleared (all installations)
   → [No Session]
 ```
 
@@ -330,8 +412,10 @@ RateLimitState (server)
 4. **Device codes**: Non-empty string, expires after 15 minutes
 5. **User codes**: 8 uppercase alphanumeric chars (e.g., "ABCD-1234")
 6. **Rate limits**: Max 5 requests per user per 60-second window
-7. **Session expiry**: 30 days from creation (KV TTL)
+7. **Session expiry**: 30 days sliding window (resets on token refresh, FR-025)
 8. **Token refresh trigger**: When expires_at is within 5 minutes of now
+9. **Token caching**: Cache all installation tokens, evict on 1-hour expiry (FR-013a/b)
+10. **Device timeout**: 15 minutes with "Try Again" for fresh code (FR-004a/b)
 
 ---
 
@@ -340,7 +424,8 @@ RateLimitState (server)
 | Entity | Storage | Encryption | TTL/Lifecycle |
 |--------|---------|------------|---------------|
 | UserSession | electron-store (client) | Yes (platform keychain) | Until logout |
-| BackendSession | Cloudflare KV (server) | At rest (KV default) | 30 days |
+| TokenCache | electron-store (client) | Yes (platform keychain) | Until logout or token expiry (1 hour) |
+| BackendSession | Cloudflare KV (server) | At rest (KV default) | 30 days (sliding window) |
 | DeviceAuthorization | In-memory (client) | N/A | 15 minutes |
 | RateLimitState | Cloudflare KV (server) | At rest (KV default) | 2 minutes |
 

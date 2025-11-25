@@ -4,7 +4,7 @@
 name = "issuedesk-auth"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
-node_compat = true
+nodejs_compat = true
 
 # KV Namespaces for session storage
 [[kv_namespaces]]

@@ -66,6 +66,7 @@ const api: IpcApi = {
     githubLogin: () => ipcRenderer.invoke('auth:github-login'),
     getSession: () => ipcRenderer.invoke('auth:get-session'),
     selectInstallation: (req) => ipcRenderer.invoke('auth:select-installation', req),
+    checkInstallations: () => ipcRenderer.invoke('auth:check-installations'),
     refreshInstallationToken: (req) => ipcRenderer.invoke('auth:refresh-installation-token', req),
     logout: () => ipcRenderer.invoke('auth:logout'),
   },

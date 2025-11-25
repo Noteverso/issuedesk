@@ -5,7 +5,7 @@
  * Manages backend session data with 30-day TTL and sliding window expiration.
  */
 
-import type { Env } from '../index';
+import type { WorkerEnv } from '@issuedesk/shared';
 import type { BackendSession, Installation } from '@issuedesk/shared';
 
 const SESSION_TTL_DAYS = 30;
@@ -33,7 +33,7 @@ export async function createSession(
   userId: number,
   accessToken: string,
   installations: Installation[],
-  env: Env
+  env: WorkerEnv
 ): Promise<string> {
   const sessionToken = generateSessionToken();
   const now = new Date().toISOString();
@@ -68,7 +68,7 @@ export async function createSession(
  */
 export async function getSession(
   sessionToken: string,
-  env: Env
+  env: WorkerEnv
 ): Promise<BackendSession | null> {
   const kvKey = `session:${sessionToken}`;
   const sessionData = await env.SESSIONS.get(kvKey, 'json');
@@ -100,7 +100,7 @@ export async function getSession(
 export async function updateSessionInstallations(
   sessionToken: string,
   installations: Installation[],
-  env: Env
+  env: WorkerEnv
 ): Promise<void> {
   const session = await getSession(sessionToken, env);
   if (!session) {
@@ -126,7 +126,7 @@ export async function updateSessionInstallations(
  */
 export async function deleteSession(
   sessionToken: string,
-  env: Env
+  env: WorkerEnv
 ): Promise<void> {
   const kvKey = `session:${sessionToken}`;
   await env.SESSIONS.delete(kvKey);

@@ -20,6 +20,9 @@ export interface UserSession {
   /** GitHub user profile information */
   user: User;
   
+  /** Available installations (from backend session) */
+  installations: Installation[];
+  
   /** Currently selected installation (null if none selected) */
   currentInstallation: Installation | null;
   

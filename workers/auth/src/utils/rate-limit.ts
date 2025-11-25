@@ -5,7 +5,7 @@
  * Implements 5 requests per minute per user rate limiting.
  */
 
-import type { Env } from '../index';
+import type { WorkerEnv } from '@issuedesk/shared';
 
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute in milliseconds
 const MAX_REQUESTS_PER_WINDOW = 5;
@@ -26,13 +26,13 @@ export interface RateLimitResult {
  */
 export async function checkRateLimit(
   identifier: string,
-  env: Env
+  env: WorkerEnv
 ): Promise<RateLimitResult> {
   const now = Date.now();
   const kvKey = `rate-limit:${identifier}`;
 
   // Get existing rate limit data from KV
-  const existingData = await env.SESSIONS.get<{ requests?: number[] }>(kvKey, 'json');
+  const existingData = await env.SESSIONS.get(kvKey, 'json') as { requests?: number[] } | null;
   let requests: number[] = existingData?.requests || [];
 
   // Filter out expired requests (older than 1 minute)
@@ -81,8 +81,8 @@ export async function checkRateLimit(
  */
 export async function rateLimitMiddleware(
   identifier: string,
-  env: Env,
-  corsHeaders: Record<string, string> = {}
+  env: WorkerEnv,
+  corsHeaders: Record<string, string>
 ): Promise<Response | null> {
   const result = await checkRateLimit(identifier, env);
 
@@ -118,7 +118,7 @@ export async function rateLimitMiddleware(
  * @param identifier - User ID or IP address
  * @param env - Cloudflare Worker environment
  */
-export async function clearRateLimit(identifier: string, env: Env): Promise<void> {
+export async function clearRateLimit(identifier: string, env: WorkerEnv): Promise<void> {
   const kvKey = `rate-limit:${identifier}`;
   await env.SESSIONS.delete(kvKey);
 }
