@@ -13,13 +13,41 @@ import type { WorkerEnv } from '@issuedesk/shared';
 
 export default {
   async fetch(request: Request, env: WorkerEnv, _ctx: ExecutionContext): Promise<Response> {
-    // Validate environment variables on startup
-    if (!env.GITHUB_APP_ID || !env.GITHUB_PRIVATE_KEY || !env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET) {
+    // T034: Validate environment variables on startup (FR-030)
+    const missingVars = [];
+    if (!env.GITHUB_APP_ID) missingVars.push('GITHUB_APP_ID');
+    if (!env.GITHUB_PRIVATE_KEY) missingVars.push('GITHUB_PRIVATE_KEY');
+    if (!env.GITHUB_CLIENT_ID) missingVars.push('GITHUB_CLIENT_ID');
+    if (!env.GITHUB_CLIENT_SECRET) missingVars.push('GITHUB_CLIENT_SECRET');
+    
+    if (missingVars.length > 0) {
+      console.error('[Config] Missing environment variables:', missingVars.join(', '));
       return new Response(
-        JSON.stringify({ error: 'CONFIGURATION_ERROR', message: 'Missing required environment variables' }),
+        JSON.stringify({ 
+          error: 'CONFIGURATION_ERROR', 
+          message: `Missing required environment variables: ${missingVars.join(', ')}. Set via wrangler secret put.`,
+          missing: missingVars
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+    
+    // Validate private key format (accepts both PKCS8 and PKCS1)
+    const hasPKCS8 = env.GITHUB_PRIVATE_KEY.includes('BEGIN PRIVATE KEY');
+    const hasPKCS1 = env.GITHUB_PRIVATE_KEY.includes('BEGIN RSA PRIVATE KEY');
+    
+    if (!hasPKCS8 && !hasPKCS1) {
+      console.error('[Config] Invalid GITHUB_PRIVATE_KEY format - must be PEM format');
+      return new Response(
+        JSON.stringify({ 
+          error: 'CONFIGURATION_ERROR', 
+          message: 'GITHUB_PRIVATE_KEY must be in PEM format (BEGIN PRIVATE KEY or BEGIN RSA PRIVATE KEY). See PRIVATE-KEY-CONVERSION.md'
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('[Config] Environment validation passed - all secrets configured');
 
     // CORS headers for Electron app
     const corsHeaders = {

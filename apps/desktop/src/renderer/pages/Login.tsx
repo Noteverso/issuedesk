@@ -22,6 +22,7 @@ export function Login() {
     authService.onUserCode((event) => {
       setDeviceCode(event);
       setIsLoading(true);
+      toast.info('Authentication Started', 'Please complete the authorization in your browser');
     });
 
     // Listen for login error
@@ -29,7 +30,7 @@ export function Login() {
       setError(event.message);
       setIsLoading(false);
       setDeviceCode(null);
-      toast.error('Login Failed', event.message);
+      // Note: Error is displayed in the UI banner below, no toast needed
     });
 
     // Listen for login success
@@ -38,19 +39,23 @@ export function Login() {
       setIsLoading(false);
       setDeviceCode(null);
     });
-  }, [toast]);
+
+    // Note: Event listeners remain active until component unmounts
+    // This is intentional as we want to receive events throughout the component lifecycle
+  }, []); // Empty dependency array - only register listeners once on mount
 
   const handleLogin = async () => {
     setError(null);
     setIsLoading(true);
     try {
       await authService.githubLogin();
-      toast.info('Starting authentication', 'Opening GitHub device flow...');
+      // Note: Success toast will be shown when user-code event is received
     } catch (err) {
+      // Note: Errors are handled by onLoginError event listener
+      // This catch block is for unexpected errors only
       const errorMsg = err instanceof Error ? err.message : 'Login failed';
       setError(errorMsg);
       setIsLoading(false);
-      toast.error('Login Failed', errorMsg);
     }
   };
 

@@ -17,6 +17,7 @@ import { createSession } from '../storage/sessions';
 import { errorResponse, validateRequest, mapGitHubError, ErrorCode } from '../utils/errors';
 import { rateLimitMiddleware } from '../utils/rate-limit';
 import { PollRequestSchema } from '@issuedesk/shared';
+import { logAuthSuccess, logAuthFailure } from '../utils/logger';
 
 /**
  * POST /auth/device
@@ -150,6 +151,9 @@ export async function handlePollDeviceFlow(
       env
     );
 
+    // T038: Log successful authentication (FR-012)
+    logAuthSuccess(user.id, installations[0]?.id);
+
     // Return session data
     return new Response(
       JSON.stringify({
@@ -167,6 +171,10 @@ export async function handlePollDeviceFlow(
     );
   } catch (error) {
     console.error('[DeviceFlow] Error polling device flow:', error);
+    
+    // T038: Log authentication failure (FR-012)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logAuthFailure(errorMessage, undefined, { device_code });
     const mapped = mapGitHubError(error);
 
     // Map GitHub-specific errors to appropriate HTTP status codes
