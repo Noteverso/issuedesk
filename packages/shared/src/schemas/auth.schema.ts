@@ -89,6 +89,7 @@ export const BackendSessionSchema = z.object({
   accessToken: z.string().min(1),
   createdAt: z.string().datetime(),
   lastAccessedAt: z.string().datetime(),
+  lastRefreshAt: z.string().datetime().optional(), // T060b: Sliding window TTL
   installations: z.array(InstallationSchema),
 });
 

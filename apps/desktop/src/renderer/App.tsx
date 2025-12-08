@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './components/common/ThemeProvider';
 import { Login } from './pages/Login';
 import { InstallAppPrompt } from './components/auth/InstallAppPrompt';
+import { OfflineIndicator } from './components/common/OfflineIndicator'; // T070d
 
 function AppContent() {
   const { isAuthenticated, isLoading: authLoading, session, refreshSession } = useAuth();
@@ -107,6 +108,7 @@ function AppContent() {
   return (
     <ThemeProvider>
       <ConfigProvider value={{ settings, updateSettings }}>
+        <OfflineIndicator />
         <Layout />
       </ConfigProvider>
     </ThemeProvider>

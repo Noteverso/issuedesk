@@ -7,6 +7,8 @@ import { registerCommentsHandlers } from './ipc/comments';
 import { registerSettingsHandlers } from './ipc/settings';
 import { registerSystemHandlers } from './ipc/system';
 import { registerAuthHandlers } from './ipc/auth';
+import { startTokenMonitor, stopTokenMonitor } from './services/token-monitor'; // T064/T065
+import { startConnectivityMonitor, stopConnectivityMonitor } from './services/connectivity'; // T070c
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
 
@@ -81,6 +83,12 @@ app.whenReady().then(() => {
   registerSystemHandlers();
   registerAuthHandlers(); // Feature: 002-github-app-auth
   
+  // T064/T065: Start automatic token refresh monitoring
+  startTokenMonitor();
+  
+  // T070c: Start connectivity monitoring for offline mode detection
+  startConnectivityMonitor();
+  
   createWindow();
   createMenu();
 
@@ -92,6 +100,10 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  // Stop monitors when all windows closed
+  stopTokenMonitor();
+  stopConnectivityMonitor();
+  
   if (process.platform !== 'darwin') {
     app.quit();
   }

@@ -292,6 +292,11 @@ export interface TokenInvalidEvent {
   reason: string;
 }
 
+export interface ConnectivityStatusEvent {
+  isOnline: boolean;
+  timestamp: string;
+}
+
 // Complete IPC API surface
 export interface IpcApi {
   // Issues
@@ -377,7 +382,8 @@ export interface IpcApi {
   // Event listeners
   on: (
     channel: 'sync:progress' | 'sync:conflict' | 'rate-limit:warning' | 'token:invalid' 
-      | 'auth:user-code' | 'auth:login-success' | 'auth:login-error' | 'auth:token-refreshed' | 'auth:session-expired',
+      | 'auth:user-code' | 'auth:login-success' | 'auth:login-error' | 'auth:token-refreshed' | 'auth:session-expired' 
+      | 'connectivity:status-changed',
     callback: (data: any) => void
   ) => void;
 }

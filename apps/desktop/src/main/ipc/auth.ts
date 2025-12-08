@@ -79,8 +79,33 @@ export function registerAuthHandlers(): void {
   });
 
   // auth:get-session - Retrieve current session from encrypted storage
+  // T053 & T054: Get session with validation
   ipcMain.handle('auth:get-session', async (): Promise<AuthGetSessionResponse> => {
     const session = getStoredSession();
+    
+    // T054: Validate session if it exists
+    if (session) {
+      // Check if installation token exists and is expired
+      if (session.installationToken) {
+        const expiresAt = new Date(session.installationToken.expires_at).getTime();
+        const now = Date.now();
+        
+        // Token expired - clear it but keep session for re-authentication
+        if (now >= expiresAt) {
+          console.log('[Auth] Installation token expired, clearing from session');
+          session.installationToken = null;
+          setStoredSession(session);
+        }
+      }
+      
+      // Validate session structure
+      if (!session.user || !session.userToken || !session.installations) {
+        console.error('[Auth] Invalid session structure, clearing session');
+        clearStoredSession();
+        return { session: null };
+      }
+    }
+    
     return { session };
   });
 
@@ -211,9 +236,66 @@ export function registerAuthHandlers(): void {
   });
 
   // auth:refresh-installation-token - Refresh the installation access token
-  ipcMain.handle('auth:refresh-installation-token', async (_event, _req: AuthRefreshInstallationTokenRequest): Promise<AuthRefreshInstallationTokenResponse> => {
-    // TODO: Implement in Phase 7 (T063)
-    throw new Error('auth:refresh-installation-token not implemented yet');
+  // T063: Automatic token refresh implementation
+  ipcMain.handle('auth:refresh-installation-token', async (event, req: AuthRefreshInstallationTokenRequest): Promise<AuthRefreshInstallationTokenResponse> => {
+    try {
+      const session = getStoredSession();
+      if (!session) {
+        throw new Error('No active session. Please login first.');
+      }
+
+      if (!session.installationToken) {
+        throw new Error('No installation token to refresh. Please select an installation first.');
+      }
+
+      // Call backend refresh endpoint
+      const refreshResponse = await fetch(`${BACKEND_URL}/auth/refresh-installation-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': session.userToken,
+        },
+        body: JSON.stringify({ installation_id: req.installationId }),
+      });
+
+      if (!refreshResponse.ok) {
+        const error = await refreshResponse.json();
+        console.error('[Auth] Token refresh failed:', error);
+        
+        // T068: Emit session expired event on refresh failure
+        if (refreshResponse.status === 401) {
+          const expiredEvent = { reason: 'Token refresh failed - session expired' };
+          BrowserWindow.fromWebContents(event.sender)?.webContents.send('auth:session-expired', expiredEvent);
+        }
+        
+        throw new Error(error.message || 'Failed to refresh installation token');
+      }
+
+      const tokenData = await refreshResponse.json();
+      console.log('[Auth] Installation token refreshed successfully');
+
+      // Update session with new token
+      session.installationToken = {
+        token: tokenData.token,
+        expires_at: tokenData.expires_at,
+        permissions: session.installationToken.permissions,
+        repository_selection: session.installationToken.repository_selection,
+      };
+
+      setStoredSession(session);
+
+      // T067: Emit token refreshed event
+      BrowserWindow.fromWebContents(event.sender)?.webContents.send('auth:token-refreshed');
+
+      return {
+        success: true,
+        token: tokenData.token,
+        expires_at: tokenData.expires_at,
+      };
+    } catch (error) {
+      console.error('[Auth] Token refresh error:', error);
+      throw error;
+    }
   });
 
   // auth:logout - Clear session and logout

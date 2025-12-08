@@ -169,6 +169,9 @@ export interface BackendSession {
   /** Last access timestamp for sliding window expiration (ISO 8601) */
   lastAccessedAt: string;
   
+  /** Last token refresh timestamp for sliding window TTL (ISO 8601) - T060b */
+  lastRefreshAt?: string;
+  
   /** Available installations (cached from GitHub) */
   installations: Installation[];
 }

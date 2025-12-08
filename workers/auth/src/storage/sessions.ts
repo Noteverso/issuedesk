@@ -119,6 +119,35 @@ export async function updateSessionInstallations(
 }
 
 /**
+ * Update session lastRefreshAt timestamp for sliding window TTL.
+ * Called when installation token is refreshed to reset the 30-day expiration.
+ * T060a: Implement sliding window TTL
+ * 
+ * @param sessionToken - Session token to update
+ * @param env - Cloudflare Worker environment
+ */
+export async function updateSessionRefreshTime(
+  sessionToken: string,
+  env: WorkerEnv
+): Promise<void> {
+  const session = await getSession(sessionToken, env);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  const now = new Date().toISOString();
+  session.lastRefreshAt = now;
+  session.lastAccessedAt = now;
+
+  const kvKey = `session:${sessionToken}`;
+  await env.SESSIONS.put(
+    kvKey,
+    JSON.stringify(session),
+    { expirationTtl: SESSION_TTL_SECONDS } // Reset 30-day TTL
+  );
+}
+
+/**
  * Delete session from KV storage (logout).
  * 
  * @param sessionToken - Session token to delete
