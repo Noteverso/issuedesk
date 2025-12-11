@@ -64,6 +64,24 @@ export default {
 
     const url = new URL(request.url);
     
+    // Health check endpoint (T070c: Offline mode detection)
+    if (url.pathname === '/health' && request.method === 'GET') {
+      return new Response(
+        JSON.stringify({ 
+          status: 'ok', 
+          timestamp: new Date().toISOString(),
+          service: 'issuedesk-auth'
+        }),
+        { 
+          status: 200, 
+          headers: { 
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+    
     // Route handlers for device flow
     if (url.pathname === '/auth/device' && request.method === 'POST') {
       return handleDeviceFlow(request, env, corsHeaders);

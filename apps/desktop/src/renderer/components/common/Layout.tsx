@@ -7,9 +7,16 @@ import Sidebar from './Sidebar';
 import StatusBar from './StatusBar';
 import { UserProfile } from '../auth/UserProfile';
 import { InstallationSwitcher } from '../auth/InstallationSwitcher';
+import { RepositorySelector } from '../auth/RepositorySelector';
 import { useWindowTitle } from '../../hooks/useWindowTitle';
 
-export default function Layout() {
+interface LayoutProps {
+  needsRepositorySelection?: boolean;
+  installationToken?: string;
+  onRepositorySelected?: (owner: string, name: string) => Promise<void>;
+}
+
+export default function Layout({ needsRepositorySelection, installationToken, onRepositorySelected }: LayoutProps = {}) {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Default to open on desktop
   const { settings } = useConfig();
   const { session, logout, refreshSession } = useAuth();
@@ -91,7 +98,14 @@ export default function Layout() {
         {/* Page content */}
         <main className="flex-1 overflow-auto">
           <div className="h-full">
-            <Outlet />
+            {needsRepositorySelection && installationToken && onRepositorySelected ? (
+              <RepositorySelector
+                installationToken={installationToken}
+                onRepositorySelected={onRepositorySelected}
+              />
+            ) : (
+              <Outlet />
+            )}
           </div>
         </main>
 

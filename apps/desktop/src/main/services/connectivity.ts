@@ -41,24 +41,27 @@ async function checkBackendConnectivity(): Promise<boolean> {
 /**
  * Perform connectivity check and emit events if status changes.
  */
-async function performConnectivityCheck(): Promise<void> {
+async function performConnectivityCheck(forceEmit = false): Promise<void> {
   const backendReachable = await checkBackendConnectivity();
   
   // Status changed - notify renderer
-  if (backendReachable !== isOnline) {
+  if (backendReachable !== isOnline || forceEmit) {
+    const statusChanged = backendReachable !== isOnline;
     isOnline = backendReachable;
     
-    const status = isOnline ? 'online' : 'offline';
-    console.log(`[Connectivity] Backend status changed: ${status}`);
-    
-    // Emit connectivity event to all windows
-    const windows = BrowserWindow.getAllWindows();
-    windows.forEach(win => {
-      win.webContents.send('connectivity:status-changed', {
-        isOnline,
-        timestamp: new Date().toISOString(),
+    if (statusChanged || forceEmit) {
+      const status = isOnline ? 'online' : 'offline';
+      console.log(`[Connectivity] Backend status ${statusChanged ? 'changed' : 'initial'}: ${status}`);
+      
+      // Emit connectivity event to all windows
+      const windows = BrowserWindow.getAllWindows();
+      windows.forEach(win => {
+        win.webContents.send('connectivity:status-changed', {
+          isOnline,
+          timestamp: new Date().toISOString(),
+        });
       });
-    });
+    }
   }
 }
 
@@ -73,8 +76,8 @@ export function startConnectivityMonitor(): void {
 
   console.log('[Connectivity] Starting connectivity monitor');
   
-  // Check immediately on start
-  performConnectivityCheck();
+  // Check immediately on start and emit initial status
+  performConnectivityCheck(true);
   
   // Then check periodically
   checkInterval = setInterval(performConnectivityCheck, CHECK_INTERVAL_MS);

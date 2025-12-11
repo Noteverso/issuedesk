@@ -209,18 +209,25 @@ export function registerSettingsHandlers() {
       }
 
       const client = new GitHubClient(token);
-      const result = await client.request<any[]>('/user/repos', {
-        params: {
-          sort: 'updated',
-          per_page: 100,
-        },
+      // Use getInstallationRepositories for GitHub App tokens
+      // This endpoint returns repositories accessible by the installation
+      const result = await client.getInstallationRepositories({
+        per_page: 100,
       });
       
-      if (result.success) {
-        console.log('✅ Repositories retrieved:', result.data?.length || 0);
+      if (result.success && result.data) {
+        console.log('✅ Repositories retrieved:', result.data.length);
+        return {
+          success: true,
+          data: result.data,
+        };
       }
       
-      return result;
+      return {
+        success: false,
+        data: [],
+        message: result.message || 'Failed to retrieve repositories',
+      };
     } catch (error) {
       console.error('❌ Error getting repositories:', error);
       return {

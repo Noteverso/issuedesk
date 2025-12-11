@@ -179,6 +179,38 @@ export class GitHubClient {
   }
 
   /**
+   * Get installation repositories (for GitHub App tokens)
+   */
+  async getInstallationRepositories(
+    options: {
+      per_page?: number;
+      page?: number;
+    } = {}
+  ): Promise<ApiResponse<Repository[]>> {
+    try {
+      const params = new URLSearchParams();
+      if (options.per_page) params.append('per_page', options.per_page.toString());
+      if (options.page) params.append('page', options.page.toString());
+
+      const url = params.toString() 
+        ? `/installation/repositories?${params.toString()}`
+        : '/installation/repositories';
+
+      const response: AxiosResponse<{ repositories: Repository[] }> = await this.client.get(url);
+      return {
+        data: response.data.repositories,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        data: [],
+        success: false,
+        message: (error as ApiError).message,
+      };
+    }
+  }
+
+  /**
    * Get issues for a repository
    */
   async getIssues(

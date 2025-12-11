@@ -16,6 +16,7 @@ export function OfflineIndicator() {
   useEffect(() => {
     // Listen for connectivity status changes
     const handleConnectivityChange = (event: ConnectivityStatusEvent) => {
+      console.log('[OfflineIndicator] Connectivity status:', event.isOnline ? 'online' : 'offline');
       setIsOnline(event.isOnline);
     };
 

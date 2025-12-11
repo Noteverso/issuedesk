@@ -647,3 +647,153 @@ Other key takeaways:
 - Document quirks and gotchas as you discover them
 
 This document should serve as a reference for future debugging sessions and prevent repeated mistakes.
+
+---
+
+## Repository Selection Implementation (2025-12-09)
+
+### Problem: Full-Screen Repository Selector Prevented Logout
+
+**Issue**: Initial implementation showed RepositorySelector as a full-screen overlay that replaced the entire app UI, preventing users from accessing logout button or navigation.
+
+**Root Cause**: RepositorySelector was rendered at the App.tsx level as a return statement, completely replacing the Layout component.
+
+**Solution**: Integrated RepositorySelector into the main Layout component:
+
+```typescript
+// App.tsx - Pass state to Layout via props
+<Layout 
+  needsRepositorySelection={!!(isAuthenticated && session?.installationToken && !settings?.activeRepositoryId)}
+  installationToken={session?.installationToken?.token}
+  onRepositorySelected={handleRepositorySelected}
+/>
+
+// Layout.tsx - Conditionally render in main content area
+<main className="flex-1 overflow-auto">
+  <div className="h-full">
+    {needsRepositorySelection && installationToken && onRepositorySelected ? (
+      <RepositorySelector
+        installationToken={installationToken}
+        onRepositorySelected={onRepositorySelected}
+      />
+    ) : (
+      <Outlet />
+    )}
+  </div>
+</main>
+```
+
+**Key Changes**:
+- Changed from `min-h-screen bg-background` to `h-full overflow-auto` in RepositorySelector
+- Component now fits within Layout's main content area
+- Header with logout button remains visible and functional
+
+**Lesson**: Critical UI components (like logout) should remain accessible during all user flows, even onboarding/setup flows.
+
+---
+
+### GitHub API Endpoint for Installation Repositories
+
+**Challenge**: Using `/installation/repositories` endpoint required proper method abstraction.
+
+**Solution**: Created dedicated `getInstallationRepositories()` method following the pattern of existing methods like `getIssues()`:
+
+```typescript
+// packages/github-api/src/github-client.ts
+async getInstallationRepositories(
+  options: {
+    per_page?: number;
+    page?: number;
+  } = {}
+): Promise<ApiResponse<Repository[]>> {
+  try {
+    const params = new URLSearchParams();
+    if (options.per_page) params.append('per_page', options.per_page.toString());
+    if (options.page) params.append('page', options.page.toString());
+
+    const url = params.toString() 
+      ? `/installation/repositories?${params.toString()}`
+      : '/installation/repositories';
+
+    const response: AxiosResponse<{ repositories: Repository[] }> = await this.client.get(url);
+    return {
+      data: response.data.repositories,
+      success: true,
+    };
+  } catch (error) {
+    return {
+      data: [],
+      success: false,
+      message: (error as ApiError).message,
+    };
+  }
+}
+```
+
+**Benefits**:
+- Consistent API pattern across all GitHub operations
+- Proper error handling and type safety
+- Extracts `repositories` array from response automatically
+- Single source of truth for endpoint structure
+
+**Usage**:
+```typescript
+// apps/desktop/src/main/ipc/settings.ts
+const client = new GitHubClient(token);
+const result = await client.getInstallationRepositories({ per_page: 100 });
+```
+
+**Lesson**: When adding new GitHub API operations, follow existing patterns in GitHubClient rather than using raw `client.request()` calls. This ensures consistency, proper typing, and easier maintenance.
+
+---
+
+### Type Confusion: Repository vs GitHubRepository
+
+**Issue**: RepositorySelector was using wrong `Repository` type (internal app type) instead of `GitHubRepository` (GitHub API response type).
+
+**Root Cause**: Two different types with similar names:
+- `Repository` from `types/repository.ts` - Internal app type with `fullName`, `databaseVersion`
+- `GitHubRepository` from `types/ipc.ts` - GitHub API response type with `full_name`, `owner.login`
+
+**Solution**: 
+```typescript
+import { GitHubRepository } from '@issuedesk/shared';
+
+export function RepositorySelector({ installationToken, onRepositorySelected }: RepositorySelectorProps) {
+  const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
+  // ...
+}
+```
+
+**Lesson**: Be explicit about which type you're using when dealing with external APIs vs internal domain models. Consider prefixing external types (e.g., `GitHubRepository`) to avoid confusion.
+
+---
+
+## Updated Documentation Recommendations (2025-12-09)
+
+Add to existing sections:
+
+4. **Create `REPOSITORY-SELECTION-TEST.md`**: ✅ CREATED
+   - Complete testing guide for repository selection flow
+   - 6 phases: Initial Auth → Installation → Repository Selection → Configuration → Dashboard → Validation
+   - Multiple test scenarios and validation checklist
+
+5. **Update `spec.md`**: ✅ UPDATED
+   - Added FR-037 to FR-040 for repository selection requirements
+   - Added acceptance scenarios to User Story 2
+   - Documented Layout integration pattern
+
+---
+
+## Conclusion (Updated 2025-12-09)
+
+Critical lessons for GitHub App authentication:
+
+1. **Always include User-Agent header** for GitHub API requests
+2. **Keep critical UI accessible** (logout, navigation) during all flows - integrate into Layout instead of full-screen overlays
+3. **Follow established patterns** - create typed methods in GitHubClient instead of raw API calls
+4. **Distinguish external vs internal types** - use explicit type names (GitHubRepository vs Repository)
+5. **Use proper layout containers** - `h-full overflow-auto` for components within Layout, not `min-h-screen`
+6. **Pass state through props** when child components need to conditionally render based on app state
+
+These patterns create maintainable, user-friendly authentication flows that don't trap users in setup screens.

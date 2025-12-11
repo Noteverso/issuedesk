@@ -52,12 +52,16 @@ After authenticating, a user needs to select which GitHub account/organization t
 
 **Independent Test**: User can view a list of all GitHub installations, select one, and the application stores this preference. Subsequent API calls use the selected installation's access token.
 
+**Implementation Note (2025-12-09)**: After installation token is obtained, user must manually select a repository from the installation's accessible repositories. The RepositorySelector component is integrated into the main Layout (not full-screen overlay) to ensure users can access logout and navigation controls while selecting a repository.
+
 **Acceptance Scenarios**:
 
 1. **Given** a user has authenticated and has multiple GitHub App installations, **When** they view the installation selection screen, **Then** they see all organizations/accounts where the app is installed with names and avatars
 2. **Given** a user views the installation list, **When** they select an installation, **Then** the backend exchanges the installation ID for a temporary access token valid for that installation only
 3. **Given** a user has selected an installation, **When** they navigate to other parts of the application, **Then** all GitHub API requests use the access token for the selected installation
 4. **Given** a user wants to switch installations, **When** they access the settings or account menu, **Then** they can select a different installation and obtain a new access token
+5. **Given** a user has an installation token but no active repository configured, **When** the application displays RepositorySelector, **Then** the user can still access the logout button and navigation controls in the header (IMPLEMENTED 2025-12-09)
+6. **Given** a user views the repository selection screen, **When** repositories are fetched via installation token, **Then** the system uses the `/installation/repositories` GitHub API endpoint through `client.getInstallationRepositories()` method (IMPLEMENTED 2025-12-09)
 
 ---
 
@@ -211,6 +215,13 @@ The application must protect sensitive credentials (GitHub App private keys, cli
 - **FR-034**: System MUST define WorkerEnv interface in shared package as single source of truth for Cloudflare Worker environment types, imported as @issuedesk/shared (IMPLEMENTED 2025-12-07)
 - **FR-035**: Desktop application MUST use Vite environment variables with VITE_ prefix for configuration values exposed to renderer process, with proper TypeScript definitions in vite-env.d.ts (IMPLEMENTED 2025-12-07)
 - **FR-036**: System MUST provide default fallback values for optional environment variables to ensure application functions without manual configuration during development (IMPLEMENTED 2025-12-07)
+
+**Repository Selection:**
+
+- **FR-037**: System MUST display RepositorySelector component within main Layout (not full-screen) when user has installation token but no active repository configured, ensuring logout and navigation remain accessible (IMPLEMENTED 2025-12-09)
+- **FR-038**: GitHubClient MUST provide getInstallationRepositories() method that calls /installation/repositories endpoint and returns Repository[] array, following same pattern as getIssues() (IMPLEMENTED 2025-12-09)
+- **FR-039**: RepositorySelector component MUST use h-full overflow-auto layout instead of min-h-screen to work within Layout container (IMPLEMENTED 2025-12-09)
+- **FR-040**: System MUST pass repository selection state from App.tsx to Layout via props (needsRepositorySelection, installationToken, onRepositorySelected) (IMPLEMENTED 2025-12-09)
 
 ### Key Entities
 

@@ -74,6 +74,23 @@ function AppContent() {
     }
   };
 
+  const handleRepositorySelected = async (owner: string, name: string) => {
+    console.log(`[App] Configuring repository: ${owner}/${name}`);
+    try {
+      // Set the repository in settings
+      await window.electronAPI.settings.setRepository({ owner, name });
+      
+      // Reload settings to get updated activeRepositoryId
+      const { settings: updatedSettings } = await window.electronAPI.settings.get();
+      setSettings(updatedSettings);
+      
+      console.log(`[App] ✅ Repository configured successfully`);
+    } catch (error) {
+      console.error('[App] Failed to configure repository:', error);
+      throw error;
+    }
+  };
+
   // Show login if not authenticated
   if (!isAuthenticated && !authLoading) {
     return <Login />;
@@ -109,7 +126,11 @@ function AppContent() {
     <ThemeProvider>
       <ConfigProvider value={{ settings, updateSettings }}>
         <OfflineIndicator />
-        <Layout />
+        <Layout 
+          needsRepositorySelection={!!(isAuthenticated && session?.installationToken && !settings?.activeRepositoryId)}
+          installationToken={session?.installationToken?.token}
+          onRepositorySelected={handleRepositorySelected}
+        />
       </ConfigProvider>
     </ThemeProvider>
   );

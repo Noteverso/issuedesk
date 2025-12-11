@@ -108,3 +108,10 @@ const api: IpcApi = {
 // Expose API to renderer via contextBridge
 contextBridge.exposeInMainWorld('electronAPI', api);
 
+// Expose development helpers (only in dev mode)
+if (process.env.NODE_ENV === 'development') {
+  contextBridge.exposeInMainWorld('devAPI', {
+    checkTokenNow: () => ipcRenderer.invoke('dev:check-token-now'),
+  });
+}
+

@@ -7,8 +7,9 @@ import { registerCommentsHandlers } from './ipc/comments';
 import { registerSettingsHandlers } from './ipc/settings';
 import { registerSystemHandlers } from './ipc/system';
 import { registerAuthHandlers } from './ipc/auth';
-import { startTokenMonitor, stopTokenMonitor } from './services/token-monitor'; // T064/T065
+import { startTokenMonitor, stopTokenMonitor, checkTokenNow } from './services/token-monitor'; // T064/T065
 import { startConnectivityMonitor, stopConnectivityMonitor } from './services/connectivity'; // T070c
+import { ipcMain } from 'electron';
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
 
@@ -88,6 +89,15 @@ app.whenReady().then(() => {
   
   // T070c: Start connectivity monitoring for offline mode detection
   startConnectivityMonitor();
+  
+  // Development helper: Manual token check trigger
+  if (isDev) {
+    ipcMain.handle('dev:check-token-now', () => {
+      console.log('[Dev] Manual token check triggered');
+      checkTokenNow();
+      return { success: true };
+    });
+  }
   
   createWindow();
   createMenu();
