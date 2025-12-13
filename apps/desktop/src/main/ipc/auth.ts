@@ -20,6 +20,7 @@ import type {
   Installation
 } from '@issuedesk/shared';
 import { getStoredSession, setStoredSession, clearStoredSession } from '../storage/auth-store';
+import { SettingsManager } from '../settings/manager';
 
 // Backend Worker URL (development: localhost, production: deployed worker)
 const BACKEND_URL = process.env.AUTH_WORKER_URL || 'http://localhost:8787';
@@ -289,8 +290,6 @@ export function registerAuthHandlers(): void {
 
       return {
         success: true,
-        token: tokenData.token,
-        expires_at: tokenData.expires_at,
       };
     } catch (error) {
       console.error('[Auth] Token refresh error:', error);
@@ -330,6 +329,11 @@ export function registerAuthHandlers(): void {
 
     // Always clear local storage
     clearStoredSession();
+    
+    // Also clear active repository since it's tied to the authenticated session
+    const settingsManager = new SettingsManager();
+    settingsManager.setActiveRepository(null);
+    
     return { success: true };
   });
 }

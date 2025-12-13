@@ -96,8 +96,14 @@ const api: IpcApi = {
       'auth:session-expired'
     ];
     if (validChannels.includes(channel)) {
-      ipcRenderer.on(channel, (_, data) => callback(data));
+      const handler = (_: any, data: any) => callback(data);
+      ipcRenderer.on(channel, handler);
+      // Return unsubscribe function for cleanup
+      return () => {
+        ipcRenderer.off(channel, handler);
+      };
     }
+    return () => {};
   },
 };
 

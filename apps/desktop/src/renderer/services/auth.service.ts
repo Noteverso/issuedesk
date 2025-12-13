@@ -89,9 +89,10 @@ export class AuthService {
    * Display this code to user for GitHub authorization.
    * 
    * @param callback - Called when device code is available
+   * @returns Unsubscribe function to remove listener
    */
-  onUserCode(callback: (event: AuthUserCodeEvent) => void): void {
-    window.electronAPI.on('auth:user-code', callback);
+  onUserCode(callback: (event: AuthUserCodeEvent) => void): () => void {
+    return window.electronAPI.on('auth:user-code', callback);
   }
 
   /**
@@ -99,9 +100,10 @@ export class AuthService {
    * Called after user completes GitHub authorization.
    * 
    * @param callback - Called with user data and installations
+   * @returns Unsubscribe function to remove listener
    */
-  onLoginSuccess(callback: (event: AuthLoginSuccessEvent) => void): void {
-    window.electronAPI.on('auth:login-success', callback);
+  onLoginSuccess(callback: (event: AuthLoginSuccessEvent) => void): () => void {
+    return window.electronAPI.on('auth:login-success', callback);
   }
 
   /**
@@ -109,9 +111,10 @@ export class AuthService {
    * Called if login fails at any step.
    * 
    * @param callback - Called with error details
+   * @returns Unsubscribe function to remove listener
    */
-  onLoginError(callback: (event: AuthLoginErrorEvent) => void): void {
-    window.electronAPI.on('auth:login-error', callback);
+  onLoginError(callback: (event: AuthLoginErrorEvent) => void): () => void {
+    return window.electronAPI.on('auth:login-error', callback);
   }
 
   /**
@@ -119,9 +122,10 @@ export class AuthService {
    * Called after successful automatic token refresh.
    * 
    * @param callback - Called when token is refreshed
+   * @returns Unsubscribe function to remove listener
    */
-  onTokenRefreshed(callback: () => void): void {
-    window.electronAPI.on('auth:token-refreshed', callback);
+  onTokenRefreshed(callback: () => void): () => void {
+    return window.electronAPI.on('auth:token-refreshed', callback);
   }
 
   /**
@@ -129,9 +133,10 @@ export class AuthService {
    * Called when session expires and user needs to re-authenticate.
    * 
    * @param callback - Called when session expires
+   * @returns Unsubscribe function to remove listener
    */
-  onSessionExpired(callback: () => void): void {
-    window.electronAPI.on('auth:session-expired', callback);
+  onSessionExpired(callback: () => void): () => void {
+    return window.electronAPI.on('auth:session-expired', callback);
   }
 }
 

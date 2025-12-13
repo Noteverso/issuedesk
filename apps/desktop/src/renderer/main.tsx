@@ -12,13 +12,13 @@ import './styles/globals.css';
 
 const routes = [
   {
-    path: '/login',
-    element: <Login />,
-  },
-  {
     path: '/',
     element: <App />,
     children: [
+      {
+        path: 'login',
+        element: <Login />,
+      },
       {
         index: true,
         loader: () => redirect('/dashboard'),

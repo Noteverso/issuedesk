@@ -20,12 +20,11 @@ export function OfflineIndicator() {
       setIsOnline(event.isOnline);
     };
 
-    window.electronAPI.on('connectivity:status-changed', handleConnectivityChange);
+    const unsubscribe = window.electronAPI.on('connectivity:status-changed', handleConnectivityChange);
 
     // Cleanup listener on unmount
     return () => {
-      // Note: electronAPI doesn't provide removeListener, so listener persists
-      // This is acceptable as connectivity events are infrequent
+      unsubscribe();
     };
   }, []);
 

@@ -5,50 +5,66 @@
  * Provides GitHub App authentication UI with device flow.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import { DeviceCodeModal } from '../components/auth/DeviceCodeModal';
 import { useToast, ToastContainer } from '../components/common/Toast';
+import { useAuth } from '../contexts/AuthContext';
 import type { AuthUserCodeEvent, AuthLoginErrorEvent } from '@issuedesk/shared';
 
 export function Login() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [deviceCode, setDeviceCode] = useState<AuthUserCodeEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loginSuccessful, setLoginSuccessful] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
+    // Store unsubscribe functions for cleanup
+    const unsubscribers: Array<() => void> = [];
+
     // Listen for device code event
-    authService.onUserCode((event) => {
+    const unsubUserCode = authService.onUserCode((event) => {
       setDeviceCode(event);
       setIsLoading(true);
       toast.info('Authentication Started', 'Please complete the authorization in your browser');
     });
+    unsubscribers.push(unsubUserCode);
 
     // Listen for login error
-    authService.onLoginError((event: AuthLoginErrorEvent) => {
+    const unsubLoginError = authService.onLoginError((event: AuthLoginErrorEvent) => {
       setError(event.message);
       setIsLoading(false);
       setDeviceCode(null);
       // Note: Error is displayed in the UI banner below, no toast needed
     });
+    unsubscribers.push(unsubLoginError);
 
     // Listen for login success
-    authService.onLoginSuccess(() => {
+    const unsubLoginSuccess = authService.onLoginSuccess(() => {
       toast.success('Login Successful', 'Welcome to IssueDesk!');
       setIsLoading(false);
       setDeviceCode(null);
-      // Navigate to dashboard after successful login
-      setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-      }, 500); // Small delay to show success toast
+      setLoginSuccessful(true);
+      // Don't navigate here - wait for auth context to update session
     });
+    unsubscribers.push(unsubLoginSuccess);
 
-    // Note: Event listeners remain active until component unmounts
-    // This is intentional as we want to receive events throughout the component lifecycle
-  }, []); // Empty dependency array - only register listeners once on mount
+    // Cleanup: Unsubscribe all listeners when component unmounts
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [toast]);
+
+  // Navigate to dashboard when authenticated (after session is loaded)
+  useEffect(() => {
+    if (loginSuccessful && isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [loginSuccessful, isAuthenticated, navigate]);
 
   const handleLogin = async () => {
     setError(null);

@@ -98,7 +98,12 @@ export class SettingsManager {
   /**
    * Set active repository
    */
-  setActiveRepository(id: string): void {
+  setActiveRepository(id: string | null): void {
+    if (id === null) {
+      store.set('activeRepositoryId', null);
+      return;
+    }
+
     const repos = store.get('repositories');
     const exists = repos.some((r) => r.id === id);
 

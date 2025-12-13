@@ -371,12 +371,5 @@ export interface IpcApi {
       | 'auth:user-code' | 'auth:login-success' | 'auth:login-error' | 'auth:token-refreshed' | 'auth:session-expired' 
       | 'connectivity:status-changed',
     callback: (data: any) => void
-  ) => void;
-}
-
-// Error response
-export interface IpcError {
-  code: string;
-  message: string;
-  details?: any;
+  ) => () => void;
 }

@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { UserSession, User, Installation } from '@issuedesk/shared';
+import type { UserSession } from '@issuedesk/shared';
 import { authService } from '../services/auth.service';
 
 interface AuthContextType {
@@ -27,15 +27,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadSession();
 
     // Listen for login success
-    authService.onLoginSuccess((event) => {
+    const unsubLoginSuccess = authService.onLoginSuccess(async () => {
       // Session will be saved by IPC handler, reload it
-      loadSession();
+      await loadSession();
     });
 
     // Listen for session expired
-    authService.onSessionExpired(() => {
+    const unsubSessionExpired = authService.onSessionExpired(() => {
       setSession(null);
     });
+
+    // Cleanup listeners on unmount
+    return () => {
+      unsubLoginSuccess();
+      unsubSessionExpired();
+    };
   }, []);
 
   const loadSession = async () => {

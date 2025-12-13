@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { AppSettings } from '@issuedesk/shared';
 import Layout from './components/common/Layout';
 import { ConfigProvider } from './contexts/ConfigContext';
@@ -101,18 +101,15 @@ function AppContent() {
     }
   }, [isAuthenticated, authLoading, navigate, location.pathname]);
 
-  // Redirect authenticated users away from login page
-  useEffect(() => {
-    if (!authLoading && isAuthenticated && location.pathname === '/login') {
-      console.log('[App] Authenticated user on login page, redirecting to dashboard');
-      navigate('/dashboard', { replace: true });
-    }
-  }, [isAuthenticated, authLoading, navigate, location.pathname]);
-
   // Show install prompt if authenticated but no installations
   // This should be shown BEFORE the Layout/routing
   if (isAuthenticated && session && (!session.installations || session.installations.length === 0)) {
     return <InstallAppPrompt onRetry={handleCheckInstallations} isRetrying={checkingInstallations} />;
+  }
+
+  // Show login page without layout
+  if (location.pathname === '/login') {
+    return <Outlet />;
   }
 
   if (loading || authLoading) {
