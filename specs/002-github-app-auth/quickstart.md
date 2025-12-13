@@ -113,12 +113,12 @@ Create two KV namespaces (one for production, one for development):
 cd /Users/byodian/personal/noteverso/issuedesk/workers/auth
 
 # Production namespace
-wrangler kv:namespace create "AUTH_SESSIONS"
-# Output: { binding = "AUTH_SESSIONS", id = "abc123..." }
+wrangler kv:namespace create "SESSIONS"
+# Output: { binding = "SESSIONS", id = "abc123..." }
 
-# Development namespace
-wrangler kv:namespace create "AUTH_SESSIONS" --preview
-# Output: { binding = "AUTH_SESSIONS", preview_id = "def456..." }
+# Development namespace (preview)
+wrangler kv:namespace create "SESSIONS" --preview
+# Output: { binding = "SESSIONS", preview_id = "def456..." }
 ```
 
 **Save the namespace IDs** - you'll add them to `wrangler.toml`.
@@ -130,32 +130,53 @@ Edit `workers/auth/wrangler.toml`:
 ```toml
 name = "issuedesk-auth"
 main = "src/index.ts"
-compatibility_date = "2025-11-06"
+compatibility_date = "2024-11-01"
 nodejs_compat = true
 
-[env.production]
-kv_namespaces = [
-  { binding = "AUTH_SESSIONS", id = "abc123..." }  # Replace with your production ID
-]
-
-[env.development]
-kv_namespaces = [
-  { binding = "AUTH_SESSIONS", preview_id = "def456..." }  # Replace with your preview ID
-]
-
-# Environment variables (non-secret)
-[vars]
-GITHUB_APP_ID = "123456"  # Replace with your App ID
-GITHUB_CLIENT_ID = "Iv1.abc123def456"  # Replace with your Client ID
+# KV Namespaces for session storage
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "abc123..."  # Replace with your production ID from step 2.2
+preview_id = "def456..."  # Replace with your preview ID from step 2.2
 ```
 
-### 2.4 Store Secrets
+**Note**: The quickstart shows a simplified configuration. The actual `wrangler.toml` includes environment-specific configurations for development and production.
 
-Store sensitive values as Cloudflare secrets (never in git):
+### 2.4 Set Environment Variables (Non-Secret)
+
+The GitHub App ID and Client ID are not sensitive and can be stored in `wrangler.toml` or set via Wrangler. For simplicity, we'll use Cloudflare secrets for all credentials:
 
 ```fish
 cd /Users/byodian/personal/noteverso/issuedesk/workers/auth
 
+# Store all GitHub App credentials as secrets
+wrangler secret put GITHUB_APP_ID
+# Enter your App ID when prompted (e.g., 123456)
+
+wrangler secret put GITHUB_CLIENT_ID
+# Enter your Client ID when prompted (e.g., Iv1.abc123def456)
+```
+
+### 2.4 Set Environment Variables (Non-Secret)
+
+The GitHub App ID and Client ID are not sensitive and can be stored in `wrangler.toml` or set via Wrangler. For simplicity, we'll use Cloudflare secrets for all credentials:
+
+```fish
+cd /Users/byodian/personal/noteverso/issuedesk/workers/auth
+
+# Store all GitHub App credentials as secrets
+wrangler secret put GITHUB_APP_ID
+# Enter your App ID when prompted (e.g., 123456)
+
+wrangler secret put GITHUB_CLIENT_ID
+# Enter your Client ID when prompted (e.g., Iv1.abc123def456)
+```
+
+### 2.5 Store Secrets
+
+Store sensitive values as Cloudflare secrets (never in git):
+
+```fish
 # Store client secret
 wrangler secret put GITHUB_CLIENT_SECRET
 # Paste your client secret when prompted
@@ -169,6 +190,12 @@ cat ~/Downloads/issuedesk-dev.2025-11-06.private-key.pem | wrangler secret put G
 ```fish
 wrangler secret list
 ```
+
+Expected output should show all 4 secrets:
+- GITHUB_APP_ID
+- GITHUB_CLIENT_ID  
+- GITHUB_CLIENT_SECRET
+- GITHUB_PRIVATE_KEY
 
 ---
 
@@ -245,30 +272,64 @@ pnpm run dev:desktop
 
 ### 5.1 Test Login
 
-1. In the Electron app, click **"Login with GitHub"**
-2. A dialog should show:
-   - User code (e.g., "ABCD-1234")
-   - "Open GitHub to authorize" button
-3. Click the button → GitHub authorization page opens
-4. Enter the user code and authorize the app
-5. Return to Electron app → should show "Logged in as [your username]"
+1. In the Electron app, click **"Login with GitHub"** on the login page
+2. A modal dialog should show:
+   - User code (e.g., "ABCD-1234") - automatically copied to clipboard
+   - "Open GitHub" button
+3. Click the button → GitHub authorization page opens in your browser
+4. Paste the user code (already in clipboard) and authorize the app
+5. Return to Electron app → should automatically:
+   - Detect successful authorization
+   - Fetch your GitHub installations
+   - Auto-select the first available installation
+   - Navigate to the dashboard showing "Logged in as [your username]"
 
-### 5.2 Test Installation Selection
+### 5.2 Test Zero-Installation Scenario
 
-1. After login, you should see a dropdown or list of installations
-2. Select your test installation
-3. App should now be able to make authenticated GitHub API calls
+If you complete device flow but haven't installed the GitHub App yet:
 
-### 5.3 Verify Token Storage
+1. After authorization, the app displays **InstallAppPrompt** with:
+   - Clear explanation of what happened
+   - Direct link to GitHub App installation page
+   - Step-by-step installation guide
+   - "Check Again" button
+2. Click the installation link → install the app on your account/repos
+3. Return to app, click "Check Again" → installations refresh
+4. First installation auto-selected → navigate to dashboard
+
+### 5.3 Test Multi-Installation Switching
+
+1. After login, check the top-right corner for **InstallationSwitcher** dropdown
+2. If you have multiple installations (multiple orgs/accounts), select different ones
+3. App should reload with data from the selected installation
+
+### 5.4 Verify Token Storage
 
 ```fish
-# On macOS, tokens are stored in Keychain
+# On macOS, tokens are stored in Keychain via electron-store
 # Check electron-store location:
 ls ~/Library/Application\ Support/issuedesk/
-# You should see a config.json file (encrypted)
+# You should see a config.json file (encrypted by Electron safeStorage)
 ```
 
 **DO NOT commit this file** - it contains encrypted tokens.
+
+### 5.5 Test Logout
+
+1. Click your user profile in the top-right corner
+2. Click "Logout" button
+3. Confirm the logout action
+4. App should:
+   - Call backend `/auth/logout` endpoint to delete server session
+   - Clear local session storage
+   - Navigate back to login page
+
+### 5.6 Test Session Persistence
+
+1. Close the Electron app completely
+2. Reopen the app
+3. Should automatically restore your session and show dashboard (no re-login needed)
+4. Session persists for 30 days (sliding window - extends on token refresh)
 
 ---
 
@@ -373,14 +434,52 @@ const allowedOrigins = [
 
 ---
 
-### Issue: Polling times out
+### Issue: Polling times out after 15 minutes
 
-**Cause**: User didn't authorize within 15 minutes
+**Cause**: User didn't authorize within the timeout period
 
 **Fix**:
-1. Check polling interval is 5 seconds (not faster)
-2. Verify user code is displayed correctly
-3. Ensure browser opens to correct `verification_uri`
+1. Device code modal should show timeout error message
+2. Click "Try Again" button to generate fresh device code
+3. Complete authorization within 15 minutes
+4. Polling interval is 5 seconds (don't modify)
+
+---
+
+### Issue: Login page infinitely refreshes
+
+**Cause**: Navigation loop between login and authenticated routes
+
+**Fix**: Already resolved in current implementation
+- AuthGuard checks location before navigating
+- Login page doesn't auto-redirect authenticated users
+- App component handles auth state navigation properly
+
+---
+
+### Issue: "No installation token found" after login
+
+**Cause**: Installation token not obtained or repository not selected
+
+**Fix**:
+1. Check that installations were fetched after device flow
+2. Verify first installation was auto-selected
+3. If zero installations, InstallAppPrompt should appear
+4. Install GitHub App on your account, click "Check Again"
+5. Repository selector should appear - select a repository
+
+---
+
+### Issue: Cannot access dashboard/issues after selecting repository
+
+**Cause**: Auth Guard or installation token issue
+
+**Fix**:
+1. Open DevTools Console (View → Toggle Developer Tools)
+2. Check for authentication errors in console
+3. Verify installation token exists in session storage
+4. Try logging out and logging in again
+5. Check backend logs for token refresh errors
 
 ---
 
@@ -388,16 +487,26 @@ const allowedOrigins = [
 
 Before considering setup complete, verify:
 
-- [ ] Worker responds to `POST /auth/device`
-- [ ] Desktop app shows user code dialog on login click
-- [ ] Browser opens to GitHub authorization page
-- [ ] After authorization, app shows user profile
-- [ ] Installation list displays correctly
-- [ ] Selecting installation enables GitHub API calls
-- [ ] Tokens are stored encrypted (check electron-store)
-- [ ] Logout clears all local session data
-- [ ] Worker enforces rate limits (test with 6 rapid requests)
-- [ ] Token auto-refreshes before 1-hour expiry
+- [ ] Worker responds to `POST /auth/device` with device_code and user_code
+- [ ] Desktop app shows device code modal on login click  
+- [ ] User code is automatically copied to clipboard
+- [ ] "Open GitHub" button opens browser to GitHub authorization page
+- [ ] After authorization, app detects success and closes modal
+- [ ] Zero-installation scenario shows InstallAppPrompt with installation link
+- [ ] First available installation is auto-selected after login
+- [ ] Dashboard displays user profile with avatar and name
+- [ ] InstallationSwitcher dropdown appears when multiple installations exist
+- [ ] Selecting different installation reloads app with new context
+- [ ] Repository selector appears when no repository configured
+- [ ] Logout button clears session and returns to login page
+- [ ] Backend `/auth/logout` endpoint deletes server session
+- [ ] Tokens are stored encrypted (check electron-store with safeStorage)
+- [ ] App session persists across restarts (30-day sliding window)
+- [ ] Worker enforces rate limits (test with 6+ rapid requests → 429 error)
+- [ ] Token auto-refreshes every ~55 minutes (check logs)
+- [ ] Offline indicator shows when backend unreachable
+- [ ] Navigation works correctly (login → dashboard → protected routes)
+- [ ] AuthGuard redirects to login when no installation token
 
 ---
 

@@ -10,10 +10,12 @@
 issuedesk/
 ├── apps/
 │   ├── desktop/          # Electron 桌面应用
-│   └── mobile/           # React Native 移动应用
+│   └── mobile/           # React Native 移动应用  
 ├── packages/
 │   ├── shared/           # 共享类型和工具
 │   └── github-api/       # GitHub API 客户端
+├── workers/
+│   └── auth/             # Cloudflare Worker 认证后端
 └── package.json          # 根包配置（含 workspaces）
 ```
 
@@ -33,6 +35,18 @@ pnpm install
 ```
 
 ## 开发
+
+### 认证后端 (Cloudflare Worker)
+
+```bash
+# 开发模式（本地）
+pnpm dev:auth
+
+# 部署到 Cloudflare
+pnpm deploy:auth
+```
+
+**首次设置**: 参见 [workers/auth/ENV_SETUP.md](workers/auth/ENV_SETUP.md)
 
 ### 桌面应用 (Electron)
 
@@ -77,30 +91,47 @@ pnpm build:all
 
 ### 桌面应用 MVP 功能
 
-1. **管理 Issues**
+1. **GitHub App 认证**
+   - 安全的 GitHub App 设备流认证
+   - 自动token刷新（无需重新登录）
+   - 多组织/账户支持
+   - 会话持久化（30天滑动窗口）
+
+2. **管理 Issues**
    - 创建、编辑、删除 Issues
    - 支持纯文本编辑
    - 状态管理（开放/关闭）
+   - 评论管理
 
-2. **管理 Labels**
+3. **管理 Labels**
    - 创建、编辑、删除标签
    - 颜色管理
    - 标签分类
 
-3. **项目配置**
-   - GitHub Token 配置
-   - 默认仓库设置
-   - 用户信息管理
+4. **项目配置**
+   - 仓库选择
+   - 主题设置（亮色/暗色）
+   - 编辑器首选项
 
 ## 配置说明
 
-### GitHub Token 配置
+### GitHub App 认证设置
 
-1. 在 GitHub 设置中创建 Personal Access Token
-2. 需要的权限：
-   - `repo` (完整仓库访问)
-   - `user` (用户信息读取)
-3. 在桌面应用的设置页面配置 Token
+IssueDesk 使用 GitHub App 进行安全认证。无需个人访问令牌（PAT）！
+
+**首次使用**:
+1. 启动桌面应用
+2. 点击"Login with GitHub"
+3. 在浏览器中授权应用
+4. 系统会自动选择第一个可用的安装
+
+**安装 GitHub App** (如果尚未安装):
+1. 访问 GitHub App 安装页面
+2. 选择要授予访问权限的仓库
+3. 点击"Install"
+4. 返回应用点击"Check Again"刷新安装列表
+
+**详细设置指南**: 参见 [specs/002-github-app-auth/quickstart.md](specs/002-github-app-auth/quickstart.md)
 
 ### 仓库配置
 
@@ -140,10 +171,24 @@ pnpm clean
 ## 技术栈
 
 - **桌面应用**: Electron + React + TypeScript + Tailwind CSS
-- **移动应用**: React Native + Expo + TypeScript
+- **认证后端**: Cloudflare Workers + TypeScript
+- **存储**: Cloudflare KV (会话), Electron safeStorage (tokens)
+- **移动应用**: React Native + Expo + TypeScript  
 - **共享包**: TypeScript + Zod
 - **API 客户端**: Axios + TypeScript
 - **包管理**: pnpm workspaces
+
+## 架构
+
+### 认证流程
+
+1. **设备流认证**: GitHub App 设备流（无需 OAuth回调）
+2. **后端安全**: 所有敏感凭据（私钥、密钥）仅存储在 Cloudflare Worker
+3. **Token管理**: 1小时access tokens，30天会话持久化
+4. **自动刷新**: Token在过期前5分钟自动刷新
+5. **离线支持**: 后端不可达时使用缓存token的只读模式
+
+详见 [specs/002-github-app-auth/](specs/002-github-app-auth/) 了解完整的设计和实现细节。
 
 ## 许可证
 

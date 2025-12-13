@@ -9,6 +9,11 @@ worker/
 .env.local
 .dev.vars
 
+# Private keys and certificates
+*.pem
+*.key
+*.p8
+
 # Logs
 *.log
 wrangler.log

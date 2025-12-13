@@ -17,6 +17,21 @@ export interface RateLimitResult {
 }
 
 /**
+ * Generate rate limit headers for responses.
+ * T083: Add rate limit headers to all Worker responses.
+ * 
+ * @param result - Rate limit check result
+ * @returns Headers object with rate limit information
+ */
+export function getRateLimitHeaders(result: RateLimitResult): Record<string, string> {
+  return {
+    'X-RateLimit-Limit': MAX_REQUESTS_PER_WINDOW.toString(),
+    'X-RateLimit-Remaining': result.remaining.toString(),
+    'X-RateLimit-Reset': result.resetAt.toISOString(),
+  };
+}
+
+/**
  * Check if a request is within rate limits.
  * Stores request timestamps in KV with 1-minute TTL.
  * 
@@ -72,6 +87,7 @@ export async function checkRateLimit(
 /**
  * Rate limit middleware for Worker handlers.
  * Returns 429 error response if rate limit exceeded.
+ * T083: Returns rate limit headers for both successful and failed requests.
  * 
  * @example
  * ```typescript
@@ -98,9 +114,7 @@ export async function rateLimitMiddleware(
         status: 429,
         headers: {
           'Content-Type': 'application/json',
-          'X-RateLimit-Limit': MAX_REQUESTS_PER_WINDOW.toString(),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': result.resetAt.toISOString(),
+          ...getRateLimitHeaders(result),
           'Retry-After': '60',
           ...corsHeaders,
         },
@@ -110,6 +124,26 @@ export async function rateLimitMiddleware(
 
   // Rate limit OK - return null (no error)
   return null;
+}
+
+/**
+ * Apply rate limit check and return both the result and any error response.
+ * T083: Enhanced version that returns rate limit info for successful requests.
+ * 
+ * @param identifier - User ID or IP address for rate limiting
+ * @param env - Cloudflare Worker environment
+ * @param corsHeaders - CORS headers to include
+ * @returns Object with rate limit result and optional error response
+ */
+export async function checkRateLimitWithHeaders(
+  identifier: string,
+  env: WorkerEnv,
+  corsHeaders: Record<string, string>
+): Promise<{ result: RateLimitResult; errorResponse: Response | null }> {
+  const result = await checkRateLimit(identifier, env);
+  const errorResponse = await rateLimitMiddleware(identifier, env, corsHeaders);
+  
+  return { result, errorResponse };
 }
 
 /**

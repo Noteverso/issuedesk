@@ -84,23 +84,28 @@ export function InstallationSwitcher({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent transition-colors"
-        aria-label="Switch installation"
+        aria-label={`Switch installation: currently using ${currentInstallation.account.login}`}
         aria-expanded={isOpen}
+        aria-haspopup="listbox"
       >
         <img
           src={currentInstallation.account.avatar_url}
-          alt={currentInstallation.account.login}
+          alt=""
           className="w-6 h-6 rounded-full"
         />
         <span className="text-sm font-medium hidden sm:inline">
           {currentInstallation.account.login}
         </span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50">
+        <div
+          className="absolute right-0 mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50"
+          role="listbox"
+          aria-label="Installation list"
+        >
           <div className="p-2 border-b border-border">
             <p className="text-xs text-muted-foreground px-2 py-1">
               Switch Installation
@@ -128,17 +133,21 @@ export function InstallationSwitcher({
                     ${isSwitching ? 'opacity-50 cursor-wait' : ''}
                     disabled:cursor-not-allowed
                   `}
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-label={`${account.login}${isSelected ? ' (current)' : ''} - ${repository_selection === 'all' ? 'All repositories' : 'Selected repositories'}`}
+                  aria-busy={isSwitching}
                 >
                   {/* Avatar */}
                   <div className="flex-shrink-0 relative">
                     <img
                       src={account.avatar_url}
-                      alt={account.login}
+                      alt=""
                       className="w-10 h-10 rounded-full"
                     />
                     {account.type === 'Organization' && (
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center">
-                        <Building2 className="w-3 h-3 text-muted-foreground" />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-card border border-border rounded-full flex items-center justify-center" title="Organization">
+                        <Building2 className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
                       </div>
                     )}
                   </div>
@@ -157,9 +166,9 @@ export function InstallationSwitcher({
                   {/* Status */}
                   <div className="flex-shrink-0">
                     {isSwitching ? (
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-label="Switching installation..." />
                     ) : isSelected ? (
-                      <Check className="w-4 h-4 text-primary" />
+                      <Check className="w-4 h-4 text-primary" aria-label="Currently selected" aria-hidden="true" />
                     ) : null}
                   </div>
                 </button>
