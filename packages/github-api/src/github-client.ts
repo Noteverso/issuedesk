@@ -23,15 +23,22 @@ export class GitHubClient {
   private client: AxiosInstance;
   private token: string;
   private rateLimitTracker: RateLimitTracker;
+  private refreshCallback?: () => Promise<string>;
 
-  constructor(token: string) {
+  /**
+   * Create a GitHubClient instance
+   * @param token GitHub API token (PAT or OAuth token)
+   * @param options Optional configuration including refresh callback for token expiry
+   */
+  constructor(token: string, options?: { refreshCallback?: () => Promise<string> }) {
     this.token = token;
+    this.refreshCallback = options?.refreshCallback;
     this.rateLimitTracker = new RateLimitTracker(0.2); // Warn at 20% remaining
     
     this.client = axios.create({
       baseURL: GITHUB_API_BASE_URL,
       headers: {
-        'Authorization': `token ${token}`,
+        'Authorization': `Bearer ${token}`,
         'Accept': `application/vnd.github.v3+json`,
         'X-GitHub-Api-Version': GITHUB_API_VERSION,
         'User-Agent': 'IssueDesk-Client/1.0.0',
@@ -62,6 +69,14 @@ export class GitHubClient {
         return Promise.reject(apiError);
       }
     );
+  }
+
+  /**
+   * Update the authentication token (e.g., after token refresh)
+   */
+  setToken(token: string): void {
+    this.token = token;
+    this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }
 
   /**

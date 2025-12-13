@@ -1,12 +1,10 @@
 import { ipcMain } from 'electron';
 import { GitHubClient } from '@issuedesk/github-api';
 import { SettingsManager } from '../settings/manager';
-import { KeychainManager } from '../security/keychain';
 import { r2Service } from '../services/r2';
 
 // Initialize managers
 const settingsManager = new SettingsManager();
-const keychainManager = new KeychainManager();
 
 /**
  * Register all settings-related IPC handlers
@@ -101,103 +99,7 @@ export function registerSettingsHandlers() {
     }
   });
 
-  // Get token
-  ipcMain.handle('settings:getToken', async () => {
-    try {
-      const token = keychainManager.getToken();
-      
-      console.log('✅ Token retrieved:', token ? '***' : 'none');
-      return { token };
-    } catch (error) {
-      console.error('❌ Error getting token:', error);
-      return { token: null };
-    }
-  });
-
-  // Set token
-  ipcMain.handle('settings:setToken', async (event, req) => {
-    try {
-      keychainManager.setToken(req.token);
-      
-      console.log('✅ Token set for user:', req.username);
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error setting token:', error);
-      return { success: false };
-    }
-  });
-
-  // Test GitHub connection
-  ipcMain.handle('settings:testConnection', async (event, token: string) => {
-    try {
-      if (!token) {
-        return {
-          success: false,
-          data: false,
-          message: 'Token is required',
-        };
-      }
-
-      const client = new GitHubClient(token);
-      
-      // Try to get authenticated user to verify token
-      const result = await client.request<any>('/user');
-      
-      if (result.success && result.data) {
-        console.log('✅ GitHub connection successful for user:', result.data.login);
-        return {
-          success: true,
-          data: true,
-          message: `Connected as ${result.data.login}`,
-        };
-      } else {
-        console.log('❌ GitHub connection failed');
-        return {
-          success: false,
-          data: false,
-          message: 'Failed to authenticate',
-        };
-      }
-    } catch (error) {
-      console.error('❌ Error testing GitHub connection:', error);
-      return {
-        success: false,
-        data: false,
-        message: error instanceof Error ? error.message : 'Connection failed',
-      };
-    }
-  });
-
-  // Get GitHub user
-  ipcMain.handle('settings:getUser', async (event, token: string) => {
-    try {
-      if (!token) {
-        return {
-          success: false,
-          data: null,
-          message: 'Token is required',
-        };
-      }
-
-      const client = new GitHubClient(token);
-      const result = await client.request<any>('/user');
-      
-      if (result.success) {
-        console.log('✅ GitHub user retrieved:', result.data?.login);
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('❌ Error getting GitHub user:', error);
-      return {
-        success: false,
-        data: null,
-        message: error instanceof Error ? error.message : 'Failed to get user',
-      };
-    }
-  });
-
-  // Get repositories
+  // Get repositories (using GitHub App installation token)
   ipcMain.handle('settings:getRepositories', async (event, token: string) => {
     try {
       if (!token) {
@@ -237,6 +139,7 @@ export function registerSettingsHandlers() {
       };
     }
   });
+
 
   // Set R2 configuration
   ipcMain.handle('settings:setR2Config', async (event, req) => {
@@ -301,10 +204,6 @@ export function registerSettingsHandlers() {
   console.log('   - settings:update ✓');
   console.log('   - settings:setRepository ✓');
   console.log('   - settings:switchRepository ✓');
-  console.log('   - settings:getToken ✓');
-  console.log('   - settings:setToken ✓');
-  console.log('   - settings:testConnection ✓');
-  console.log('   - settings:getUser ✓');
   console.log('   - settings:getRepositories ✓');
   console.log('   - settings:setR2Config ✓');
   console.log('   - settings:getR2Config ✓');

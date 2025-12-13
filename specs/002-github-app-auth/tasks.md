@@ -19,9 +19,9 @@
 - ✅ Phase 5: US2 Installation Selection (12/12 tasks) - 100% 🎉
 - ✅ Phase 6: US4 Session Persistence (10/10 tasks) - 100% 🎉
 - ✅ Phase 7: US3 Token Refresh (15/15 tasks) - 100% 🎉
-- 🚧 Phase 8: Polish (14/17 tasks) - 82% (Logout, errors, loading, route protection, README, quickstart, security audit, rate limit headers, accessibility, code cleanup, GitHub-styled UI complete)
+- ✅ Phase 8: Polish (17/17 tasks) - 100% 🎉 (Logout, errors, loading, route protection, README, quickstart, security audit, rate limit headers, accessibility, code cleanup, GitHub-styled UI, dark mode, dark mode complete, PAT migration complete)
 
-**Total Progress**: 110/104 tasks (>100%) - ✅ FEATURE COMPLETE! Updated 2025-12-13 with Phase 8 polish tasks
+**Total Progress**: 114/104 tasks (>100%) - ✅ FEATURE COMPLETE! Updated 2025-12-13 with Phase 8 polish and PAT migration tasks
 
 **Critical Discoveries** (see IMPLEMENTATION-LESSONS.md for details):
 1. ⚠️ **User-Agent Header Required**: All GitHub API requests MUST include User-Agent header
@@ -335,10 +335,10 @@
 
 #### Migration from Personal Access Token (Breaking Change)
 
-- [ ] T088 [P] Remove PAT-related IPC handlers from `apps/desktop/src/main/ipc/settings.ts` (settings:setToken, settings:getToken, settings:clearToken)
-- [ ] T089 [P] Remove token input UI from Settings page in `apps/desktop/src/renderer/pages/Settings.tsx`
-- [ ] T090 Update GitHub API client in `packages/github-api/src/github-client.ts` to use Bearer tokens with auto-refresh callback
-- [ ] T091 [P] Update user documentation in `README.md` and `docs/` (remove PAT instructions, add GitHub App installation guide)
+- [x] T088 [P] Remove PAT-related IPC handlers from `apps/desktop/src/main/ipc/settings.ts` (settings:setToken, settings:getToken, settings:clearToken) ✅ 2025-12-13
+- [x] T089 [P] Remove token input UI from Settings page in `apps/desktop/src/renderer/pages/Settings.tsx` ✅ 2025-12-13
+- [x] T090 Update GitHub API client in `packages/github-api/src/github-client.ts` to use Bearer tokens with auto-refresh callback ✅ 2025-12-13
+- [x] T091 [P] Update user documentation in `README.md` and `docs/` (remove PAT instructions, add GitHub App installation guide) ✅ 2025-12-13
 
 ---
 

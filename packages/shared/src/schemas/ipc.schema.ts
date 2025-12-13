@@ -63,15 +63,13 @@ export const SetRepositoryRequestSchema = z.object({
   token: z.string().optional(),
 });
 
+
 export const SwitchRepositoryRequestSchema = z.object({
   repositoryId: z.string(),
-});
-
-export const SetTokenRequestSchema = z.object({
-  token: z.string().min(1),
 });
 
 // System
 export const OpenExternalRequestSchema = z.object({
   url: z.string().url(),
 });
+

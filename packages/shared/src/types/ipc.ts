@@ -87,18 +87,8 @@ export interface SetRepositoryResponse {
   repositoryId: string;
   isNew: boolean;
 }
-
 export interface SwitchRepositoryRequest {
   repositoryId: string;
-}
-
-export interface SetTokenRequest {
-  token: string;
-  username?: string;
-}
-
-export interface GetTokenResponse {
-  token: string | null;
 }
 
 export interface GitHubUser {
@@ -338,10 +328,6 @@ export interface IpcApi {
     update: (req: SettingsUpdateRequest) => Promise<{ settings: AppSettings }>;
     setRepository: (req: SetRepositoryRequest) => Promise<SetRepositoryResponse>;
     switchRepository: (req: SwitchRepositoryRequest) => Promise<{ success: boolean }>;
-    getToken: () => Promise<GetTokenResponse>;
-    setToken: (req: SetTokenRequest) => Promise<{ success: boolean }>;
-    testConnection: (token: string) => Promise<GitHubApiResponse<boolean>>;
-    getUser: (token: string) => Promise<GitHubApiResponse<GitHubUser>>;
     getRepositories: (token: string) => Promise<GitHubApiResponse<GitHubRepository[]>>;
     setR2Config: (req: R2ConfigRequest) => Promise<R2ConfigResponse>;
     getR2Config: () => Promise<{ config: R2ConfigRequest | null }>;

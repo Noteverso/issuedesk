@@ -133,6 +133,21 @@ IssueDesk 使用 GitHub App 进行安全认证。无需个人访问令牌（PAT�
 
 **详细设置指南**: 参见 [specs/002-github-app-auth/quickstart.md](specs/002-github-app-auth/quickstart.md)
 
+### 从个人访问令牌迁移（用户指南）
+
+如果您之前使用过 IssueDesk v1.x 的个人访问令牌（PAT）身份验证：
+
+1. **升级到 v2.x**: 下载最新版本的 IssueDesk
+2. **重新授权**: 点击"Login with GitHub"并通过 GitHub App 设备流进行认证
+3. **自动迁移**: 应用会自动清理旧的 PAT 数据
+4. **享受新功能**: 
+   - 自动 token 刷新（无需重新登录）
+   - 更强的安全性（短期有效的 token）
+   - 多组织/账户支持
+   - 离线缓存支持
+
+详见 [MIGRATION-FROM-PAT.md](specs/002-github-app-auth/MIGRATION-FROM-PAT.md) 了解完整的迁移细节。
+
 ### 仓库配置
 
 参考 [all-in-github](https://github.com/byodian/all-in-github) 项目：
