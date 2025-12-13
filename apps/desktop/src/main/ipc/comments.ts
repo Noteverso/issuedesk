@@ -11,7 +11,6 @@ import {
 } from '@issuedesk/shared';
 import { GitHubClient } from '@issuedesk/github-api';
 import { getSettingsManager } from '../settings/manager';
-import { getKeychainManager } from '../security/keychain';
 import { getStoredSession } from '../storage/auth-store';
 
 /**
@@ -39,11 +38,10 @@ interface GitHubComment {
 }
 
 /**
- * Get GitHub client using stored token from session or KeychainManager (fallback)
- * Priority: GitHub App installation token > Personal Access Token
+ * Get GitHub client using installation token from session.
+ * Requires GitHub App authentication - no PAT fallback.
  */
 function getGitHubClient(): GitHubClient | null {
-  // Try to get session with installation token first
   const session = getStoredSession();
   console.log('[Comments] Session retrieved:', {
     hasSession: !!session,
@@ -57,18 +55,8 @@ function getGitHubClient(): GitHubClient | null {
     return new GitHubClient(session.installationToken.token);
   }
 
-  // Fallback to PAT from keychain
-  console.log('[Comments] ⚠️ No installation token found, falling back to PAT from keychain');
-  const keychain = getKeychainManager();
-  const token = keychain.getToken();
-  
-  if (!token) {
-    console.warn('[Comments] No GitHub token found in keychain');
-    return null;
-  }
-  
-  console.log('[Comments] ✅ Using PAT from keychain');
-  return new GitHubClient(token);
+  console.error('[Comments] ❌ No installation token found. Please login with GitHub App.');
+  return null;
 }
 
 /**

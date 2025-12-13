@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AppSettings } from '@issuedesk/shared';
 import Layout from './components/common/Layout';
 import { ConfigProvider } from './contexts/ConfigContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './components/common/ThemeProvider';
-import { Login } from './pages/Login';
 import { InstallAppPrompt } from './components/auth/InstallAppPrompt';
 import { OfflineIndicator } from './components/common/OfflineIndicator'; // T070d
 
 function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, isLoading: authLoading, session, refreshSession } = useAuth();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,12 +93,24 @@ function AppContent() {
     }
   };
 
-  // Show login if not authenticated
-  if (!isAuthenticated && !authLoading) {
-    return <Login />;
-  }
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated && location.pathname !== '/login') {
+      console.log('[App] Not authenticated, redirecting to login');
+      navigate('/login', { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate, location.pathname]);
+
+  // Redirect authenticated users away from login page
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && location.pathname === '/login') {
+      console.log('[App] Authenticated user on login page, redirecting to dashboard');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate, location.pathname]);
 
   // Show install prompt if authenticated but no installations
+  // This should be shown BEFORE the Layout/routing
   if (isAuthenticated && session && (!session.installations || session.installations.length === 0)) {
     return <InstallAppPrompt onRetry={handleCheckInstallations} isRetrying={checkingInstallations} />;
   }

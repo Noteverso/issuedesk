@@ -223,6 +223,34 @@ The application must protect sensitive credentials (GitHub App private keys, cli
 - **FR-039**: RepositorySelector component MUST use h-full overflow-auto layout instead of min-h-screen to work within Layout container (IMPLEMENTED 2025-12-09)
 - **FR-040**: System MUST pass repository selection state from App.tsx to Layout via props (needsRepositorySelection, installationToken, onRepositorySelected) (IMPLEMENTED 2025-12-09)
 
+**Logout & Session Management:**
+
+- **FR-041**: System MUST provide POST /auth/logout backend endpoint that validates session token and deletes session from storage, returning success response (IMPLEMENTED 2025-12-11)
+- **FR-042**: Desktop application MUST implement auth:logout IPC handler that calls backend logout endpoint followed by local session clearance, ensuring backend and client state remain synchronized (IMPLEMENTED 2025-12-11)
+- **FR-043**: Logout UI MUST be accessible from UserProfile component with confirmation dialog and proper loading states during logout operation (IMPLEMENTED 2025-12-11)
+
+**Error Handling & User Feedback:**
+
+- **FR-044**: System MUST define centralized error messages in packages/shared with error code enum mapping to user-friendly messages, including title, description, recovery suggestion, and retryability flag (IMPLEMENTED 2025-12-11)
+- **FR-045**: System MUST provide reusable Spinner component with size variants (sm, md, lg) and color variants (primary, muted, white) for consistent loading states across application (IMPLEMENTED 2025-12-11)
+- **FR-046**: All async operations MUST display appropriate loading indicators to prevent user confusion during network requests or processing (IMPLEMENTED 2025-12-11)
+
+**Authentication Enforcement & Legacy Removal:**
+
+- **FR-047**: System MUST remove all Personal Access Token (PAT) fallback authentication logic from IPC handlers for data operations (issues, labels, comments), enforcing GitHub App authentication exclusively (IMPLEMENTED 2025-12-13)
+- **FR-048**: IPC handlers MUST return clear error messages directing users to login with GitHub App when no installation token is found, with no silent fallback to legacy authentication methods (IMPLEMENTED 2025-12-13)
+- **FR-049**: System MUST NOT import or reference keychain/credential storage modules in IPC handlers after GitHub App authentication is implemented (IMPLEMENTED 2025-12-13)
+
+**React Router Integration & Navigation:**
+
+- **FR-050**: Desktop application MUST use React Router with HashRouter for Electron file:// protocol compatibility, with Login as separate root-level route and App as parent route containing nested protected routes (IMPLEMENTED 2025-12-13)
+- **FR-051**: System MUST implement AuthGuard component with optional requireInstallation flag that redirects to /login when authentication or required installation token is missing (IMPLEMENTED 2025-12-13)
+- **FR-052**: All navigation logic MUST check location.pathname before calling navigate() to prevent infinite redirect loops between authentication states (IMPLEMENTED 2025-12-13)
+- **FR-053**: Login success MUST trigger programmatic navigation to /dashboard with small delay (500ms) for toast visibility, not automatic auth state detection (IMPLEMENTED 2025-12-13)
+- **FR-054**: App component MUST use separate useEffect hooks for different navigation concerns: one for redirecting unauthenticated users to login, another for redirecting authenticated users away from login page (IMPLEMENTED 2025-12-13)
+- **FR-055**: Full-screen blocking components (e.g., InstallAppPrompt) MUST use conditional rendering in parent component, NOT routing, to prevent navigation conflicts while maintaining UI control (IMPLEMENTED 2025-12-13)
+- **FR-056**: System MUST use replace: true for authentication-related navigation to prevent back button from returning users to invalid states (IMPLEMENTED 2025-12-13)
+
 ### Key Entities
 
 - **User Session**: Represents an authenticated user's session, including user ID, username, avatar, and backend session token for re-authentication

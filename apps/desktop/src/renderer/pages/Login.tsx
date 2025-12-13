@@ -6,12 +6,14 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import { DeviceCodeModal } from '../components/auth/DeviceCodeModal';
 import { useToast, ToastContainer } from '../components/common/Toast';
 import type { AuthUserCodeEvent, AuthLoginErrorEvent } from '@issuedesk/shared';
 
 export function Login() {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [deviceCode, setDeviceCode] = useState<AuthUserCodeEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +40,10 @@ export function Login() {
       toast.success('Login Successful', 'Welcome to IssueDesk!');
       setIsLoading(false);
       setDeviceCode(null);
+      // Navigate to dashboard after successful login
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 500); // Small delay to show success toast
     });
 
     // Note: Event listeners remain active until component unmounts

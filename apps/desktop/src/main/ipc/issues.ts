@@ -10,7 +10,6 @@ import { GitHubClient } from '@issuedesk/github-api';
 // import { getDatabaseManager } from '../database/manager';
 // import { IssuesRepository } from '../database/repositories/issues';
 import { getSettingsManager } from '../settings/manager';
-import { getKeychainManager } from '../security/keychain';
 import { getStoredSession } from '../storage/auth-store';
 
 /**
@@ -21,10 +20,9 @@ import { getStoredSession } from '../storage/auth-store';
 
 /**
  * Get GitHub client using installation token from session.
- * Falls back to PAT from keychain for backwards compatibility.
+ * Requires GitHub App authentication - no PAT fallback.
  */
 function getGitHubClient(): GitHubClient | null {
-  // Try to get installation token from auth session (GitHub App)
   console.log('[Issues] Attempting to retrieve session...');
   const session = getStoredSession();
   
@@ -44,18 +42,8 @@ function getGitHubClient(): GitHubClient | null {
     return new GitHubClient(session.installationToken.token);
   }
   
-  // Fallback to PAT for backwards compatibility
-  console.log('[Issues] No installation token found, trying PAT fallback...');
-  const keychain = getKeychainManager();
-  const token = keychain.getToken();
-  
-  if (!token) {
-    console.error('[Issues] ❌ No GitHub token found. Please login with GitHub App or configure PAT.');
-    return null;
-  }
-  
-  console.warn('[Issues] ⚠️  Using legacy PAT authentication (deprecated)');
-  return new GitHubClient(token);
+  console.error('[Issues] ❌ No installation token found. Please login with GitHub App.');
+  return null;
 }
 
 /**

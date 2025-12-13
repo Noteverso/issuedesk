@@ -299,8 +299,36 @@ export function registerAuthHandlers(): void {
   });
 
   // auth:logout - Clear session and logout
+  // T074: Call backend to delete session, then clear local storage
   ipcMain.handle('auth:logout', async (): Promise<AuthLogoutResponse> => {
-    // TODO: Implement in Phase 5
+    const session = getStoredSession();
+    
+    // If no session exists, nothing to logout
+    if (!session?.userToken) {
+      clearStoredSession();
+      return { success: true };
+    }
+
+    try {
+      // Call backend to delete session from KV storage
+      const response = await fetch(`${BACKEND_URL}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': session.userToken,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('[Auth] Backend logout failed:', await response.text());
+        // Continue with local cleanup even if backend fails
+      }
+    } catch (error) {
+      console.error('[Auth] Logout network error:', error);
+      // Continue with local cleanup even if network fails
+    }
+
+    // Always clear local storage
     clearStoredSession();
     return { success: true };
   });

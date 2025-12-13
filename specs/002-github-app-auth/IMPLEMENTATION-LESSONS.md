@@ -769,6 +769,272 @@ export function RepositorySelector({ installationToken, onRepositorySelected }: 
 
 ---
 
+### Logout Implementation: Backend + Client Coordination
+
+**Date**: 2025-12-11  
+**Tasks**: T073-T075 (Phase 8 - Logout Functionality)
+
+**Challenge**: Implement robust logout that clears both backend session (KV storage) and client session (electron-store), with graceful degradation when backend is unreachable.
+
+**Key Decisions**:
+
+1. **Backend Session Deletion**:
+   - Created `POST /auth/logout` endpoint in Worker
+   - Validates `X-Session-Token` header format (128 hex chars)
+   - Uses existing `deleteSession()` from `storage/sessions.ts`
+   - Returns `{ success: true }` on success, 401 if invalid/missing token
+
+2. **Client-Side Resilience**:
+   - IPC handler always clears local storage (defense in depth)
+   - Continues with cleanup even if backend call fails
+   - Logs errors but doesn't block user experience
+   - Returns success in all cases
+
+3. **Property Naming**:
+   - Use `userToken` property from `UserSession` type
+   - NOT `sessionToken` (that's only in `BackendSession`)
+   - Different types for client vs backend session structure
+
+**Implementation Pattern**:
+```typescript
+// IPC Handler (apps/desktop/src/main/ipc/auth.ts)
+ipcMain.handle('auth:logout', async (): Promise<AuthLogoutResponse> => {
+  const session = getStoredSession();
+  
+  if (!session?.userToken) {
+    clearStoredSession();
+    return { success: true };
+  }
+
+  try {
+    // Call backend to delete session
+    await fetch(`${BACKEND_URL}/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-Token': session.userToken, // Use userToken, not sessionToken
+      },
+    });
+  } catch (error) {
+    console.error('[Auth] Logout error:', error);
+    // Continue with local cleanup anyway
+  }
+
+  // Always clear local storage
+  clearStoredSession();
+  return { success: true };
+});
+```
+
+**UI Integration**:
+- UserProfile component already had logout button (T075 verified existing implementation)
+- Flow: UserProfile → AuthContext.logout() → authService.logout() → IPC call
+- AuthContext clears React state after IPC call
+- User redirected to login page
+
+**Graceful Degradation Scenarios**:
+1. **Backend Unreachable**: Local cleanup continues, user logged out from client perspective
+2. **Session Already Expired**: 401 from backend handled gracefully, local cleanup continues
+3. **No Session Exists**: Returns success immediately without backend call
+4. **Network Error**: Caught and logged, local cleanup continues
+
+**Lessons Learned**:
+1. **Defense in Depth**: Always clear client state regardless of backend success
+2. **Type Awareness**: Different session types for client (`UserSession`) vs backend (`BackendSession`)
+3. **User Experience**: Never block logout on network failures - local cleanup is sufficient
+4. **Security**: Backend validates token format before KV operations
+5. **Existing Code**: Check what's already implemented (logout button existed, just needed backend integration)
+
+**Documentation Created**:
+- `LOGOUT-TEST.md`: Complete 6-phase testing guide with validation checklist
+- Updated `tasks.md`: Marked T073-T075 complete, updated progress to 99/104 (95%)
+
+---
+
+### PAT Fallback Removal and Authentication Enforcement
+
+**Date**: 2025-12-13  
+**Context**: Removed all Personal Access Token (PAT) fallback logic to enforce GitHub App authentication only
+
+**Problem**: IPC handlers (issues, labels, comments) had fallback logic to legacy PAT authentication when no installation token was found. This allowed the app to work with outdated authentication methods, causing confusion about authentication requirements.
+
+**Changes Made**:
+
+1. **Removed PAT Fallback from IPC Handlers**:
+```typescript
+// Before: getGitHubClient() with PAT fallback
+function getGitHubClient(): GitHubClient | null {
+  const session = getStoredSession();
+  if (session?.installationToken?.token) {
+    return new GitHubClient(session.installationToken.token);
+  }
+  
+  // Fallback to PAT for backwards compatibility
+  const token = keychain.getToken();
+  if (token) {
+    return new GitHubClient(token);
+  }
+  return null;
+}
+
+// After: Installation token only
+function getGitHubClient(): GitHubClient | null {
+  const session = getStoredSession();
+  if (session?.installationToken?.token) {
+    return new GitHubClient(session.installationToken.token);
+  }
+  
+  console.error('[IPC] ❌ No installation token found. Please login with GitHub App.');
+  return null;
+}
+```
+
+2. **Files Modified**:
+   - `apps/desktop/src/main/ipc/issues.ts` - Removed keychain import and PAT fallback
+   - `apps/desktop/src/main/ipc/labels.ts` - Removed keychain import and PAT fallback
+   - `apps/desktop/src/main/ipc/comments.ts` - Removed keychain import and PAT fallback
+
+**Lesson**: Removing legacy authentication paths early prevents confusion and enforces the new authentication model consistently across the app.
+
+---
+
+### React Router Navigation and Authentication Flow
+
+**Date**: 2025-12-13  
+**Context**: Fixed complex navigation issues with React Router integration in Electron app
+
+**Problem 1: AuthGuard Not Redirecting**:
+- AuthGuard was created but `/login` route didn't exist at router level
+- App.tsx used conditional rendering (`return <Login />`) instead of routing
+- When AuthGuard tried to `<Navigate to="/login" />`, nothing happened
+
+**Solution**:
+```typescript
+// main.tsx - Added login route at root level
+const routes = [
+  {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/',
+    element: <App />,
+    children: [
+      // ... protected routes with AuthGuard
+    ],
+  },
+];
+```
+
+**Problem 2: No Navigation After Login Success**:
+- Login page showed success toast but didn't navigate anywhere
+- User stayed on login page even after successful authentication
+
+**Solution**:
+```typescript
+// Login.tsx - Navigate to dashboard after success
+authService.onLoginSuccess(() => {
+  toast.success('Login Successful', 'Welcome to IssueDesk!');
+  setTimeout(() => {
+    navigate('/dashboard', { replace: true });
+  }, 500); // Delay for toast visibility
+});
+```
+
+**Problem 3: Infinite Refresh Loop After Logout**:
+- Login page had useEffect checking for auth and navigating to dashboard
+- After logout, timing issues caused detect auth → navigate away → detect no auth → navigate back loop
+- App.tsx also tried to navigate based on auth state without checking current location
+
+**Solution**:
+```typescript
+// App.tsx - Check current location before navigating
+useEffect(() => {
+  if (!authLoading && !isAuthenticated && location.pathname !== '/login') {
+    navigate('/login', { replace: true });
+  }
+}, [isAuthenticated, authLoading, navigate, location.pathname]);
+
+useEffect(() => {
+  if (!authLoading && isAuthenticated && location.pathname === '/login') {
+    navigate('/dashboard', { replace: true });
+  }
+}, [isAuthenticated, authLoading, navigate, location.pathname]);
+
+// Login.tsx - Removed auto-redirect useEffect
+// Only navigate on explicit login success event
+```
+
+**Problem 4: Full-Screen Components vs Routing**:
+- `InstallAppPrompt` needed to block entire UI when no installations found
+- But it was inside routed component structure
+- Conditional rendering in App.tsx (route parent) worked correctly for this use case
+
+**Solution**: Keep full-screen blocking flows (InstallAppPrompt) as conditional renders in App.tsx, not as routes:
+```typescript
+// App.tsx - Before routing to child components
+if (isAuthenticated && session && (!session.installations || session.installations.length === 0)) {
+  return <InstallAppPrompt onRetry={handleCheckInstallations} isRetrying={checkingInstallations} />;
+}
+
+return (
+  <Layout>
+    <Outlet /> {/* Child routes render here */}
+  </Layout>
+);
+```
+
+**Key Lessons**:
+
+1. **Route Structure for Electron + React Router**:
+   - Login should be a separate route at root level, not conditionally rendered
+   - App component as route parent can conditionally render full-screen blockers (InstallAppPrompt)
+   - Child routes (Dashboard, Issues, etc.) should use AuthGuard wrapper
+
+2. **Navigation State Checks**:
+   - Always check `location.pathname` before calling `navigate()` to prevent infinite loops
+   - Separate navigation concerns: components handle their own success navigation, App handles auth state navigation
+   - Use `replace: true` for auth-related navigation to prevent back button issues
+
+3. **Timing Considerations**:
+   - Add small delays (500ms) when navigating after showing success messages
+   - Don't auto-redirect from Login page based on auth check (causes loops)
+   - Let explicit events (login success, logout) trigger navigation
+
+4. **Authentication Flow Architecture**:
+```
+User visits app
+  ↓
+App.tsx checks: !isAuthenticated && pathname !== '/login' → navigate('/login')
+  ↓
+Login page displayed
+  ↓
+User logs in successfully → Login navigates to '/dashboard'
+  ↓
+App.tsx checks: isAuthenticated && pathname === '/login' → navigate('/dashboard')
+  ↓
+App.tsx checks: !session.installations → show InstallAppPrompt (full-screen)
+  ↓
+User installs app → clicks retry → App.tsx re-checks
+  ↓
+App.tsx renders: <Layout><Outlet /></Layout>
+  ↓
+AuthGuard checks: requireInstallation && !installationToken → navigate('/login')
+  ↓
+Dashboard renders (protected route)
+```
+
+5. **Common Pitfalls to Avoid**:
+   - ❌ Checking auth and navigating without checking current location
+   - ❌ Multiple components trying to control navigation based on same state
+   - ❌ Using conditional rendering for Login instead of routing
+   - ❌ Auto-redirecting from Login page based on auth check
+   - ✅ Single source of truth for navigation per state change
+   - ✅ Location-aware navigation logic
+   - ✅ Explicit event-driven navigation for user actions
+
+---
+
 ## Updated Documentation Recommendations (2025-12-09)
 
 Add to existing sections:
@@ -783,9 +1049,14 @@ Add to existing sections:
    - Added acceptance scenarios to User Story 2
    - Documented Layout integration pattern
 
+6. **Create `LOGOUT-TEST.md`**: ✅ CREATED (2025-12-11)
+   - Complete testing guide for logout functionality
+   - 6 test phases covering happy path, offline mode, invalid tokens, fresh install, session restoration, multiple installations
+   - Validation checklist and success criteria
+
 ---
 
-## Conclusion (Updated 2025-12-09)
+## Conclusion (Updated 2025-12-13)
 
 Critical lessons for GitHub App authentication:
 
@@ -795,5 +1066,15 @@ Critical lessons for GitHub App authentication:
 4. **Distinguish external vs internal types** - use explicit type names (GitHubRepository vs Repository)
 5. **Use proper layout containers** - `h-full overflow-auto` for components within Layout, not `min-h-screen`
 6. **Pass state through props** when child components need to conditionally render based on app state
+7. **Graceful degradation** - Client operations (like logout) should succeed even if backend fails
+8. **Type awareness** - Client types (UserSession) differ from backend types (BackendSession) in property names
+9. **Verify existing code** - Check what's already implemented before creating duplicate functionality
+10. **Remove legacy authentication** - Eliminate PAT fallback to enforce GitHub App authentication consistently
+11. **Location-aware navigation** - Always check `location.pathname` before calling `navigate()` to prevent infinite loops
+12. **Separate navigation concerns** - Components handle their own success navigation, parent components handle auth state navigation
+13. **Route structure for Electron** - Login as separate route, blocking flows (InstallAppPrompt) as conditional renders in parent component
+14. **Event-driven navigation** - Use explicit events (login success, logout) to trigger navigation, not automatic auth checks
 
-These patterns create maintainable, user-friendly authentication flows that don't trap users in setup screens.
+These patterns create maintainable, user-friendly authentication flows that don't trap users in setup screens, handle network failures gracefully, and work seamlessly with React Router in Electron apps.
+
+

@@ -9,6 +9,7 @@
 import { handleDeviceFlow, handlePollDeviceFlow } from './handlers/device-flow';
 import { handleInstallationToken, handleRefreshInstallationToken } from './handlers/tokens';
 import { handleRefreshInstallations } from './handlers/installations';
+import { handleLogout } from './handlers/logout';
 import type { WorkerEnv } from '@issuedesk/shared';
 
 export default {
@@ -101,6 +102,10 @@ export default {
     
     if (url.pathname === '/auth/refresh-installation-token' && request.method === 'POST') {
       return handleRefreshInstallationToken(request, env, corsHeaders);
+    }
+
+    if (url.pathname === '/auth/logout' && request.method === 'POST') {
+      return handleLogout(request, env, corsHeaders);
     }
 
     // 404 for unimplemented routes

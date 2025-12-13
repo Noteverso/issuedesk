@@ -6,9 +6,15 @@ import Dashboard from './pages/Dashboard';
 import Issues from './pages/Issues';
 import Labels from './pages/Labels';
 import Settings from './pages/Settings';
+import { Login } from './pages/Login';
+import { AuthGuard } from './components/auth/AuthGuard';
 import './styles/globals.css';
 
 const routes = [
+  {
+    path: '/login',
+    element: <Login />,
+  },
   {
     path: '/',
     element: <App />,
@@ -19,19 +25,35 @@ const routes = [
       },
       {
         path: 'dashboard',
-        element: <Dashboard />,
+        element: (
+          <AuthGuard requireInstallation>
+            <Dashboard />
+          </AuthGuard>
+        ),
       },
       {
         path: 'issues',
-        element: <Issues />,
+        element: (
+          <AuthGuard requireInstallation>
+            <Issues />
+          </AuthGuard>
+        ),
       },
       {
         path: 'labels',
-        element: <Labels />,
+        element: (
+          <AuthGuard requireInstallation>
+            <Labels />
+          </AuthGuard>
+        ),
       },
       {
         path: 'settings',
-        element: <Settings />,
+        element: (
+          <AuthGuard>
+            <Settings />
+          </AuthGuard>
+        ),
       },
     ],
   },

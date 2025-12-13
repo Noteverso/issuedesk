@@ -21,6 +21,7 @@ export * from './schemas/auth.schema';
 
 // Export constants
 export * from './constants';
+export { ErrorCode, type ErrorMessage, ERROR_MESSAGES, getErrorMessage, formatErrorForDisplay } from './constants/error-messages';
 
 // Export utilities
 export * from './utils/comment-metadata';
