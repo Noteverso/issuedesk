@@ -6,7 +6,7 @@
  */
 
 import type { WorkerEnv } from '@issuedesk/shared';
-import { getSession, updateSessionInstallations } from '../storage/sessions';
+import { getBackendSession, updateSessionInstallations } from '../storage/sessions';
 import { rateLimitMiddleware } from '../utils/rate-limit';
 import { errorResponse, ErrorCode, mapGitHubError } from '../utils/errors';
 import { GitHubClient } from '../auth/github';
@@ -42,7 +42,7 @@ export async function handleRefreshInstallations(
     }
 
     // Get session from KV
-    const session = await getSession(sessionToken, env);
+    const session = await getBackendSession(sessionToken, env);
     if (!session) {
       return errorResponse(
         ErrorCode.UNAUTHORIZED,

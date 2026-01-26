@@ -53,7 +53,7 @@ export function AuthGuard({
   }
 
   // Check if installation token required
-  if (requireInstallation && !session?.installationToken) {
+  if (requireInstallation && !session?.credentials) {
     // User is authenticated but hasn't selected an installation
     // Redirect to login to restart the authentication flow
     console.warn('[AuthGuard] No installation token found, redirecting to login');

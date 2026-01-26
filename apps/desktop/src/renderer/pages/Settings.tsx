@@ -9,7 +9,8 @@ import {
   RefreshCw,
   Save,
   Cloud,
-  Upload
+  Upload,
+  Trash2
 } from 'lucide-react';
 
 export default function Settings() {
@@ -26,6 +27,7 @@ export default function Settings() {
 
   // R2 Configuration states
   const [r2Enabled, setR2Enabled] = useState(false);
+  const [r2Configured, setR2Configured] = useState(false); // Track if credentials are already saved
   const [r2AccountId, setR2AccountId] = useState('');
   const [r2AccessKeyId, setR2AccessKeyId] = useState('');
   const [r2SecretAccessKey, setR2SecretAccessKey] = useState('');
@@ -38,13 +40,11 @@ export default function Settings() {
   // Load R2 configuration on mount
   useEffect(() => {
     window.electronAPI.settings.getR2Config().then((response) => {
-      if (response.config) {
-        setR2Enabled(response.config.enabled);
-        setR2AccountId(response.config.accountId);
-        setR2AccessKeyId(response.config.accessKeyId);
-        setR2SecretAccessKey(response.config.secretAccessKey);
-        setR2BucketName(response.config.bucketName);
-        setR2PublicUrl(response.config.publicUrl);
+      if (response.config && response.config.enabled) {
+        // Config exists - mark as configured but don't show sensitive data
+        setR2Enabled(true);
+        setR2Configured(true);
+        // Don't load sensitive credentials - they stay hidden
       }
     });
   }, []);
@@ -98,8 +98,38 @@ export default function Settings() {
 
       await window.electronAPI.settings.setR2Config(config);
       console.log('R2 configuration saved');
+      
+      // Mark as configured and clear form fields for security
+      if (r2Enabled && r2AccountId && r2AccessKeyId && r2SecretAccessKey && r2BucketName) {
+        setR2Configured(true);
+        // Clear sensitive fields from memory
+        setR2AccountId('');
+        setR2AccessKeyId('');
+        setR2SecretAccessKey('');
+        setR2BucketName('');
+        setR2PublicUrl('');
+      }
     } catch (error) {
       console.error('Failed to save R2 configuration:', error);
+      throw error;
+    }
+  };
+
+  const deleteR2Config = async () => {
+    try {
+      await window.electronAPI.settings.setR2Config(null);
+      setR2Enabled(false);
+      setR2Configured(false);
+      setR2AccountId('');
+      setR2AccessKeyId('');
+      setR2SecretAccessKey('');
+      setR2BucketName('');
+      setR2PublicUrl('');
+      setR2Status('idle');
+      setR2Message('');
+      console.log('R2 configuration deleted');
+    } catch (error) {
+      console.error('Failed to delete R2 configuration:', error);
       throw error;
     }
   };
@@ -256,20 +286,45 @@ export default function Settings() {
             </div>
             
             <div className="space-y-4">
-              <div className="flex items-center space-x-2 mb-4">
-                <input
-                  type="checkbox"
-                  id="r2-enabled"
-                  checked={r2Enabled}
-                  onChange={(e) => setR2Enabled(e.target.checked)}
-                  className="rounded border-border"
-                />
-                <label htmlFor="r2-enabled" className="text-sm font-medium">
-                  启用 R2 图片上传
-                </label>
-              </div>
+              {r2Configured ? (
+                /* Show configured status - hide all credentials */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <div>
+                        <p className="font-medium text-green-800 dark:text-green-200">R2 图片存储已配置</p>
+                        <p className="text-sm text-green-600 dark:text-green-400">凭证已加密存储，无法查看</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={deleteR2Config}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                    >
+                      删除配置
+                    </button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    💡 为了安全，已保存的凭证无法查看。如需更改，请删除当前配置后重新创建。
+                  </p>
+                </div>
+              ) : (
+                /* Show configuration form when not configured */
+                <>
+                  <div className="flex items-center space-x-2 mb-4">
+                    <input
+                      type="checkbox"
+                      id="r2-enabled"
+                      checked={r2Enabled}
+                      onChange={(e) => setR2Enabled(e.target.checked)}
+                      className="rounded border-border"
+                    />
+                    <label htmlFor="r2-enabled" className="text-sm font-medium">
+                      启用 R2 图片上传
+                    </label>
+                  </div>
 
-              {r2Enabled && (
+                  {r2Enabled && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
@@ -378,6 +433,8 @@ export default function Settings() {
                     )}
                   </div>
                 </div>
+              )}
+                </>
               )}
             </div>
           </div>

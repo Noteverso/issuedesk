@@ -16,6 +16,7 @@ import type {
   AuthLoginSuccessEvent,
   AuthLoginErrorEvent,
   Installation,
+  AppSettings,
 } from '@issuedesk/shared';
 
 /**
@@ -77,6 +78,7 @@ export class AuthService {
    * Removes session from encrypted storage and backend.
    */
   async logout(): Promise<AuthLogoutResponse> {
+    await window.electronAPI.settings.clear();
     return window.electronAPI.auth.logout();
   }
 
@@ -137,6 +139,13 @@ export class AuthService {
    */
   onSessionExpired(callback: () => void): () => void {
     return window.electronAPI.on('auth:session-expired', callback);
+  }
+
+  /**
+   * get setting store
+   */
+  async getSettings(): Promise<{ settings: AppSettings }> {
+    return window.electronAPI.settings.get();
   }
 }
 

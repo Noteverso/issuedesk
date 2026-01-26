@@ -2,10 +2,11 @@
  * Electron-store configuration for encrypted auth storage
  * Feature: 002-github-app-auth
  * 
- * Stores user session data with platform-specific encryption.
+ * Stores user session data with platform-specific encryption using Electron safeStorage API.
  */
 
 import Store from 'electron-store';
+import { safeStorage } from 'electron';
 import { UserSessionSchema } from '@issuedesk/shared';
 import type { UserSession } from '@issuedesk/shared';
 
@@ -13,32 +14,56 @@ import type { UserSession } from '@issuedesk/shared';
  * Auth store schema for validation
  */
 interface AuthStoreSchema {
-  session: UserSession | null;
+  session: string | null; // Store as encrypted base64 string
 }
 
 /**
- * Encrypted store for auth data.
- * T037: Uses electron safeStorage API for platform-specific encryption (FR-014, FR-033)
+ * Store for auth data.
+ * T037: Uses Electron safeStorage API for machine-level encryption (FR-014, FR-033)
  * 
  * Security features:
  * - Platform-specific encryption (Windows DPAPI, macOS Keychain, Linux Secret Service)
- * - Encryption key derived from machine-specific values
- * - Data encrypted at rest
+ * - Encryption key managed by OS (not in source code)
+ * - Data encrypted at rest using OS key management
  * - Schema validation on read/write
+ * 
+ * Implementation:
+ * - Session data is JSON stringified, encrypted with safeStorage, and stored as base64
+ * - Decryption happens on read using OS-managed keys
  */
 export const authStore = new Store<AuthStoreSchema>({
   name: 'auth',
-  // T037: Enable encryption for all data in this store
-  encryptionKey: 'issuedesk-auth-encryption',
+  // T037: No hardcoded encryption key - using safeStorage instead
   schema: {
     session: {
-      type: ['object', 'null'],
+      type: ['string', 'null'],
       default: null,
     },
   },
-  // Don't clear on errors to preserve encrypted data
   clearInvalidConfig: false,
 });
+
+/**
+ * Encrypt data using Electron safeStorage API.
+ * 
+ * @param data - Plain text data to encrypt
+ * @returns Base64-encoded encrypted data
+ */
+function encryptData(data: string): string {
+  const buffer = safeStorage.encryptString(data);
+  return buffer.toString('base64');
+}
+
+/**
+ * Decrypt data using Electron safeStorage API.
+ * 
+ * @param encryptedData - Base64-encoded encrypted data
+ * @returns Decrypted plain text
+ */
+function decryptData(encryptedData: string): string {
+  const buffer = Buffer.from(encryptedData, 'base64');
+  return safeStorage.decryptString(buffer);
+}
 
 /**
  * T037: Verify encryption is available on this platform.
@@ -47,51 +72,62 @@ export const authStore = new Store<AuthStoreSchema>({
  * @returns true if encryption is available, false otherwise
  */
 export function isEncryptionAvailable(): boolean {
-  try {
-    // electron-store with encryptionKey automatically uses safeStorage
-    // Test by attempting to access the store
-    authStore.get('session');
-    return true;
-  } catch (error) {
-    console.error('[AuthStore] Encryption verification failed:', error);
-    return false;
-  }
+  return safeStorage.isEncryptionAvailable();
 }
 
 /**
  * T037: Get encryption status information.
  * Useful for debugging and security audits.
  * 
- * @returns Encryption status details
+ * @returns Encryption status details including platform-specific information
  */
 export function getEncryptionStatus(): {
   enabled: boolean;
   storeLocation: string;
   isAvailable: boolean;
+  platform: string;
+  securityProvider: string;
 } {
+  const platform = process.platform;
+  let securityProvider = 'Unknown';
+  
+  if (platform === 'darwin') {
+    securityProvider = 'macOS Keychain';
+  } else if (platform === 'win32') {
+    securityProvider = 'Windows DPAPI';
+  } else if (platform === 'linux') {
+    securityProvider = 'Linux Secret Service';
+  }
+  
   return {
-    enabled: true, // encryptionKey is set
+    enabled: true,
     storeLocation: authStore.path,
     isAvailable: isEncryptionAvailable(),
+    platform,
+    securityProvider,
   };
 }
 
 /**
  * Get current session from encrypted storage.
- * Validates session structure using Zod schema.
+ * Decrypts using Electron safeStorage and validates structure using Zod schema.
  * 
  * @returns UserSession or null if no session exists
  */
 export function getStoredSession(): UserSession | null {
   try {
-    const session = authStore.get('session', null);
+    const encryptedSession = authStore.get('session', null);
     
-    if (!session) {
+    if (!encryptedSession) {
       return null;
     }
 
+    // Decrypt session data
+    const decryptedJson = decryptData(encryptedSession);
+    const sessionData = JSON.parse(decryptedJson);
+
     // Validate session structure
-    const result = UserSessionSchema.safeParse(session);
+    const result = UserSessionSchema.safeParse(sessionData);
     if (!result.success) {
       console.error('[AuthStore] Invalid session format:', result.error);
       // Clear invalid session
@@ -108,7 +144,7 @@ export function getStoredSession(): UserSession | null {
 
 /**
  * Store session in encrypted storage.
- * Validates session before storing.
+ * Validates session, encrypts using Electron safeStorage, and stores as base64.
  * 
  * @param session - UserSession to store
  */
@@ -120,7 +156,11 @@ export function setStoredSession(session: UserSession): void {
       throw new Error(`Invalid session format: ${result.error.message}`);
     }
 
-    authStore.set('session', result.data);
+    // Encrypt session data
+    const jsonString = JSON.stringify(result.data);
+    const encryptedData = encryptData(jsonString);
+    
+    authStore.set('session', encryptedData);
   } catch (error) {
     console.error('[AuthStore] Error storing session:', error);
     throw error;
@@ -165,8 +205,8 @@ export function updateInstallationToken(token: string, expiresAt: string): void 
     throw new Error('No active session or installation');
   }
 
-  session.installationToken = {
-    token,
+  session.credentials = {
+    token: token,
     expires_at: expiresAt,
     permissions: session.currentInstallation.permissions,
     repository_selection: session.currentInstallation.repository_selection,

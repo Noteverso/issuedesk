@@ -157,7 +157,7 @@ export async function handlePollDeviceFlow(
     // Return session data
     return new Response(
       JSON.stringify({
-        session_token: sessionToken,
+        sessionToken,
         user,
         installations,
       }),

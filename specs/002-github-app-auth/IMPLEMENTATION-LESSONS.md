@@ -1056,7 +1056,358 @@ Add to existing sections:
 
 ---
 
-## Conclusion (Updated 2025-12-13)
+---
+
+## OS-Managed Encryption for Sensitive Data (2025-12-15)
+
+### Problem: Hardcoded Encryption Keys in Source Code
+
+**Date**: 2025-12-15  
+**Context**: Security review identified hardcoded encryption key in auth-store.ts
+
+**Original Implementation**:
+```typescript
+// apps/desktop/src/main/storage/auth-store.ts
+const authStore = new Store<AuthStoreSchema>({
+  name: 'auth',
+  encryptionKey: 'issuedesk-auth-encryption', // ❌ SECURITY RISK
+  schema: {
+    session: { type: ['string', 'null'] }
+  }
+});
+```
+
+**Security Risk**: Anyone with access to source code can decrypt stored sessions by extracting the hardcoded key.
+
+**Solution: Electron's safeStorage API**:
+
+```typescript
+import { safeStorage } from 'electron';
+
+// Manual encryption/decryption with OS-managed keys
+function encryptData(data: string): string {
+  const buffer = safeStorage.encryptString(data);
+  return buffer.toString('base64');
+}
+
+function decryptData(encryptedData: string): string {
+  const buffer = Buffer.from(encryptedData, 'base64');
+  return safeStorage.decryptString(buffer);
+}
+
+// Store encrypted data as base64 string
+const authStore = new Store<AuthStoreSchema>({
+  name: 'auth',
+  // No encryptionKey property - manual encryption
+  schema: {
+    session: { type: ['string', 'null'] }
+  }
+});
+
+export function setStoredSession(session: UserSession): void {
+  const jsonString = JSON.stringify(session);
+  const encryptedData = encryptData(jsonString);
+  authStore.set('session', encryptedData);
+}
+
+export function getStoredSession(): UserSession | null {
+  const encryptedData = authStore.get('session');
+  if (!encryptedData) return null;
+  
+  try {
+    const jsonString = decryptData(encryptedData);
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('[AuthStore] Failed to decrypt session:', error);
+    return null;
+  }
+}
+```
+
+**Platform-Specific Encryption Providers**:
+- **macOS**: Keychain (uses user's login password to derive encryption key)
+- **Windows**: DPAPI (Data Protection API) - per-user encryption
+- **Linux**: Secret Service API (libsecret) - integrates with GNOME Keyring/KWallet
+
+**Key Benefits**:
+1. **No Source Code Secrets**: Encryption keys never appear in code
+2. **OS-Level Security**: Keys managed by platform security systems
+3. **User-Specific**: Different users on same machine have different keys
+4. **Tamper Protection**: Keys tied to OS security features
+
+**Migration Considerations**:
+- Old encrypted data (with hardcoded key) cannot be decrypted with OS keys
+- Solution: Delete old auth-store file on first run with new encryption
+- Users must re-authenticate (acceptable for security improvement)
+
+**Implementation Pattern**:
+```typescript
+// Encryption status reporting
+export function getEncryptionStatus(): {
+  isAvailable: boolean;
+  platform: string;
+} {
+  return {
+    isAvailable: safeStorage.isEncryptionAvailable(),
+    platform: process.platform,
+  };
+}
+```
+
+---
+
+### R2 Credentials Security Enhancement
+
+**Date**: 2025-12-15  
+**Context**: Extended OS-managed encryption pattern to R2 image upload configuration
+
+**Problem**: R2 credentials (Cloudflare R2 access keys) were stored in plain text in electron-store and remained visible in UI after configuration.
+
+**Solution: Matching GitHub Token Security Pattern**
+
+1. **Encrypted Storage**:
+```typescript
+// apps/desktop/src/main/settings/manager.ts
+import { safeStorage } from 'electron';
+
+interface SettingsStore {
+  r2ConfigEncrypted: string | null; // Changed from r2Config
+}
+
+export function setR2Config(config: AppSettings['r2Config']): void {
+  if (config === null) {
+    store.set('r2ConfigEncrypted', null);
+    return;
+  }
+  
+  const jsonString = JSON.stringify(config);
+  const encryptedData = encryptData(jsonString);
+  store.set('r2ConfigEncrypted', encryptedData);
+}
+
+export function getR2Config(): AppSettings['r2Config'] {
+  const encryptedData = store.get('r2ConfigEncrypted');
+  if (!encryptedData) return null;
+  
+  try {
+    const jsonString = decryptData(encryptedData);
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('[Settings] Failed to decrypt R2 config:', error);
+    return null;
+  }
+}
+```
+
+2. **Credential Hiding in UI**:
+```typescript
+// apps/desktop/src/renderer/pages/Settings.tsx
+const [r2Configured, setR2Configured] = useState(false);
+
+// After successful save, hide credentials
+const handleSave = async () => {
+  if (r2Enabled && r2AccountId && r2AccessKeyId && r2SecretAccessKey) {
+    await window.electronAPI.settings.setR2Config({
+      accountId: r2AccountId,
+      accessKeyId: r2AccessKeyId,
+      secretAccessKey: r2SecretAccessKey,
+      bucketName: r2BucketName,
+    });
+    
+    // Mark as configured and clear form fields
+    setR2Configured(true);
+    setR2AccountId('');
+    setR2AccessKeyId('');
+    setR2SecretAccessKey('');
+    setR2BucketName('');
+    
+    toast.success('R2 image upload configured successfully');
+  }
+};
+
+// Conditional UI rendering
+{r2Configured ? (
+  <div className="space-y-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 p-4">
+    <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+      <CheckCircle2 size={16} />
+      <span className="text-sm font-medium">R2 图片存储已配置</span>
+    </div>
+    <p className="text-xs text-green-600 dark:text-green-400">
+      为了安全，已保存的凭证无法查看。如需修改，请先删除现有配置。
+    </p>
+    <Button
+      variant="destructive"
+      size="sm"
+      onClick={deleteR2Config}
+      className="flex items-center gap-2"
+    >
+      <Trash2 size={14} />
+      删除 R2 配置
+    </Button>
+  </div>
+) : (
+  // Full credential input form
+  <div className="space-y-4">
+    <Input placeholder="Account ID" value={r2AccountId} onChange={...} />
+    <Input placeholder="Access Key ID" value={r2AccessKeyId} onChange={...} />
+    <Input type="password" placeholder="Secret Access Key" value={r2SecretAccessKey} onChange={...} />
+    <Input placeholder="Bucket Name" value={r2BucketName} onChange={...} />
+  </div>
+)}
+```
+
+**UX Pattern - View-Once, Delete-to-Modify**:
+1. User enters credentials in form
+2. Click save → credentials encrypted and stored
+3. UI switches to "configured" state with green banner
+4. Form fields cleared, credentials no longer visible
+5. Only option: Delete configuration (forces re-entry)
+
+**Security Benefits**:
+1. **No Plain Text Storage**: Credentials encrypted with OS keys
+2. **No Memory Persistence**: Cleared from React state after save
+3. **No View After Save**: Cannot inspect saved credentials in UI
+4. **Delete-Only Modification**: Must delete and recreate to change
+5. **Matches Industry Standards**: Same pattern as GitHub tokens, AWS credentials
+
+**Consistency with Existing Patterns**:
+- GitHub installation token: Stored encrypted, never displayed after initial auth
+- Cloudflare API key: Stored encrypted, hidden after configuration
+- R2 credentials: Now follows same pattern
+
+---
+
+### Session Token Architecture Clarifications
+
+**Date**: 2025-12-15  
+**Context**: Resolved naming confusion between backend and client session management
+
+**Problem**: Both worker (backend) and desktop (client) had functions named `getSession()`, causing confusion about session storage and token types.
+
+**Solution: Renamed Backend Function**:
+```typescript
+// workers/auth/src/storage/sessions.ts
+// Renamed: getSession() → getBackendSession()
+export async function getBackendSession(sessionToken: string): Promise<BackendSession | null> {
+  return await getSession(env.SESSIONS_KV, sessionToken);
+}
+```
+
+**Updated 6 references across 3 files**:
+- `handlers/logout.ts`
+- `handlers/installation-token.ts`
+- `handlers/refresh-installation.ts`
+
+**Three-Layer Token Architecture**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Layer 1: OAuth Token (Backend Only)                            │
+│ - Source: GitHub device flow /oauth/access_token               │
+│ - Storage: Cloudflare KV (BackendSession.accessToken)          │
+│ - Purpose: Worker calls GitHub API on behalf of user           │
+│ - Lifetime: No expiration (can be revoked)                     │
+│ - Security: Never sent to client                               │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ Layer 2: Session Token (Shared Key)                            │
+│ - Source: generateSessionToken() → 128-char hex UUID           │
+│ - Storage: KV key + encrypted client storage                   │
+│ - Purpose: Lookup key for backend session in KV                │
+│ - Lifetime: 30 days (sliding window)                           │
+│ - Security: Random UUID, no sensitive data                     │
+└─────────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ Layer 3: Installation Token (Client Only)                      │
+│ - Source: Worker exchanges installation ID with GitHub         │
+│ - Storage: Encrypted client (UserSession.credentials.token)    │
+│ - Purpose: Repository API operations (issues, labels, etc.)    │
+│ - Lifetime: 1 hour (auto-refreshed by worker)                  │
+│ - Security: OS-encrypted, limited scope                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Type Distinctions**:
+```typescript
+// Backend Session (KV storage)
+interface BackendSession {
+  sessionToken: string;      // 128-char UUID
+  accessToken: string;       // OAuth token (never sent to client)
+  installations: Installation[];
+  user: User;
+  expiresAt: number;
+}
+
+// Client Session (encrypted electron-store)
+interface UserSession {
+  userToken: string;         // Same as BackendSession.sessionToken
+  user: User;
+  currentInstallation: Installation | null;
+  installationToken: InstallationToken | null; // { token, expiresAt }
+}
+```
+
+**Critical Naming Lesson**:
+- **Backend**: `sessionToken` property in `BackendSession`
+- **Client**: `userToken` property in `UserSession`
+- **Same value, different property names** - caused initial confusion in logout implementation
+
+**Function Naming Clarity**:
+- `getBackendSession()` - Retrieves from KV storage (worker)
+- `getStoredSession()` - Retrieves from encrypted local storage (desktop)
+- `generateSessionToken()` - Creates 128-char UUID for both
+
+---
+
+### Key Takeaways: Secure Credentials Management
+
+**Security Principles Applied**:
+
+1. **Never Store Secrets in Source Code**:
+   - ❌ Hardcoded encryption keys
+   - ✅ OS-managed encryption (safeStorage)
+
+2. **Platform Security Integration**:
+   - ✅ macOS Keychain
+   - ✅ Windows DPAPI
+   - ✅ Linux Secret Service
+
+3. **Defense in Depth**:
+   - Encrypted storage (OS keys)
+   - Credentials cleared from memory after use
+   - UI prevents viewing saved credentials
+   - Delete-only modification pattern
+
+4. **User Experience Consistency**:
+   - All credentials follow same pattern (GitHub, Cloudflare, R2)
+   - Clear visual feedback (green banner when configured)
+   - Security tip text explaining why credentials hidden
+
+5. **Token Lifecycle Management**:
+   - OAuth tokens (backend only, long-lived)
+   - Session tokens (lookup keys, 30-day sliding window)
+   - Installation tokens (client operations, 1-hour refresh)
+
+**Implementation Checklist for Future Credentials**:
+- [ ] Use `safeStorage.encryptString()` / `decryptString()`
+- [ ] Store as base64 encoded strings
+- [ ] Clear from React state after save
+- [ ] Hide in UI after successful configuration
+- [ ] Implement delete-only modification
+- [ ] Add green status banner when configured
+- [ ] Include security explanation text
+- [ ] Test migration from plain text (if upgrading)
+
+**Documentation Updates Needed**:
+- ✅ IMPLEMENTATION-LESSONS.md updated with encryption patterns
+- ⏸️ Update SECURITY-AUDIT.md with OS-managed encryption details
+- ⏸️ Document credential migration process in MIGRATION.md
+
+---
+
+## Conclusion (Updated 2025-12-15)
 
 Critical lessons for GitHub App authentication:
 
@@ -1074,7 +1425,10 @@ Critical lessons for GitHub App authentication:
 12. **Separate navigation concerns** - Components handle their own success navigation, parent components handle auth state navigation
 13. **Route structure for Electron** - Login as separate route, blocking flows (InstallAppPrompt) as conditional renders in parent component
 14. **Event-driven navigation** - Use explicit events (login success, logout) to trigger navigation, not automatic auth checks
+15. **OS-managed encryption** - Never hardcode encryption keys; use `safeStorage` API for platform security integration
+16. **Credential hiding pattern** - Clear from UI after save, implement delete-only modification (GitHub-style)
+17. **Session token naming clarity** - Backend uses `sessionToken`, client uses `userToken` for the same lookup key
 
-These patterns create maintainable, user-friendly authentication flows that don't trap users in setup screens, handle network failures gracefully, and work seamlessly with React Router in Electron apps.
+These patterns create maintainable, user-friendly authentication flows that don't trap users in setup screens, handle network failures gracefully, work seamlessly with React Router in Electron apps, and protect sensitive credentials using OS-level security features.
 
 

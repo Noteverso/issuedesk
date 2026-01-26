@@ -199,6 +199,18 @@ export function registerSettingsHandlers() {
     }
   });
 
+  // clear
+  ipcMain.handle('settings:clear', async () => {
+    try {
+      settingsManager.clearAll();
+      console.log('✅ Settings cleared');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error clearing settings:', error);
+      return { success: false };
+    }
+  });
+
   console.log('✅ Settings IPC handlers registered successfully');
   console.log('   - settings:get ✓');
   console.log('   - settings:update ✓');

@@ -15,7 +15,7 @@
  */
 export interface UserSession {
   /** Backend session token for re-authentication (64 bytes = 128 hex chars) */
-  userToken: string;
+  sessionToken: string;
   
   /** GitHub user profile information */
   user: User;
@@ -27,7 +27,7 @@ export interface UserSession {
   currentInstallation: Installation | null;
   
   /** Current installation access token (null if no installation selected) */
-  installationToken: InstallationToken | null;
+  credentials: Credentials | null;
 }
 
 // ============================================================================
@@ -106,7 +106,7 @@ export interface Account {
  * Short-lived access token for a specific installation.
  * Valid for 1 hour, needs refresh.
  */
-export interface InstallationToken {
+export interface Credentials {
   /** Access token for GitHub API calls */
   token: string;
   

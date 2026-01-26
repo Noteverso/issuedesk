@@ -1,4 +1,5 @@
 import Store from 'electron-store';
+import { safeStorage } from 'electron';
 import { AppSettings, RepositoryConfig, ThemeMode, EditorMode, ViewPreferences } from '@issuedesk/shared';
 
 interface SettingsStore {
@@ -7,7 +8,7 @@ interface SettingsStore {
   theme: ThemeMode;
   editorMode: EditorMode;
   viewPreferences: ViewPreferences;
-  r2Config: AppSettings['r2Config'];
+  r2ConfigEncrypted: string | null; // Encrypted base64 string
 }
 
 const store = new Store<SettingsStore>({
@@ -21,9 +22,31 @@ const store = new Store<SettingsStore>({
       issues: 'list',
       labels: 'list',
     },
-    r2Config: null,
+    r2ConfigEncrypted: null,
   },
 });
+
+/**
+ * Encrypt data using Electron safeStorage API.
+ * 
+ * @param data - Plain text data to encrypt
+ * @returns Base64-encoded encrypted data
+ */
+function encryptData(data: string): string {
+  const buffer = safeStorage.encryptString(data);
+  return buffer.toString('base64');
+}
+
+/**
+ * Decrypt data using Electron safeStorage API.
+ * 
+ * @param encryptedData - Base64-encoded encrypted data
+ * @returns Decrypted plain text
+ */
+function decryptData(encryptedData: string): string {
+  const buffer = Buffer.from(encryptedData, 'base64');
+  return safeStorage.decryptString(buffer);
+}
 
 /**
  * Settings manager using electron-store
@@ -34,6 +57,21 @@ export class SettingsManager {
    * Get all settings
    */
   getAll(): AppSettings {
+    // Decrypt R2 config if it exists
+    let r2Config: AppSettings['r2Config'] = null;
+    const encryptedR2 = store.get('r2ConfigEncrypted');
+    
+    if (encryptedR2) {
+      try {
+        const decryptedJson = decryptData(encryptedR2);
+        r2Config = JSON.parse(decryptedJson);
+      } catch (error) {
+        console.error('[SettingsManager] Failed to decrypt R2 config:', error);
+        // Clear invalid encrypted data
+        store.set('r2ConfigEncrypted', null);
+      }
+    }
+    
     return {
       activeRepositoryId: store.get('activeRepositoryId'),
       repositories: store.get('repositories'),
@@ -41,7 +79,7 @@ export class SettingsManager {
       editorMode: store.get('editorMode'),
       viewPreferences: store.get('viewPreferences'),
       rateLimit: null, // Runtime state, not persisted
-      r2Config: store.get('r2Config'),
+      r2Config,
     };
   }
 
@@ -143,17 +181,50 @@ export class SettingsManager {
   }
 
   /**
-   * Set R2 configuration
+   * Set R2 configuration (encrypted with OS-managed keys)
    */
   setR2Config(config: AppSettings['r2Config']): void {
-    store.set('r2Config', config);
+    if (config === null) {
+      store.set('r2ConfigEncrypted', null);
+      return;
+    }
+    
+    try {
+      const jsonString = JSON.stringify(config);
+      const encryptedData = encryptData(jsonString);
+      store.set('r2ConfigEncrypted', encryptedData);
+    } catch (error) {
+      console.error('[SettingsManager] Failed to encrypt R2 config:', error);
+      throw error;
+    }
   }
 
   /**
-   * Get R2 configuration
+   * Get R2 configuration (decrypted)
    */
   getR2Config(): AppSettings['r2Config'] {
-    return store.get('r2Config');
+    const encryptedR2 = store.get('r2ConfigEncrypted');
+    
+    if (!encryptedR2) {
+      return null;
+    }
+    
+    try {
+      const decryptedJson = decryptData(encryptedR2);
+      return JSON.parse(decryptedJson);
+    } catch (error) {
+      console.error('[SettingsManager] Failed to decrypt R2 config:', error);
+      // Clear invalid encrypted data
+      store.set('r2ConfigEncrypted', null);
+      return null;
+    }
+  }
+
+  /**
+   * clear all settings (when logout)
+   */
+  clearAll(): void {
+    store.clear();
   }
 }
 

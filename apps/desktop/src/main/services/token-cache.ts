@@ -6,7 +6,7 @@
  * Caches tokens for all authorized installations to enable 0ms switching delay.
  */
 
-import type { InstallationToken } from '@issuedesk/shared';
+import type { Credentials } from '@issuedesk/shared';
 
 export interface CachedToken {
   installationId: number;
@@ -30,7 +30,7 @@ export class TokenCache {
    * @param installationId - Installation ID to get token for
    * @returns Cached token or null
    */
-  getToken(installationId: number): InstallationToken | null {
+  getToken(installationId: number): Credentials | null {
     const cached = this.cache.get(installationId);
     
     if (!cached) {
@@ -60,15 +60,15 @@ export class TokenCache {
    * Overwrites any existing token for this installation.
    * 
    * @param installationId - Installation ID
-   * @param installationToken - Complete installation token object
+   * @param credentials - Complete installation token object
    */
-  putToken(installationId: number, installationToken: InstallationToken): void {
+  putToken(installationId: number, credentials: Credentials): void {
     this.cache.set(installationId, {
       installationId,
-      token: installationToken.token,
-      expiresAt: installationToken.expires_at,
-      permissions: installationToken.permissions,
-      repositorySelection: installationToken.repository_selection,
+      token: credentials.token,
+      expiresAt: credentials.expires_at,
+      permissions: credentials.permissions,
+      repositorySelection: credentials.repository_selection,
     });
   }
 

@@ -22,6 +22,7 @@ function AppContent() {
     console.log('window.electronAPI:', window.electronAPI);
     console.log('typeof window.electronAPI:', typeof window.electronAPI);
     console.log('Available methods:', window.electronAPI ? Object.keys(window.electronAPI) : 'N/A');
+    console.log(isAuthenticated, session?.credentials, settings?.activeRepositoryId);
     
     const loadSettings = async () => {
       try {
@@ -138,8 +139,8 @@ function AppContent() {
       <ConfigProvider value={{ settings, updateSettings }}>
         <OfflineIndicator />
         <Layout 
-          needsRepositorySelection={!!(isAuthenticated && session?.installationToken && !settings?.activeRepositoryId)}
-          installationToken={session?.installationToken?.token}
+          needsRepositorySelection={!!(isAuthenticated && session?.credentials && !settings?.activeRepositoryId)}
+          installationToken={session?.credentials?.token}
           onRepositorySelected={handleRepositorySelected}
         />
       </ConfigProvider>

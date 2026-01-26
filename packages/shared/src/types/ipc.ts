@@ -325,6 +325,7 @@ export interface IpcApi {
   // Settings
   settings: {
     get: () => Promise<{ settings: AppSettings }>;
+    clear: () => Promise<{ success: boolean }>;
     update: (req: SettingsUpdateRequest) => Promise<{ settings: AppSettings }>;
     setRepository: (req: SetRepositoryRequest) => Promise<SetRepositoryResponse>;
     switchRepository: (req: SwitchRepositoryRequest) => Promise<{ success: boolean }>;

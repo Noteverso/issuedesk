@@ -59,14 +59,14 @@ export async function createSession(
 }
 
 /**
- * Get session from KV storage by session token.
+ * Get backend session from KV storage by session token.
  * Updates lastAccessedAt for sliding window expiration.
  * 
  * @param sessionToken - Session token to retrieve
  * @param env - Cloudflare Worker environment
  * @returns Session data or null if not found/expired
  */
-export async function getSession(
+export async function getBackendSession(
   sessionToken: string,
   env: WorkerEnv
 ): Promise<BackendSession | null> {
@@ -102,7 +102,7 @@ export async function updateSessionInstallations(
   installations: Installation[],
   env: WorkerEnv
 ): Promise<void> {
-  const session = await getSession(sessionToken, env);
+  const session = await getBackendSession(sessionToken, env);
   if (!session) {
     throw new Error('Session not found');
   }
@@ -130,7 +130,7 @@ export async function updateSessionRefreshTime(
   sessionToken: string,
   env: WorkerEnv
 ): Promise<void> {
-  const session = await getSession(sessionToken, env);
+  const session = await getBackendSession(sessionToken, env);
   if (!session) {
     throw new Error('Session not found');
   }

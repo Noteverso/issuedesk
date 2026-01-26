@@ -42,6 +42,7 @@ const api: IpcApi = {
   // Settings API
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
+    clear: () => ipcRenderer.invoke('settings:clear'),
     update: (req) => ipcRenderer.invoke('settings:update', req),
     setRepository: (req) => ipcRenderer.invoke('settings:setRepository', req),
     switchRepository: (req) => ipcRenderer.invoke('settings:switchRepository', req),

@@ -46,13 +46,13 @@ function getGitHubClient(): GitHubClient | null {
   console.log('[Comments] Session retrieved:', {
     hasSession: !!session,
     hasUser: !!session?.user,
-    hasInstallationToken: !!session?.installationToken,
-    tokenLength: session?.installationToken?.token?.length,
+    hasInstallationToken: !!session?.credentials,
+    tokenLength: session?.credentials?.token?.length,
   });
 
-  if (session?.installationToken?.token) {
+  if (session?.credentials?.token) {
     console.log('[Comments] ✅ Using GitHub App installation token');
-    return new GitHubClient(session.installationToken.token);
+    return new GitHubClient(session.credentials.token);
   }
 
   console.error('[Comments] ❌ No installation token found. Please login with GitHub App.');

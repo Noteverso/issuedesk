@@ -23,23 +23,12 @@ import { getStoredSession } from '../storage/auth-store';
  * Requires GitHub App authentication - no PAT fallback.
  */
 function getGitHubClient(): GitHubClient | null {
-  console.log('[Issues] Attempting to retrieve session...');
   const session = getStoredSession();
-  
-  console.log('[Issues] Session retrieved:', {
-    hasSession: !!session,
-    hasUser: !!session?.user,
-    userId: session?.user?.id,
-    userLogin: session?.user?.login,
-    hasInstallationToken: !!session?.installationToken,
-    tokenLength: session?.installationToken?.token?.length,
-    currentInstallation: session?.currentInstallation?.id,
-  });
-  
-  if (session?.installationToken?.token) {
+   
+  if (session?.credentials?.token) {
     console.log('[Issues] ✅ Using GitHub App installation token');
-    console.log('[Issues] Token expires at:', session.installationToken.expires_at);
-    return new GitHubClient(session.installationToken.token);
+    console.log('[Issues] Token expires at:', session.credentials.expires_at);
+    return new GitHubClient(session.credentials.token);
   }
   
   console.error('[Issues] ❌ No installation token found. Please login with GitHub App.');

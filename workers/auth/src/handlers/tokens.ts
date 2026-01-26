@@ -7,7 +7,7 @@
 
 import type { WorkerEnv } from '@issuedesk/shared';
 import { GitHubClient } from '../auth/github';
-import { getSession, updateSessionRefreshTime } from '../storage/sessions';
+import { getBackendSession, updateSessionRefreshTime } from '../storage/sessions';
 import { errorResponse, validateRequest, mapGitHubError, ErrorCode } from '../utils/errors';
 import { rateLimitMiddleware } from '../utils/rate-limit';
 import { deduplicateRequest, getTokenRefreshKey } from '../utils/dedup'; // T070a/b
@@ -42,7 +42,7 @@ export async function handleInstallationToken(
     );
   }
 
-  const session = await getSession(sessionToken, env);
+  const session = await getBackendSession(sessionToken, env);
   if (!session) {
     return errorResponse(
       ErrorCode.UNAUTHORIZED,
@@ -144,28 +144,60 @@ export async function handleRefreshInstallationToken(
   env: WorkerEnv,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
-  // Get session token for refresh time update
+  // Validate session token
   const sessionToken = request.headers.get('X-Session-Token');
+  if (!sessionToken) {
+    return errorResponse(
+      ErrorCode.UNAUTHORIZED,
+      'Missing X-Session-Token header',
+      401,
+      false,
+      corsHeaders
+    );
+  }
+
+  const session = await getBackendSession(sessionToken, env);
+  if (!session) {
+    return errorResponse(
+      ErrorCode.UNAUTHORIZED,
+      'Invalid or expired session',
+      401,
+      false,
+      corsHeaders
+    );
+  }
+
+  // Validate request body
+  let body: unknown;
+  try {
+    body = await request.clone().json();
+  } catch {
+    return errorResponse(
+      ErrorCode.INVALID_REQUEST,
+      'Invalid JSON in request body',
+      400,
+      false,
+      corsHeaders
+    );
+  }
+
+  const validation = validateRequest(body, InstallationTokenRequestSchema, corsHeaders);
+  if (validation instanceof Response) {
+    return validation;
+  }
+
+  const { installation_id } = validation.data as InstallationTokenRequest;
   
   // T070b: Deduplicate concurrent refresh requests
-  const session = await getSession(sessionToken || '', env);
-  if (session) {
-    const body = await request.clone().json();
-    const installationId = body.installation_id;
-    const dedupKey = getTokenRefreshKey(session.userId, installationId);
-    
-    // Wrap the refresh request in deduplication
-    const response = await deduplicateRequest(dedupKey, async () => {
-      return handleInstallationToken(request, env, corsHeaders);
-    });
-    
-    // Post-processing after deduplicated request
-    return await postProcessRefresh(response, sessionToken, env, session, installationId);
-  }
+  const dedupKey = getTokenRefreshKey(session.userId, installation_id);
   
-  // Fallback if no session (will fail in handleInstallationToken)
-  const response = await handleInstallationToken(request, env, corsHeaders);
-  return await postProcessRefresh(response, sessionToken, env, null, 0);
+  // Wrap the refresh request in deduplication
+  const response = await deduplicateRequest(dedupKey, async () => {
+    return handleInstallationToken(request, env, corsHeaders);
+  });
+  
+  // Post-processing after deduplicated request
+  return await postProcessRefresh(response, sessionToken, env, session, installation_id);
 }
 
 /**

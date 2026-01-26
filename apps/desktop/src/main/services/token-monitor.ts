@@ -71,30 +71,30 @@ async function refreshToken(installationId: number, userToken: string): Promise<
 async function checkAndRefreshToken(): Promise<void> {
   const session = getStoredSession();
   
-  if (!session || !session.installationToken) {
+  if (!session || !session.credentials) {
     // No session or no installation token - nothing to monitor
     return;
   }
 
-  const { installationToken } = session;
+  const { credentials } = session;
   
   // Check if token is expiring soon
-  if (isTokenExpiringSoon(installationToken.expires_at)) {
+  if (isTokenExpiringSoon(credentials.expires_at)) {
     console.log('[TokenMonitor] Token expires soon, refreshing...', {
-      expiresAt: installationToken.expires_at,
+      expiresAt: credentials.expires_at,
       currentInstallation: session.currentInstallation?.id,
     });
 
     // T065: Trigger automatic refresh
     const newToken = await refreshToken(
       session.currentInstallation!.id,
-      session.userToken
+      session.sessionToken
     );
 
     if (newToken) {
       // Update session with new token
-      session.installationToken = {
-        ...installationToken,
+      session.credentials = {
+        ...credentials,
         token: newToken.token,
         expires_at: newToken.expires_at,
       };

@@ -60,11 +60,11 @@ export const InstallationTokenSchema = z.object({
 // ============================================================================
 
 export const UserSessionSchema = z.object({
-  userToken: z.string().length(128), // 64 bytes = 128 hex chars
+  sessionToken: z.string().length(128), // 64 bytes = 128 hex chars
   user: UserSchema,
   installations: z.array(InstallationSchema),
   currentInstallation: InstallationSchema.nullable(),
-  installationToken: InstallationTokenSchema.nullable(),
+  credentials: InstallationTokenSchema.nullable(),
 });
 
 // ============================================================================
@@ -113,7 +113,7 @@ export const PollRequestSchema = z.object({
  * POST /auth/poll response (success)
  */
 export const PollSuccessResponseSchema = z.object({
-  session_token: z.string().length(128),
+  sessionToken: z.string().length(128),
   user: UserSchema,
   installations: z.array(InstallationSchema),
 });

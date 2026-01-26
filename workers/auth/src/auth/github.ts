@@ -5,7 +5,7 @@
  * Wraps GitHub Device Flow, User Info, and Installations API endpoints.
  */
 
-import type { WorkerEnv } from '@issuedesk/shared';
+import type { Credentials, WorkerEnv } from '@issuedesk/shared';
 import type { DeviceAuthorization, User, Installation, GitHubDeviceFlowResponse } from '@issuedesk/shared';
 import { generateGitHubAppJWT } from './jwt';
 import { retry, isDefaultRetryableError } from '../utils/retry';
@@ -148,12 +148,7 @@ export class GitHubClient {
    * 
    * Requires GitHub App JWT authentication.
    */
-  async createInstallationToken(installationId: number): Promise<{
-    token: string;
-    expires_at: string;
-    permissions: Record<string, string>;
-    repository_selection: 'all' | 'selected';
-  }> {
+  async createInstallationToken(installationId: number): Promise<Credentials> {
     const jwt = await generateGitHubAppJWT(this.env);
 
     const response = await retry(
@@ -173,12 +168,7 @@ export class GitHubClient {
       throw await this.handleErrorResponse(response);
     }
 
-    return await response.json() as { 
-      token: string; 
-      expires_at: string; 
-      permissions: Record<string, string>; 
-      repository_selection: 'all' | 'selected'; 
-    };
+    return await response.json() as Credentials;
   }
 
   /**

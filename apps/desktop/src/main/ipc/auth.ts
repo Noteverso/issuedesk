@@ -87,20 +87,20 @@ export function registerAuthHandlers(): void {
     // T054: Validate session if it exists
     if (session) {
       // Check if installation token exists and is expired
-      if (session.installationToken) {
-        const expiresAt = new Date(session.installationToken.expires_at).getTime();
+      if (session.credentials) {
+        const expiresAt = new Date(session.credentials.expires_at).getTime();
         const now = Date.now();
         
         // Token expired - clear it but keep session for re-authentication
         if (now >= expiresAt) {
           console.log('[Auth] Installation token expired, clearing from session');
-          session.installationToken = null;
+          session.credentials = null;
           setStoredSession(session);
         }
       }
       
       // Validate session structure
-      if (!session.user || !session.userToken || !session.installations) {
+      if (!session.user || !session.sessionToken || !session.installations) {
         console.error('[Auth] Invalid session structure, clearing session');
         clearStoredSession();
         return { session: null };
@@ -123,7 +123,7 @@ export function registerAuthHandlers(): void {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': session.userToken,
+          'X-Session-Token': session.sessionToken,
         },
         body: JSON.stringify({ installation_id: req.installationId }),
       });
@@ -143,7 +143,7 @@ export function registerAuthHandlers(): void {
       }
 
       // Update session with installation token
-      session.installationToken = {
+      session.credentials = {
         token: tokenData.token,
         expires_at: tokenData.expires_at,
         permissions: tokenData.permissions || installation.permissions || {},
@@ -179,7 +179,7 @@ export function registerAuthHandlers(): void {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': session.userToken,
+          'X-Session-Token': session.sessionToken,
         },
       });
 
@@ -205,14 +205,14 @@ export function registerAuthHandlers(): void {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-Session-Token': session.userToken,
+              'X-Session-Token': session.sessionToken,
             },
             body: JSON.stringify({ installation_id: firstInstallation.id }),
           });
 
           if (tokenResponse.ok) {
             const tokenData = await tokenResponse.json();
-            session.installationToken = {
+            session.credentials = {
               token: tokenData.token,
               expires_at: tokenData.expires_at,
               permissions: tokenData.permissions || firstInstallation.permissions || {},
@@ -245,7 +245,7 @@ export function registerAuthHandlers(): void {
         throw new Error('No active session. Please login first.');
       }
 
-      if (!session.installationToken) {
+      if (!session.credentials) {
         throw new Error('No installation token to refresh. Please select an installation first.');
       }
 
@@ -254,7 +254,7 @@ export function registerAuthHandlers(): void {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': session.userToken,
+          'X-Session-Token': session.sessionToken,
         },
         body: JSON.stringify({ installation_id: req.installationId }),
       });
@@ -276,11 +276,11 @@ export function registerAuthHandlers(): void {
       console.log('[Auth] Installation token refreshed successfully');
 
       // Update session with new token
-      session.installationToken = {
+      session.credentials = {
         token: tokenData.token,
         expires_at: tokenData.expires_at,
-        permissions: session.installationToken.permissions,
-        repository_selection: session.installationToken.repository_selection,
+        permissions: session.credentials.permissions,
+        repository_selection: session.credentials.repository_selection,
       };
 
       setStoredSession(session);
@@ -303,7 +303,7 @@ export function registerAuthHandlers(): void {
     const session = getStoredSession();
     
     // If no session exists, nothing to logout
-    if (!session?.userToken) {
+    if (!session?.sessionToken) {
       clearStoredSession();
       return { success: true };
     }
@@ -314,7 +314,7 @@ export function registerAuthHandlers(): void {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': session.userToken,
+          'X-Session-Token': session.sessionToken,
         },
       });
 
@@ -405,11 +405,11 @@ async function pollForAuthorization(
 
       // Create user session with proper typing
       const session: UserSession = {
-        userToken: authData.session_token,
+        sessionToken: authData.sessionToken,
         user: authData.user,
         installations: authData.installations || [],
         currentInstallation: null,
-        installationToken: null,
+        credentials: null,
       };
 
       // Automatically select first installation if available
@@ -417,7 +417,6 @@ async function pollForAuthorization(
         const firstInstallation = authData.installations[0];
         console.log(`[Auth] Auto-selecting first installation: ${firstInstallation.id}`);
         console.log(`[Auth] Backend URL: ${BACKEND_URL}/auth/installation-token`);
-        console.log(`[Auth] Session token: ${authData.session_token.substring(0, 20)}...`);
         
         try {
           // Exchange for installation token
@@ -426,7 +425,7 @@ async function pollForAuthorization(
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-Session-Token': authData.session_token,
+              'X-Session-Token': authData.sessionToken,
             },
             body: JSON.stringify({ installation_id: firstInstallation.id }),
           });
@@ -446,7 +445,7 @@ async function pollForAuthorization(
             
             // Update session with installation token
             // Use data from backend if available, otherwise use installation data
-            session.installationToken = {
+            session.credentials = {
               token: tokenData.token,
               expires_at: tokenData.expires_at,
               permissions: tokenData.permissions || firstInstallation.permissions || {},
@@ -459,7 +458,7 @@ async function pollForAuthorization(
             console.log(`[Auth] ✅ Auto-selected installation ${firstInstallation.id} with token`);
             console.log('[Auth] Session now contains:', {
               hasUser: !!session.user,
-              hasInstallationToken: !!session.installationToken,
+              hasInstallationToken: !!session.credentials,
               hasCurrentInstallation: !!session.currentInstallation,
             });
           } else {
@@ -485,7 +484,7 @@ async function pollForAuthorization(
       };
       console.log('[Auth] Emitting login success event with session:', {
         hasUser: !!session.user,
-        hasInstallationToken: !!session.installationToken,
+        hasInstallationToken: !!session.credentials,
         installationId: session.currentInstallation?.id,
       });
       BrowserWindow.fromWebContents(event.sender)?.webContents.send('auth:login-success', successEvent);
