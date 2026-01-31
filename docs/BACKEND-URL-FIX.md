@@ -33,7 +33,7 @@
 ```bash
 # 1. Edit the production URL
 # Open: apps/desktop/src/main/config/environment.ts
-# Line ~24: Change 'https://issuedesk-auth.your-subdomain.workers.dev'
+# Line ~24: Change 'https://yourname.workers.dev'
 #           to your actual backend URL
 
 # 2. Build DMG
@@ -44,7 +44,7 @@ pnpm dist:desktop:make
 
 ```bash
 # 1. Run configuration script
-./configure-backend.sh https://issuedesk-auth.YOUR-SUBDOMAIN.workers.dev
+./configure-backend.sh https://yourname.workers.dev
 
 # 2. Build DMG
 pnpm dist:desktop:make
@@ -54,7 +54,7 @@ pnpm dist:desktop:make
 
 ```bash
 # Build with custom backend URL
-AUTH_WORKER_URL="https://issuedesk-auth.YOUR-SUBDOMAIN.workers.dev" pnpm dist:desktop:make
+AUTH_WORKER_URL="https://yourname.workers.dev" pnpm dist:desktop:make
 ```
 
 ## Backend URL Configuration
@@ -62,7 +62,7 @@ AUTH_WORKER_URL="https://issuedesk-auth.YOUR-SUBDOMAIN.workers.dev" pnpm dist:de
 | Environment | Current Default | How to Change |
 |-------------|----------------|---------------|
 | **Development** | `http://localhost:8787` | Set `AUTH_WORKER_URL` env var |
-| **Production** | `https://issuedesk-auth.your-subdomain.workers.dev` | Edit [environment.ts](apps/desktop/src/main/config/environment.ts) line 24 |
+| **Production** | `https://yourname.workers.dev` | Edit [environment.ts](apps/desktop/src/main/config/environment.ts) line 24 |
 
 ## Verify Configuration
 

@@ -320,17 +320,17 @@ After successful deployment, you'll see:
 
 ```
 ✨ Successfully published your worker to:
-  https://issuedesk-auth.your-subdomain.workers.dev
+  https://yourname.workers.dev
 ```
 
 ### Test Production Deployment
 
 ```bash
 # Test health endpoint
-curl https://issuedesk-auth.your-subdomain.workers.dev/health
+curl https://yourname.workers.dev/health
 
 # Test device flow
-curl -X POST https://issuedesk-auth.your-subdomain.workers.dev/auth/device \
+curl -X POST https://yourname.workers.dev/auth/device \
   -H "Content-Type: application/json"
 ```
 

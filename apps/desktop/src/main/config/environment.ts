@@ -6,14 +6,18 @@
 /**
  * Get the authentication worker backend URL.
  * Priority:
- * 1. AUTH_WORKER_URL environment variable (if set)
- * 2. Production default (if not in development)
- * 3. Development localhost
+ * 1. AUTH_WORKER_URL environment variable (if set) - overrides all
+ * 2. PROD_AUTH_WORKER_URL (if in production mode)
+ * 3. Development localhost (if in development mode)
+ * 4. Fallback production URL
+ * 
+ * Note: Uses process.env since this runs in Electron main process (Node.js context)
  */
 export function getBackendUrl(): string {
-  // Check environment variable first
+  // Priority 1: Explicit AUTH_WORKER_URL override (works in both dev and prod)
   const envUrl = process.env.AUTH_WORKER_URL;
   if (envUrl) {
+    console.log('[Environment] Using AUTH_WORKER_URL:', envUrl);
     return envUrl;
   }
 
@@ -21,12 +25,15 @@ export function getBackendUrl(): string {
   const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
 
   if (isDev) {
-    // Development: use local Cloudflare Worker
-    return 'http://localhost:8787';
+    // Priority 2: Development - use local Cloudflare Worker
+    const devUrl = 'http://localhost:8787';
+    console.log('[Environment] Using development URL:', devUrl);
+    return devUrl;
   } else {
-    // Production: use deployed Cloudflare Worker
-    // TODO: Replace with your actual deployed worker URL
-    return process.env.PROD_AUTH_WORKER_URL || 'https://your-production-worker.example.com';
+    // Priority 3: Production - use PROD_AUTH_WORKER_URL or fallback
+    const prodUrl = process.env.PROD_AUTH_WORKER_URL || 'https://youname.workers.dev';
+    console.log('[Environment] Using production URL:', prodUrl);
+    return prodUrl;
   }
 }
 

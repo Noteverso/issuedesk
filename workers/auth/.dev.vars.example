@@ -1,0 +1,22 @@
+# Development Environment Variables for Cloudflare Worker
+# Feature: 002-github-app-auth
+# 
+# IMPORTANT: This file contains sensitive credentials.
+# - DO NOT commit this file to version control
+# - Add .dev.vars to .gitignore
+# - Use real values from your GitHub App for local testing
+
+# GitHub App ID (found in GitHub App settings)
+GITHUB_APP_ID=
+
+# GitHub App Private Key (PEM format)
+# Replace with your actual private key - must be on a single line with \n for newlines
+# Example: "-----BEGIN RSA PRIVATE KEY-----\nMIIE...\n-----END RSA PRIVATE KEY-----"
+GITHUB_PRIVATE_KEY=""
+
+# GitHub App Client ID (OAuth credentials)
+GITHUB_CLIENT_ID=
+
+# GitHub App Client Secret (OAuth credentials)
+GITHUB_CLIENT_SECRET=
+

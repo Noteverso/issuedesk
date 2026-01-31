@@ -1,0 +1,13 @@
+# Environment variables (contains sensitive data)
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# Build output
+out/
+dist/
+.vite/
+
+# Electron
+.DS_Store

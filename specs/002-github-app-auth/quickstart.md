@@ -110,7 +110,7 @@ This opens a browser to authorize Wrangler with your Cloudflare account.
 Create two KV namespaces (one for production, one for development):
 
 ```fish
-cd /Users/byodian/personal/noteverso/issuedesk/workers/auth
+cd ~/personal/noteverso/issuedesk/workers/auth
 
 # Production namespace
 wrangler kv:namespace create "SESSIONS"
@@ -147,7 +147,7 @@ preview_id = "def456..."  # Replace with your preview ID from step 2.2
 The GitHub App ID and Client ID are not sensitive and can be stored in `wrangler.toml` or set via Wrangler. For simplicity, we'll use Cloudflare secrets for all credentials:
 
 ```fish
-cd /Users/byodian/personal/noteverso/issuedesk/workers/auth
+cd ~/personal/noteverso/issuedesk/workers/auth
 
 # Store all GitHub App credentials as secrets
 wrangler secret put GITHUB_APP_ID
@@ -162,7 +162,7 @@ wrangler secret put GITHUB_CLIENT_ID
 The GitHub App ID and Client ID are not sensitive and can be stored in `wrangler.toml` or set via Wrangler. For simplicity, we'll use Cloudflare secrets for all credentials:
 
 ```fish
-cd /Users/byodian/personal/noteverso/issuedesk/workers/auth
+cd ~/personal/noteverso/issuedesk/workers/auth
 
 # Store all GitHub App credentials as secrets
 wrangler secret put GITHUB_APP_ID
@@ -204,7 +204,7 @@ Expected output should show all 4 secrets:
 ### 3.1 Install Dependencies
 
 ```fish
-cd /Users/byodian/personal/noteverso/issuedesk
+cd ~/personal/noteverso/issuedesk
 pnpm install
 ```
 
@@ -219,7 +219,7 @@ echo 'VITE_AUTH_WORKER_URL=http://localhost:8787' > .env.local
 
 **For production** (after deploying worker):
 ```env
-VITE_AUTH_WORKER_URL=https://issuedesk-auth.your-subdomain.workers.dev
+VITE_AUTH_WORKER_URL=https://yourname.workers.dev
 ```
 
 ---
@@ -229,7 +229,7 @@ VITE_AUTH_WORKER_URL=https://issuedesk-auth.your-subdomain.workers.dev
 ### 4.1 Start Cloudflare Worker (Terminal 1)
 
 ```fish
-cd /Users/byodian/personal/noteverso/issuedesk/workers/auth
+cd ~/personal/noteverso/issuedesk/workers/auth
 pnpm run dev
 ```
 
@@ -260,7 +260,7 @@ Expected response:
 ### 4.2 Start Desktop App (Terminal 2)
 
 ```fish
-cd /Users/byodian/personal/noteverso/issuedesk
+cd ~/personal/noteverso/issuedesk
 pnpm run dev:desktop
 ```
 
@@ -338,7 +338,7 @@ ls ~/Library/Application\ Support/issuedesk/
 ### 6.1 Deploy Cloudflare Worker
 
 ```fish
-cd /Users/byodian/personal/noteverso/issuedesk/workers/auth
+cd ~/personal/noteverso/issuedesk/workers/auth
 wrangler deploy --env production
 ```
 
@@ -346,7 +346,7 @@ wrangler deploy --env production
 ```
 Uploaded issuedesk-auth (X.XX sec)
 Published issuedesk-auth (X.XX sec)
-  https://issuedesk-auth.your-subdomain.workers.dev
+  https://yourname.workers.dev
 ```
 
 **Copy the worker URL** - you'll need it for desktop app config.
@@ -373,7 +373,7 @@ Published issuedesk-auth (X.XX sec)
 4. Build desktop app with production worker URL:
    ```fish
    cd apps/desktop
-   echo 'VITE_AUTH_WORKER_URL=https://issuedesk-auth.your-subdomain.workers.dev' > .env.production
+   echo 'VITE_AUTH_WORKER_URL=https://yourname.workers.dev' > .env.production
    pnpm run build
    ```
 

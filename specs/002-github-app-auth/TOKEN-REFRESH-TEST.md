@@ -61,7 +61,7 @@ console.log('New token expires at:', newSession.session.installationToken.expire
 
 1. **Start the app in dev mode**:
    ```bash
-   cd /Users/byodian/personal/noteverso/issuedesk
+   cd ~/personal/noteverso/issuedesk
    pnpm run dev:desktop
    ```
 
