@@ -7,8 +7,9 @@
  */
 
 import { BrowserWindow } from 'electron';
+import { getBackendUrl } from '../config/environment';
 
-const BACKEND_URL = process.env.AUTH_WORKER_URL || 'http://localhost:8787';
+const BACKEND_URL = getBackendUrl();
 const CHECK_INTERVAL_MS = 30 * 1000; // Check every 30 seconds
 const HEALTH_CHECK_TIMEOUT_MS = 5000; // 5 second timeout for health checks
 
@@ -25,6 +26,7 @@ async function checkBackendConnectivity(): Promise<boolean> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
 
+    console.log(`[Connectivity] Performing backend health check to ${BACKEND_URL}/health...`);
     const response = await fetch(`${BACKEND_URL}/health`, {
       method: 'GET',
       signal: controller.signal,

@@ -9,10 +9,11 @@
 
 import { BrowserWindow } from 'electron';
 import { getStoredSession, setStoredSession } from '../storage/auth-store';
+import { getBackendUrl, isDevelopment } from '../config/environment';
 
-const CHECK_INTERVAL_MS = process.env.NODE_ENV === 'development' ? 30 * 1000 : 5 * 60 * 1000; // 30 seconds in dev, 5 minutes in prod
-const REFRESH_THRESHOLD_MS = process.env.NODE_ENV === 'development' ? 50 * 60 * 1000 : 5 * 60 * 1000; // 50 minutes in dev (most tokens), 5 minutes in prod
-const BACKEND_URL = process.env.AUTH_WORKER_URL || 'http://localhost:8787';
+const CHECK_INTERVAL_MS = isDevelopment() ? 30 * 1000 : 5 * 60 * 1000; // 30 seconds in dev, 5 minutes in prod
+const REFRESH_THRESHOLD_MS = isDevelopment() ? 50 * 60 * 1000 : 5 * 60 * 1000; // 50 minutes in dev (most tokens), 5 minutes in prod
+const BACKEND_URL = getBackendUrl();
 
 let monitorInterval: NodeJS.Timeout | null = null;
 

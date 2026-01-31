@@ -46,10 +46,10 @@ For production, use Wrangler secrets instead of `.dev.vars`:
 cd workers/auth
 
 # Set each secret
-wrangler secret put GITHUB_APP_ID
-wrangler secret put GITHUB_PRIVATE_KEY
-wrangler secret put GITHUB_CLIENT_ID
-wrangler secret put GITHUB_CLIENT_SECRET
+npx wrangler secret put GITHUB_APP_ID
+npx wrangler secret put GITHUB_PRIVATE_KEY
+npx wrangler secret put GITHUB_CLIENT_ID
+npx wrangler secret put GITHUB_CLIENT_SECRET
 ```
 
 ## Creating a GitHub App

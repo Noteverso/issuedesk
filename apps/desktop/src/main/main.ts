@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell, dialog } from 'electron';
+import { app, BrowserWindow, Menu, shell, dialog, nativeImage } from 'electron';
 import { join } from 'path';
 
 import { registerIssuesHandlers } from './ipc/issues';
@@ -10,10 +10,28 @@ import { registerAuthHandlers } from './ipc/auth';
 import { startTokenMonitor, stopTokenMonitor, checkTokenNow } from './services/token-monitor'; // T064/T065
 import { startConnectivityMonitor, stopConnectivityMonitor } from './services/connectivity'; // T070c
 import { ipcMain } from 'electron';
+import { isDevelopment } from './config/environment';
 
-const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
+const isDev = isDevelopment();
 
 let mainWindow: BrowserWindow;
+
+// Get app icon path
+function getAppIconPath(): string {
+  if (isDev) {
+    // In development, use assets folder relative to project root
+    return join(__dirname, '../../assets/icons/issue-desk-icon.png');
+  } else {
+    // In production, use packaged resources
+    if (process.platform === 'darwin') {
+      return join(process.resourcesPath, 'icon.icns');
+    } else if (process.platform === 'win32') {
+      return join(process.resourcesPath, 'icon.ico');
+    } else {
+      return join(process.resourcesPath, 'icon.png');
+    }
+  }
+}
 
 function createWindow(): void {
   // Debug: Log preload script path
@@ -22,12 +40,26 @@ function createWindow(): void {
   console.log('🔧 isDev:', isDev);
   console.log('🔧 __dirname:', __dirname);
   
+  // Load app icon
+  let appIcon;
+  try {
+    const iconPath = getAppIconPath();
+    console.log('🔧 Loading icon from:', iconPath);
+    appIcon = nativeImage.createFromPath(iconPath);
+    if (appIcon.isEmpty()) {
+      console.warn('⚠️ App icon is empty, using default');
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to load app icon:', error);
+  }
+  
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 600,
+    icon: appIcon,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

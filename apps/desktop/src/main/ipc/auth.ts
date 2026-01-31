@@ -21,9 +21,11 @@ import type {
 } from '@issuedesk/shared';
 import { getStoredSession, setStoredSession, clearStoredSession } from '../storage/auth-store';
 import { SettingsManager } from '../settings/manager';
+import { getBackendUrl } from '../config/environment';
 
-// Backend Worker URL (development: localhost, production: deployed worker)
-const BACKEND_URL = process.env.AUTH_WORKER_URL || 'http://localhost:8787';
+// Backend Worker URL (configured via environment.ts)
+const BACKEND_URL = getBackendUrl();
+console.log(`[Auth] Using backend URL: ${BACKEND_URL}`);
 
 // Device flow polling configuration
 const POLL_INTERVAL_MS = 5000; // 5 seconds

@@ -3,14 +3,13 @@
 
 name = "issuedesk-auth"
 main = "src/index.ts"
-compatibility_date = "2024-11-01"
-nodejs_compat = true
+compatibility_date = "2026-01-31"
+#nodejs_compat = true
 
 # KV Namespaces for session storage
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "sessions_prod" # Replace with actual KV namespace ID after creation
-preview_id = "sessions_preview" # Replace with preview KV namespace ID
+id = "0a121b1a2ca642d78a41d60004021545"
 
 # Environment Variables (secrets set via `wrangler secret put`)
 # GITHUB_APP_ID = "123456" (set via wrangler secret)
@@ -19,18 +18,18 @@ preview_id = "sessions_preview" # Replace with preview KV namespace ID
 # GITHUB_CLIENT_SECRET = "abc123..." (set via wrangler secret)
 
 # Development configuration
-[env.development]
-name = "issuedesk-auth-dev"
-kv_namespaces = [
-  { binding = "SESSIONS", id = "sessions_dev", preview_id = "sessions_dev_preview" }
-]
+#[env.development]
+#name = "issuedesk-auth-dev"
+#kv_namespaces = [
+#  { binding = "SESSIONS", id = "sessions_dev", preview_id = "sessions_dev_preview" }
+#]
 
 # Production configuration
-[env.production]
-name = "issuedesk-auth"
-kv_namespaces = [
-  { binding = "SESSIONS", id = "sessions_prod", preview_id = "sessions_prod_preview" }
-]
+#[env.production]
+#name = "issuedesk-auth"
+#kv_namespaces = [
+#  { binding = "SESSIONS", id = "sessions_prod", preview_id = "sessions_prod_preview" }
+#]
 
 # Routes (configured after deployment)
 # routes = ["auth.issuedesk.workers.dev/*"]

@@ -13,15 +13,34 @@ const config: ForgeConfig = {
     asar: true,
     executableName: 'IssueDesk',
     name: 'IssueDesk',
+    icon: './assets/icons/issue-desk-icon', // Will use .icns on macOS, .ico on Windows
+    appBundleId: 'com.issuedesk.app',
+    appCategoryType: 'public.app-category.productivity',
+    darwinDarkModeSupport: true,
+    osxSign: {},
+    osxNotarize: undefined,
   },
   rebuildConfig: {},
   makers: [
     new MakerDMG({
       format: 'ULFO',
+      icon: './assets/icons/issue-desk-icon.icns',
+      background: undefined,
     }),
-    new MakerSquirrel({}),
-    new MakerRpm({}),
-    new MakerDeb({}),
+    new MakerSquirrel({
+      iconUrl: 'https://raw.githubusercontent.com/Noteverso/issuedesk/main/apps/desktop/assets/icons/issue-desk-icon.ico',
+      setupIcon: './assets/icons/issue-desk-icon.ico',
+    }),
+    new MakerRpm({
+      options: {
+        icon: './assets/icons/issue-desk-icon.png',
+      }
+    }),
+    new MakerDeb({
+      options: {
+        icon: './assets/icons/issue-desk-icon.png',
+      }
+    }),
   ],
   plugins: [
     new VitePlugin({
