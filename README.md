@@ -98,20 +98,14 @@ pnpm install
 桌面应用依赖共享包，需要按顺序构建：
 
 ```bash
-# 1. 构建 shared 包（基础类型和工具）
+# 先构建 shared 包（基础类型和工具）
 pnpm build:shared
 
-# 2. 安装 github-api 包的依赖（链接已构建的 shared 包）
-pnpm install
-
-# 3. 构建 github-api 包
+# 再构建 github-api 包
 pnpm build:github-api
 
-# 4. 安装 desktop 应用的依赖（链接已构建的包）
-pnpm install
-
 # 或者使用快捷命令一次性完成
-pnpm build:packages && pnpm install
+pnpm build:packages
 ```
 
 > **注意**: 依赖顺序为 `shared` → `github-api` → `desktop`。每次构建共享包后需要运行 `pnpm install` 以更新依赖链接。
@@ -197,9 +191,6 @@ pnpm dev:desktop
 # 开发模式（热重载）
 pnpm dev:desktop
 
-# 生产模式测试（使用生产后端）
-NODE_ENV=production pnpm dev:desktop
-
 # 类型检查
 pnpm --filter @issuedesk/desktop type-check
 
@@ -258,28 +249,31 @@ pnpm dist:desktop:make
 
 ### 配置生产环境后端 URL
 
-在打包前，需要配置生产环境的后端 URL：
+在打包前，需要配置生产环境的后端 URL。当前优先级如下：
 
-#### 方法 1: 编辑配置文件（推荐）
+1. `AUTH_WORKER_URL`（总是生效，覆盖所有环境）
+2. 开发模式（`NODE_ENV=development` 或 `ELECTRON_IS_DEV=1`）：使用 `http://localhost:8787`
+3. 生产模式：使用 `PROD_AUTH_WORKER_URL`，否则回退到默认值
+
+#### 方法 1: 使用 .env（推荐）
 
 ```bash
-# 编辑 apps/desktop/src/main/config/environment.ts
-# 将第 24 行的 URL 改为你的 Cloudflare Worker URL
+# 复制示例文件
+cp apps/desktop/.env.example apps/desktop/.env
+
+# 编辑 apps/desktop/.env
+# 设置 PROD_AUTH_WORKER_URL 或 AUTH_WORKER_URL
 ```
 
-#### 方法 2: 使用配置脚本
+#### 方法 2: 环境变量
 
 ```bash
-./configure-backend.sh https://yourname.workers.dev
-```
-
-#### 方法 3: 环境变量
-
-```bash
+# 覆盖所有环境
 AUTH_WORKER_URL="https://your-worker-url.workers.dev" pnpm dist:desktop:make
-```
 
-详细说明：[docs/BUILD-DMG.md](docs/BUILD-DMG.md)
+# 或者仅生产环境使用
+PROD_AUTH_WORKER_URL="https://your-worker-url.workers.dev" pnpm dist:desktop:make
+```
 
 ### macOS 代码签名
 
@@ -288,6 +282,10 @@ AUTH_WORKER_URL="https://your-worker-url.workers.dev" pnpm dist:desktop:make
 ```bash
 # 进入构建目录
 cd apps/desktop/out/IssueDesk-darwin-arm64
+
+# 或者安装dmg后进入应用目录
+cd /Applications
+
 
 # Ad-hoc 签名（测试用）
 codesign --force --deep --sign - IssueDesk.app
@@ -418,10 +416,14 @@ curl -X POST http://localhost:8787/auth/device \
 配置文件位于：`apps/desktop/src/main/config/environment.ts`
 
 ```typescript
-// 开发环境：使用本地 Worker
-const isDev = process.env.NODE_ENV === 'development';
-// 后端 URL：开发用 localhost:8787，生产用 Cloudflare Worker URL
-const BACKEND_URL = isDev ? 'http://localhost:8787' : 'https://your-worker.workers.dev';
+// 优先级：AUTH_WORKER_URL > (dev) localhost > PROD_AUTH_WORKER_URL > fallback
+const envUrl = process.env.AUTH_WORKER_URL;
+const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === '1';
+const BACKEND_URL = envUrl
+   ? envUrl
+   : isDev
+      ? 'http://localhost:8787'
+      : process.env.PROD_AUTH_WORKER_URL || 'https://yourname.workers.dev';
 ```
 
 ### 认证后端配置
