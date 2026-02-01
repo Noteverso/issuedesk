@@ -13,46 +13,46 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
 
 ## Phase 1: Setup
 
-- [ ] [T001] [P0] Initialize Expo project with TypeScript template (`apps/mobile/`)
-- [ ] [T002] [P0] Configure package.json with workspace dependencies (@issuedesk/shared, @issuedesk/github-api)
-- [ ] [T003] [P0] Update tsconfig.json for monorepo path aliases
-- [ ] [T004] [P0] Create base folder structure (`src/api/`, `src/components/`, `src/contexts/`, `src/hooks/`, `src/navigation/`, `src/screens/`, `src/services/`, `src/styles/`, `src/types/`)
-- [ ] [T005] [P0] Install and configure navigation packages (@react-navigation/native, native-stack, bottom-tabs)
-- [ ] [T006] [P0] Install expo-secure-store and expo-linking
-- [ ] [T007] [P0] Install react-native-markdown-display
-- [ ] [T008] [P0] Create theme system with light/dark mode support (`src/styles/theme.ts`)
+- [x] [T001] [P0] Initialize Expo project with TypeScript template (`apps/mobile/`)
+- [x] [T002] [P0] Configure package.json with workspace dependencies (@issuedesk/shared, @issuedesk/github-api)
+- [x] [T003] [P0] Update tsconfig.json for monorepo path aliases
+- [x] [T004] [P0] Create base folder structure (`src/api/`, `src/components/`, `src/contexts/`, `src/hooks/`, `src/navigation/`, `src/screens/`, `src/services/`, `src/styles/`, `src/types/`)
+- [x] [T005] [P0] Install and configure navigation packages (@react-navigation/native, native-stack, bottom-tabs)
+- [x] [T006] [P0] Install expo-secure-store and expo-linking
+- [x] [T007] [P0] Install react-native-markdown-display
+- [x] [T008] [P0] Create theme system with light/dark mode support (`src/styles/theme.ts`)
 
 ---
 
 ## Phase 2: Foundational
 
-- [ ] [T009] [P0] Create secure storage service wrapper (`src/services/storage.ts`) - wraps expo-secure-store
-- [ ] [T010] [P0] Create API client adapter (`src/api/client.ts`) - wraps @issuedesk/github-api for React Native
-- [ ] [T011] [P0] Create AuthContext with session state management (`src/contexts/AuthContext.tsx`)
-- [ ] [T012] [P0] Create RepositoryContext for active repository state (`src/contexts/RepositoryContext.tsx`)
-- [ ] [T013] [P0] Create ThemeContext for light/dark mode (`src/contexts/ThemeContext.tsx`)
-- [ ] [T014] [P0] Create root App.tsx with context providers
-- [ ] [T015] [P0] Create AuthNavigator for login flow (`src/navigation/AuthNavigator.tsx`)
-- [ ] [T016] [P0] Create MainTabNavigator with bottom tabs (`src/navigation/MainTabNavigator.tsx`)
-- [ ] [T017] [P0] Create AppNavigator with conditional auth routing (`src/navigation/AppNavigator.tsx`)
+- [x] [T009] [P0] Create secure storage service wrapper (`src/services/storage.ts`) - wraps expo-secure-store
+- [x] [T010] [P0] Create API client adapter (`src/api/client.ts`) - wraps @issuedesk/github-api for React Native
+- [x] [T011] [P0] Create AuthContext with session state management (`src/contexts/AuthContext.tsx`)
+- [x] [T012] [P0] Create RepositoryContext for active repository state (`src/contexts/RepositoryContext.tsx`)
+- [x] [T013] [P0] Create ThemeContext for light/dark mode (`src/contexts/ThemeContext.tsx`)
+- [x] [T014] [P0] Create root App.tsx with context providers
+- [x] [T015] [P0] Create AuthNavigator for login flow (`src/navigation/AuthNavigator.tsx`)
+- [x] [T016] [P0] Create MainTabNavigator with bottom tabs (`src/navigation/MainTabNavigator.tsx`)
+- [x] [T017] [P0] Create AppNavigator with conditional auth routing (`src/navigation/AppNavigator.tsx`)
 
 ---
 
 ## Phase 3: Authentication (US1 - P1)
 
-- [ ] [T018] [P1] [US1] Create auth service with device flow logic (`src/api/auth.ts`)
+- [x] [T018] [P1] [US1] Create auth service with device flow logic (`src/api/auth.ts`)
   - Implements FR-001, FR-004, FR-008
-- [ ] [T019] [P1] [US1] Create LoginScreen with "Login with GitHub" button (`src/screens/auth/LoginScreen.tsx`)
+- [x] [T019] [P1] [US1] Create LoginScreen with "Login with GitHub" button (`src/screens/auth/LoginScreen.tsx`)
   - Implements FR-001
-- [ ] [T020] [P1] [US1] Create DeviceCodeScreen showing code and copy button (`src/screens/auth/DeviceCodeScreen.tsx`)
+- [x] [T020] [P1] [US1] Create DeviceCodeScreen showing code and copy button (`src/screens/auth/DeviceCodeScreen.tsx`)
   - Implements FR-002, FR-003, FR-005
-- [ ] [T021] [P1] [US1] Implement device code polling with 15-minute timeout handling
+- [x] [T021] [P1] [US1] Implement device code polling with 15-minute timeout handling
   - Implements FR-004, FR-005
-- [ ] [T022] [P1] [US1] Create InstallAppScreen for users without GitHub App installation (`src/screens/auth/InstallAppScreen.tsx`)
+- [x] [T022] [P1] [US1] Create InstallAppScreen for users without GitHub App installation (`src/screens/auth/InstallAppScreen.tsx`)
   - Implements FR-006
-- [ ] [T023] [P1] [US1] Implement secure token storage using expo-secure-store
+- [x] [T023] [P1] [US1] Implement secure token storage using expo-secure-store
   - Implements FR-007, FR-009
-- [ ] [T024] [P1] [US1] Implement token refresh logic with 5-minute buffer
+- [x] [T024] [P1] [US1] Implement token refresh logic with 5-minute buffer
   - Implements FR-008
 - [ ] [T025] [P1] [US1] Add useAuth hook for authentication state access (`src/hooks/useAuth.ts`)
 
@@ -60,98 +60,98 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
 
 ## Phase 4: Repository Selection (US2 - P1)
 
-- [ ] [T026] [P1] [US2] Create RepositorySelectScreen with repository list (`src/screens/settings/RepositorySelectScreen.tsx`)
+- [x] [T026] [P1] [US2] Create RepositorySelectScreen with repository list (`src/screens/settings/RepositorySelectScreen.tsx`)
   - Implements FR-010, FR-011
-- [ ] [T027] [P1] [US2] Implement repository list fetching from GitHub API
+- [x] [T027] [P1] [US2] Implement repository list fetching from GitHub API
   - Implements FR-010
-- [ ] [T028] [P1] [US2] Persist selected repository in AsyncStorage
+- [x] [T028] [P1] [US2] Persist selected repository in AsyncStorage
   - Implements FR-012
-- [ ] [T029] [P1] [US2] Auto-load previously selected repository on app start
+- [x] [T029] [P1] [US2] Auto-load previously selected repository on app start
   - Implements FR-012
-- [ ] [T030] [P1] [US2] Display current repository name in navigation header
+- [x] [T030] [P1] [US2] Display current repository name in navigation header
   - Implements FR-014
 
 ---
 
 ## Phase 5: Issue List (US3 - P1)
 
-- [ ] [T031] [P1] [US3] Create IssueCard component (`src/components/issue/IssueCard.tsx`)
+- [x] [T031] [P1] [US3] Create IssueCard component (`src/components/issue/IssueCard.tsx`)
   - Shows title, labels (colored badges), state indicator
-- [ ] [T032] [P1] [US3] Create LabelBadge component (`src/components/label/LabelBadge.tsx`)
+- [x] [T032] [P1] [US3] Create LabelBadge component (`src/components/label/LabelBadge.tsx`)
   - Renders colored label badge
-- [ ] [T033] [P1] [US3] Create IssueListScreen with FlatList (`src/screens/issues/IssueListScreen.tsx`)
+- [x] [T033] [P1] [US3] Create IssueListScreen with FlatList (`src/screens/issues/IssueListScreen.tsx`)
   - Implements FR-015
 - [ ] [T034] [P1] [US3] Create useIssues hook for issue data fetching (`src/hooks/useIssues.ts`)
   - Implements FR-015, FR-016
-- [ ] [T035] [P1] [US3] Implement pull-to-refresh on issue list
+- [x] [T035] [P1] [US3] Implement pull-to-refresh on issue list
   - Implements FR-016
-- [ ] [T036] [P1] [US3] Create search bar component and title search filtering
+- [x] [T036] [P1] [US3] Create search bar component and title search filtering
   - Implements FR-018
-- [ ] [T037] [P1] [US3] Create label filter selector with modal
+- [x] [T037] [P1] [US3] Create label filter selector with modal
   - Implements FR-017
-- [ ] [T038] [P1] [US3] Add "Clear Filters" button when filters active
-- [ ] [T039] [P1] [US3] Add loading and empty state indicators
+- [x] [T038] [P1] [US3] Add "Clear Filters" button when filters active
+- [x] [T039] [P1] [US3] Add loading and empty state indicators
   - Implements FR-023
 
 ---
 
 ## Phase 6: Issue Detail (US4 - P2)
 
-- [ ] [T040] [P2] [US4] Create IssueDetailScreen (`src/screens/issues/IssueDetailScreen.tsx`)
+- [x] [T040] [P2] [US4] Create IssueDetailScreen (`src/screens/issues/IssueDetailScreen.tsx`)
   - Implements FR-019
-- [ ] [T041] [P2] [US4] Integrate markdown rendering with react-native-markdown-display
+- [x] [T041] [P2] [US4] Integrate markdown rendering with react-native-markdown-display
   - Implements FR-019, handles images, code blocks, links
-- [ ] [T042] [P2] [US4] Display comments section below issue body
+- [x] [T042] [P2] [US4] Display comments section below issue body
   - Implements FR-025
-- [ ] [T043] [P2] [US4] Create CommentCard component (`src/components/comment/CommentCard.tsx`)
+- [x] [T043] [P2] [US4] Create CommentCard component (`src/components/comment/CommentCard.tsx`)
   - Shows author, timestamp, rendered markdown
 - [ ] [T044] [P2] [US4] Create useComments hook for comment fetching (`src/hooks/useComments.ts`)
   - Implements FR-025
-- [ ] [T045] [P2] [US4] Add external link button to open in browser
+- [x] [T045] [P2] [US4] Add external link button to open in browser
   - Implements FR-022
 
 ---
 
 ## Phase 7: Create Issue (US5 - P2)
 
-- [ ] [T046] [P2] [US5] Create CreateIssueScreen with form (`src/screens/issues/CreateIssueScreen.tsx`)
+- [x] [T046] [P2] [US5] Create CreateIssueScreen with form (`src/screens/issues/CreateIssueScreen.tsx`)
   - Implements FR-020
 - [ ] [T047] [P2] [US5] Create IssueForm component with title and body inputs (`src/components/issue/IssueForm.tsx`)
-- [ ] [T048] [P2] [US5] Create label multi-select component for issue creation
+- [x] [T048] [P2] [US5] Create label multi-select component for issue creation
   - Implements FR-020
 - [ ] [T049] [P2] [US5] Create useLabels hook for label fetching (`src/hooks/useLabels.ts`)
-- [ ] [T050] [P2] [US5] Implement issue creation API call
+- [x] [T050] [P2] [US5] Implement issue creation API call
   - Implements FR-020
 - [ ] [T051] [P2] [US5] Add discard confirmation dialog when leaving form with changes
-- [ ] [T052] [P2] [US5] Add "+" FAB button on IssueListScreen to navigate to create
-- [ ] [T053] [P2] [US5] Display loading state during creation
+- [x] [T052] [P2] [US5] Add "+" FAB button on IssueListScreen to navigate to create
+- [x] [T053] [P2] [US5] Display loading state during creation
   - Implements FR-023
-- [ ] [T054] [P2] [US5] Display error message on creation failure
+- [x] [T054] [P2] [US5] Display error message on creation failure
   - Implements FR-024
 
 ---
 
 ## Phase 8: Edit Issue (US6 - P2)
 
-- [ ] [T055] [P2] [US6] Create EditIssueScreen (`src/screens/issues/EditIssueScreen.tsx`)
+- [x] [T055] [P2] [US6] Create EditIssueScreen (`src/screens/issues/EditIssueScreen.tsx`)
   - Implements FR-021
-- [ ] [T056] [P2] [US6] Add Edit button to IssueDetailScreen
+- [x] [T056] [P2] [US6] Add Edit button to IssueDetailScreen
 - [ ] [T057] [P2] [US6] Reuse IssueForm component for editing
-- [ ] [T058] [P2] [US6] Implement issue update API call
+- [x] [T058] [P2] [US6] Implement issue update API call
   - Implements FR-021
-- [ ] [T059] [P2] [US6] Add open/close state toggle on IssueDetailScreen
+- [x] [T059] [P2] [US6] Add open/close state toggle on IssueDetailScreen
   - Implements FR-021
 
 ---
 
 ## Phase 9: Comments (US7 - P3)
 
-- [ ] [T060] [P3] [US7] Create CommentForm component (`src/components/comment/CommentForm.tsx`)
-- [ ] [T061] [P3] [US7] Add "Add Comment" button to IssueDetailScreen
+- [x] [T060] [P3] [US7] Create CommentForm component (`src/components/comment/CommentForm.tsx`)
+- [x] [T061] [P3] [US7] Add "Add Comment" button to IssueDetailScreen
   - Implements FR-026
-- [ ] [T062] [P3] [US7] Implement comment creation API call
+- [x] [T062] [P3] [US7] Implement comment creation API call
   - Implements FR-026
-- [ ] [T063] [P3] [US7] Render markdown in comments
+- [x] [T063] [P3] [US7] Render markdown in comments
   - Implements FR-027
 
 ---
@@ -159,49 +159,49 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
 ## Phase 10: Labels (US8 - P3)
 
 - [ ] [T064] [P3] [US8] Create LabelList component (`src/components/label/LabelList.tsx`)
-- [ ] [T065] [P3] [US8] Create LabelsScreen (`src/screens/labels/LabelsScreen.tsx`)
+- [x] [T065] [P3] [US8] Create LabelsScreen (`src/screens/labels/LabelsScreen.tsx`)
   - Implements FR-028
-- [ ] [T066] [P3] [US8] Display label name, color, and description
+- [x] [T066] [P3] [US8] Display label name, color, and description
   - Implements FR-028
-- [ ] [T067] [P3] [US8] Navigate to filtered issues when tapping label
+- [x] [T067] [P3] [US8] Navigate to filtered issues when tapping label
   - Implements FR-029
 
 ---
 
 ## Phase 11: Dashboard (US9 - P4)
 
-- [ ] [T068] [P4] [US9] Create DashboardScreen (`src/screens/dashboard/DashboardScreen.tsx`)
+- [x] [T068] [P4] [US9] Create DashboardScreen (`src/screens/dashboard/DashboardScreen.tsx`)
   - Implements FR-030, FR-031, FR-032
-- [ ] [T069] [P4] [US9] Create stat cards for total, open, closed counts
+- [x] [T069] [P4] [US9] Create stat cards for total, open, closed counts
   - Implements FR-030, FR-031
-- [ ] [T070] [P4] [US9] Create label distribution visualization
+- [x] [T070] [P4] [US9] Create label distribution visualization
   - Implements FR-032
-- [ ] [T071] [P4] [US9] Navigate to filtered issues when tapping stats
+- [x] [T071] [P4] [US9] Navigate to filtered issues when tapping stats
 
 ---
 
 ## Phase 12: Settings (US10 - P4)
 
-- [ ] [T072] [P4] [US10] Create SettingsScreen (`src/screens/settings/SettingsScreen.tsx`)
+- [x] [T072] [P4] [US10] Create SettingsScreen (`src/screens/settings/SettingsScreen.tsx`)
   - Implements FR-033, FR-035, FR-036
-- [ ] [T073] [P4] [US10] Add theme toggle switch
+- [x] [T073] [P4] [US10] Add theme toggle switch
   - Implements FR-033
-- [ ] [T074] [P4] [US10] Persist theme preference in AsyncStorage
+- [x] [T074] [P4] [US10] Persist theme preference in AsyncStorage
   - Implements FR-034
-- [ ] [T075] [P4] [US10] Add "Change Repository" navigation
+- [x] [T075] [P4] [US10] Add "Change Repository" navigation
   - Implements FR-036
-- [ ] [T076] [P4] [US10] Implement logout with credential clearing
+- [x] [T076] [P4] [US10] Implement logout with credential clearing
   - Implements FR-035
 
 ---
 
 ## Phase 13: Offline & Error Handling
 
-- [ ] [T077] [P3] Create network status hook using NetInfo or similar
+- [x] [T077] [P3] Create network status hook using NetInfo or similar
   - Implements FR-037
-- [ ] [T078] [P3] Display offline indicator banner when disconnected
+- [x] [T078] [P3] Display offline indicator banner when disconnected
   - Implements FR-037
-- [ ] [T079] [P3] Add retry buttons on failed operations
+- [x] [T079] [P3] Add retry buttons on failed operations
   - Implements FR-038
 - [ ] [T080] [P2] Handle API authorization errors and redirect to login
   - Handles edge case: revoked installation
