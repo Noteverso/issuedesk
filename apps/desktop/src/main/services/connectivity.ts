@@ -10,7 +10,7 @@ import { BrowserWindow } from 'electron';
 import { getBackendUrl } from '../config/environment';
 
 const BACKEND_URL = getBackendUrl();
-const CHECK_INTERVAL_MS = 30 * 1000; // Check every 30 seconds
+const CHECK_INTERVAL_MS = 60 * 1000; // Check every 60 seconds
 const HEALTH_CHECK_TIMEOUT_MS = 5000; // 5 second timeout for health checks
 
 let isOnline = true;

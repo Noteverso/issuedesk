@@ -64,6 +64,7 @@ function createWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       preload: preloadPath,
+      devTools: isDev,
     },
     // Use native system title bar on all platforms
     titleBarStyle: 'default',
@@ -207,7 +208,11 @@ function createMenu(): void {
       submenu: [
         { label: 'Reload', accelerator: 'CmdOrCtrl+R', role: 'reload' },
         { label: 'Force Reload', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
-        { label: 'Toggle Developer Tools', accelerator: process.platform === 'darwin' ? 'Cmd+Alt+I' : 'F12', role: 'toggleDevTools' },
+        ...(isDev ? [{
+          label: 'Toggle Developer Tools',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Alt+I' : 'F12',
+          role: 'toggleDevTools' as const
+        }] : []),
         { type: 'separator' },
         {
           label: 'Appearance',
