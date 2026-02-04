@@ -69,7 +69,9 @@ export class MobileGitHubClient {
     options: RequestInit = {}
   ): Promise<T> {
     if (!this.accessToken) {
-      throw new Error('Not authenticated');
+      const error = new Error('Not authenticated');
+      (error as any).code = 'UNAUTHORIZED';
+      throw error;
     }
 
     const url = `https://api.github.com${endpoint}`;
@@ -84,8 +86,11 @@ export class MobileGitHubClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('UNAUTHORIZED');
+      if (response.status === 401 || response.status === 403) {
+        // Token expired or revoked - trigger re-authentication
+        const error = new Error('Authorization failed. Please log in again.');
+        (error as any).code = 'UNAUTHORIZED';
+        throw error;
       }
       throw new Error(`GitHub API error: ${response.status}`);
     }
@@ -266,6 +271,46 @@ export class MobileGitHubClient {
         method: 'POST',
         body: JSON.stringify({ body }),
         headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  /**
+   * Update a comment
+   */
+  async updateComment(commentId: number, body: string): Promise<{
+    id: number;
+    body: string;
+    user: { login: string; avatar_url: string };
+    created_at: string;
+    updated_at: string;
+  }> {
+    if (!this.repository) {
+      throw new Error('No repository selected');
+    }
+
+    return this.request(
+      `/repos/${this.repository.owner}/${this.repository.name}/issues/comments/${commentId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ body }),
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  /**
+   * Delete a comment
+   */
+  async deleteComment(commentId: number): Promise<void> {
+    if (!this.repository) {
+      throw new Error('No repository selected');
+    }
+
+    await this.request(
+      `/repos/${this.repository.owner}/${this.repository.name}/issues/comments/${commentId}`,
+      {
+        method: 'DELETE',
       }
     );
   }

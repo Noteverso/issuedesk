@@ -13,13 +13,15 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useRepository } from '../../contexts/RepositoryContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { githubClient } from '../../api/client';
+import { isUnauthorizedError } from '../../utils/errorHandling';
 import IssueCard from '../../components/issue/IssueCard';
 import type { IssuesStackParamList } from '../../types';
 
@@ -42,6 +44,7 @@ export default function IssueListScreen() {
   const route = useRoute<IssueListScreenRouteProp>();
   const { theme } = useTheme();
   const { repository } = useRepository();
+  const { logout } = useAuth();
 
   const initialLabelFilter = route.params?.labelFilter;
 
@@ -52,6 +55,7 @@ export default function IssueListScreen() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [labelFilter, setLabelFilter] = useState<string | undefined>(initialLabelFilter);
+  const [stateFilter, setStateFilter] = useState<'all' | 'open' | 'closed'>('all');
   const [showSearch, setShowSearch] = useState(false);
 
   const loadIssues = useCallback(async () => {
@@ -59,16 +63,21 @@ export default function IssueListScreen() {
 
     try {
       const data = await githubClient.getIssues({
-        state: 'all',
+        state: stateFilter,
         labels: labelFilter,
         per_page: 100,
       });
       setIssues(data);
       setError(null);
     } catch (err) {
+      // Handle authorization errors by logging out
+      if (isUnauthorizedError(err)) {
+        await logout();
+        return;
+      }
       setError('Failed to load issues');
     }
-  }, [repository, labelFilter]);
+  }, [repository, labelFilter, stateFilter, logout]);
 
   useEffect(() => {
     const init = async () => {
@@ -108,6 +117,7 @@ export default function IssueListScreen() {
   const clearFilters = () => {
     setLabelFilter(undefined);
     setSearchQuery('');
+    setStateFilter('all');
   };
 
   const hasFilters = !!labelFilter || !!searchQuery.trim();
@@ -170,6 +180,63 @@ export default function IssueListScreen() {
           )}
         </View>
       )}
+
+      {/* State Filter Tabs */}
+      <View style={[styles.filterTabs, { borderBottomColor: theme.colors.border }]}>
+        <TouchableOpacity
+          style={[
+            styles.filterTab,
+            stateFilter === 'all' && { borderBottomColor: theme.colors.primary },
+          ]}
+          onPress={() => setStateFilter('all')}
+        >
+          <Text
+            style={[
+              styles.filterTabText,
+              { color: theme.colors.textSecondary },
+              stateFilter === 'all' && { color: theme.colors.text, fontWeight: '600' },
+            ]}
+          >
+            All
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filterTab,
+            stateFilter === 'open' && { borderBottomColor: theme.colors.success },
+          ]}
+          onPress={() => setStateFilter('open')}
+        >
+          <Text
+            style={[
+              styles.filterTabText,
+              { color: theme.colors.textSecondary },
+              stateFilter === 'open' && { color: theme.colors.text, fontWeight: '600' },
+            ]}
+          >
+            🟢 Open
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filterTab,
+            stateFilter === 'closed' && { borderBottomColor: theme.colors.closedPurple },
+          ]}
+          onPress={() => setStateFilter('closed')}
+        >
+          <Text
+            style={[
+              styles.filterTabText,
+              { color: theme.colors.textSecondary },
+              stateFilter === 'closed' && { color: theme.colors.text, fontWeight: '600' },
+            ]}
+          >
+            🟣 Closed
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -282,6 +349,20 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 14,
   },
+  filterTabs: {
+    flexDirection: 'row',
+    marginTop: 12,
+    borderBottomWidth: 1,
+  },
+  filterTab: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  filterTabText: {
+    fontSize: 14,
+  },
   list: {
     padding: 16,
   },
@@ -316,10 +397,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.25)',
   },
   fabIcon: {
     color: '#ffffff',

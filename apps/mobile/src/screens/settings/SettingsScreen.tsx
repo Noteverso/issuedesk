@@ -114,6 +114,29 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* R2 Storage Section */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+          IMAGE STORAGE
+        </Text>
+        <View style={[styles.card, { backgroundColor: theme.colors.backgroundSecondary, borderColor: theme.colors.border }]}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate('R2Settings' as never)}
+          >
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowLabel, { color: theme.colors.text }]}>
+                Cloudflare R2 Configuration
+              </Text>
+              <Text style={[styles.rowDescription, { color: theme.colors.textSecondary }]}>
+                Configure image upload to R2 storage
+              </Text>
+            </View>
+            <Text style={[styles.chevron, { color: theme.colors.textTertiary }]}>›</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* About Section */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
@@ -172,11 +195,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
+  rowContent: {
+    flex: 1,
+  },
   rowLabel: {
     fontSize: 16,
   },
+  rowDescription: {
+    fontSize: 13,
+    marginTop: 2,
+  },
   rowValue: {
     fontSize: 16,
+  },
+  chevron: {
+    fontSize: 24,
+    marginLeft: 8,
   },
   divider: {
     height: 1,

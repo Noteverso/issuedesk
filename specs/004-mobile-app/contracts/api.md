@@ -18,7 +18,7 @@ This document defines the expected request/response contracts for the mobile app
 
 Base URL: `https://issuedesk-auth.workers.dev` (production)
 
-### POST /auth/device/code
+### POST /auth/device
 
 Initiate device flow authentication.
 

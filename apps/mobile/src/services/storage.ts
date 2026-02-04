@@ -5,6 +5,7 @@
 
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import type { UserSession, AccessToken, AppPreferences, SelectedRepository } from '../types';
 
 // Secure storage keys (encrypted)
@@ -20,6 +21,37 @@ const ASYNC_KEYS = {
 } as const;
 
 /**
+ * Web-compatible secure storage wrapper
+ */
+const isWeb = Platform.OS === 'web';
+
+const secureStoreWrapper = {
+  async setItemAsync(key: string, value: string): Promise<void> {
+    if (isWeb) {
+      localStorage.setItem(key, value);
+    } else {
+      await SecureStore.setItemAsync(key, value);
+    }
+  },
+
+  async getItemAsync(key: string): Promise<string | null> {
+    if (isWeb) {
+      return localStorage.getItem(key);
+    } else {
+      return await SecureStore.getItemAsync(key);
+    }
+  },
+
+  async deleteItemAsync(key: string): Promise<void> {
+    if (isWeb) {
+      localStorage.removeItem(key);
+    } else {
+      await SecureStore.deleteItemAsync(key);
+    }
+  },
+};
+
+/**
  * Secure storage for sensitive data (expo-secure-store)
  */
 export const secureStorage = {
@@ -27,7 +59,7 @@ export const secureStorage = {
    * Save user session to secure storage
    */
   async saveSession(session: UserSession): Promise<void> {
-    await SecureStore.setItemAsync(
+    await secureStoreWrapper.setItemAsync(
       SECURE_KEYS.USER_SESSION,
       JSON.stringify(session)
     );
@@ -37,7 +69,7 @@ export const secureStorage = {
    * Get user session from secure storage
    */
   async getSession(): Promise<UserSession | null> {
-    const data = await SecureStore.getItemAsync(SECURE_KEYS.USER_SESSION);
+    const data = await secureStoreWrapper.getItemAsync(SECURE_KEYS.USER_SESSION);
     if (!data) return null;
     try {
       return JSON.parse(data) as UserSession;
@@ -50,14 +82,14 @@ export const secureStorage = {
    * Clear user session from secure storage
    */
   async clearSession(): Promise<void> {
-    await SecureStore.deleteItemAsync(SECURE_KEYS.USER_SESSION);
+    await secureStoreWrapper.deleteItemAsync(SECURE_KEYS.USER_SESSION);
   },
 
   /**
    * Save access token to secure storage
    */
   async saveAccessToken(token: AccessToken): Promise<void> {
-    await SecureStore.setItemAsync(
+    await secureStoreWrapper.setItemAsync(
       SECURE_KEYS.ACCESS_TOKEN,
       JSON.stringify(token)
     );
@@ -67,7 +99,7 @@ export const secureStorage = {
    * Get access token from secure storage
    */
   async getAccessToken(): Promise<AccessToken | null> {
-    const data = await SecureStore.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
+    const data = await secureStoreWrapper.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
     if (!data) return null;
     try {
       return JSON.parse(data) as AccessToken;
@@ -80,7 +112,7 @@ export const secureStorage = {
    * Clear access token from secure storage
    */
   async clearAccessToken(): Promise<void> {
-    await SecureStore.deleteItemAsync(SECURE_KEYS.ACCESS_TOKEN);
+    await secureStoreWrapper.deleteItemAsync(SECURE_KEYS.ACCESS_TOKEN);
   },
 
   /**
@@ -88,8 +120,8 @@ export const secureStorage = {
    */
   async clearAll(): Promise<void> {
     await Promise.all([
-      SecureStore.deleteItemAsync(SECURE_KEYS.USER_SESSION),
-      SecureStore.deleteItemAsync(SECURE_KEYS.ACCESS_TOKEN),
+      secureStoreWrapper.deleteItemAsync(SECURE_KEYS.USER_SESSION),
+      secureStoreWrapper.deleteItemAsync(SECURE_KEYS.ACCESS_TOKEN),
     ]);
   },
 };

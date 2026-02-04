@@ -50,12 +50,27 @@ export default {
     
     console.log('[Config] Environment validation passed - all secrets configured');
 
-    // CORS headers for Electron app
+    // CORS headers for Electron + web dev
+    const requestOrigin = request.headers.get('Origin') || '';
+    const allowedOrigins = new Set([
+      'electron://issuedesk',
+      'http://localhost:8081',
+      'http://localhost:8082',
+      'http://localhost:19006',
+      'http://127.0.0.1:8081',
+      'http://127.0.0.1:8082',
+      'http://127.0.0.1:19006',
+    ]);
+    const allowOrigin = allowedOrigins.has(requestOrigin)
+      ? requestOrigin
+      : 'electron://issuedesk';
+
     const corsHeaders = {
-      'Access-Control-Allow-Origin': 'electron://issuedesk',
+      'Access-Control-Allow-Origin': allowOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-Session-Token',
       'Access-Control-Max-Age': '86400',
+      'Vary': 'Origin',
     };
 
     // Handle preflight requests

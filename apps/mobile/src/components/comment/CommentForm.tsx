@@ -6,21 +6,20 @@
 import React, { useState } from 'react';
 import {
   View,
-  TextInput,
   TouchableOpacity,
   Text,
   StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
+  TextInput,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { CommentEditorModal } from './CommentEditorModal';
 
 interface CommentFormProps {
   onSubmit: (body: string) => Promise<void>;
   placeholder?: string;
   submitLabel?: string;
   disabled?: boolean;
+  initialValue?: string;
 }
 
 export function CommentForm({
@@ -28,29 +27,27 @@ export function CommentForm({
   placeholder = 'Add a comment...',
   submitLabel = 'Comment',
   disabled = false,
+  initialValue = '',
 }: CommentFormProps) {
   const { theme } = useTheme();
-  const [body, setBody] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [body, setBody] = useState(initialValue);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
-    if (!body.trim() || isSubmitting || disabled) return;
+  const handleSubmit = async (commentBody: string) => {
+    if (!commentBody.trim() || disabled) return;
 
-    setIsSubmitting(true);
     setError(null);
 
     try {
-      await onSubmit(body.trim());
+      await onSubmit(commentBody.trim());
       setBody('');
+      setIsModalVisible(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit comment');
-    } finally {
-      setIsSubmitting(false);
+      throw err;
     }
   };
-
-  const canSubmit = body.trim().length > 0 && !isSubmitting && !disabled;
 
   const styles = StyleSheet.create({
     container: {
@@ -60,82 +57,75 @@ export function CommentForm({
       padding: theme.spacing.md,
     },
     inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    input: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
       borderWidth: 1,
       borderColor: theme.colors.border,
       borderRadius: theme.borderRadius.md,
-      backgroundColor: theme.colors.background,
-      marginBottom: theme.spacing.sm,
-    },
-    input: {
-      padding: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
       fontSize: theme.fontSize.md,
       color: theme.colors.text,
-      minHeight: 80,
-      maxHeight: 200,
-      textAlignVertical: 'top',
+      minHeight: 40,
     },
-    footer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    hint: {
-      fontSize: theme.fontSize.sm,
-      color: theme.colors.textSecondary,
-    },
-    submitButton: {
-      backgroundColor: canSubmit ? theme.colors.primary : theme.colors.border,
+    writeButton: {
+      backgroundColor: theme.colors.primary,
       paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.md,
       borderRadius: theme.borderRadius.md,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
+      minHeight: 40,
+      justifyContent: 'center',
     },
-    submitButtonText: {
-      color: canSubmit ? '#FFFFFF' : theme.colors.textSecondary,
+    writeButtonText: {
+      color: '#FFFFFF',
       fontSize: theme.fontSize.md,
       fontWeight: '600',
     },
     errorText: {
       fontSize: theme.fontSize.sm,
       color: theme.colors.error,
-      marginBottom: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
     },
   });
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+    <>
       <View style={styles.container}>
         {error && <Text style={styles.errorText}>{error}</Text>}
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
             placeholder={placeholder}
-            placeholderTextColor={theme.colors.textSecondary}
+            placeholderTextColor={theme.colors.textTertiary}
             value={body}
             onChangeText={setBody}
+            editable={!disabled}
+            onFocus={() => setIsModalVisible(true)}
             multiline
-            editable={!disabled && !isSubmitting}
-            autoCapitalize="sentences"
-            autoCorrect
           />
-        </View>
-        <View style={styles.footer}>
-          <Text style={styles.hint}>Markdown supported</Text>
           <TouchableOpacity
-            style={styles.submitButton}
-            onPress={handleSubmit}
-            disabled={!canSubmit}
+            style={styles.writeButton}
+            onPress={() => setIsModalVisible(true)}
+            disabled={disabled}
           >
-            {isSubmitting && <ActivityIndicator size="small" color="#FFFFFF" />}
-            <Text style={styles.submitButtonText}>{submitLabel}</Text>
+            <Text style={styles.writeButtonText}>Write</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+
+      {/* Full-screen Editor Modal */}
+      <CommentEditorModal
+        visible={isModalVisible}
+        initialValue={body}
+        onSave={handleSubmit}
+        onCancel={() => setIsModalVisible(false)}
+        title="New Comment"
+      />
+    </>
   );
 }

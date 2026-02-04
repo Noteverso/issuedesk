@@ -17,7 +17,7 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes before expiry
  */
 export async function startDeviceFlow(): Promise<DeviceAuthorization> {
   const backendUrl = getAuthBackendUrl();
-  const response = await fetch(`${backendUrl}/auth/device/code`, {
+  const response = await fetch(`${backendUrl}/auth/device`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });
@@ -71,71 +71,74 @@ export async function pollDeviceFlow(
   while (Date.now() < expiresAt) {
     onPoll?.();
 
-    const response = await fetch(`${backendUrl}/auth/device/token`, {
+    const response = await fetch(`${backendUrl}/auth/poll`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ device_code: deviceCode }),
     });
 
-    if (response.ok) {
-      const data = await response.json() as {
-        session_token: string;
-        user: {
-          id: string;
-          login: string;
-          avatar_url: string;
-        };
-        installations: Array<{
-          id: number;
-          account: {
-            login: string;
-            type: 'User' | 'Organization';
-            avatar_url: string;
-          };
-        }>;
-      };
-
-      const installations: Installation[] = data.installations.map((inst) => ({
-        id: inst.id,
-        accountLogin: inst.account.login,
-        accountType: inst.account.type,
-        avatarUrl: inst.account.avatar_url,
-      }));
-
-      const user: UserSession = {
-        userId: data.user.id,
-        username: data.user.login,
-        avatarUrl: data.user.avatar_url,
-        sessionToken: data.session_token,
-        selectedInstallationId: installations[0]?.id ?? 0,
-      };
-
-      return { sessionToken: data.session_token, user, installations };
-    }
-
-    const errorData = await response.json() as { error?: string };
-
-    if (errorData.error === 'authorization_pending') {
-      // User hasn't completed authorization yet, keep polling
+    // Handle different HTTP status codes like desktop
+    if (response.status === 202) {
+      // Authorization pending - continue polling
       await sleep(interval);
       continue;
     }
 
-    if (errorData.error === 'slow_down') {
-      // Increase poll interval
+    if (response.status === 429) {
+      // Slow down - increase interval
       await sleep(interval + 5000);
       continue;
     }
 
-    if (errorData.error === 'expired_token') {
+    if (response.status === 410) {
+      // Device code expired
       throw new Error('DEVICE_CODE_EXPIRED');
     }
 
-    if (errorData.error === 'access_denied') {
+    if (response.status === 403) {
+      // Access denied
       throw new Error('ACCESS_DENIED');
     }
 
-    throw new Error(`Unexpected error: ${errorData.error}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      throw new Error(errorData.message || 'Authentication failed');
+    }
+
+    // Success! Parse response
+    const data = await response.json() as {
+      sessionToken: string;
+      user: {
+        id: number;
+        login: string;
+        avatar_url: string;
+      };
+      installations: Array<{
+        id: number;
+        account: {
+          login: string;
+          type: 'User' | 'Organization';
+          avatar_url: string;
+        };
+      }>;
+    };
+
+    const installations: Installation[] = data.installations.map((inst) => ({
+      id: inst.id,
+      accountLogin: inst.account.login,
+      accountType: inst.account.type,
+      avatarUrl: inst.account.avatar_url,
+    }));
+
+    const user: UserSession = {
+      userId: data.user.id.toString(),
+      username: data.user.login,
+      avatarUrl: data.user.avatar_url,
+      sessionToken: data.sessionToken,
+      selectedInstallationId: installations[0]?.id ?? 0,
+    };
+
+    return { sessionToken: data.sessionToken, user, installations };
   }
 
   throw new Error('DEVICE_CODE_TIMEOUT');
@@ -149,12 +152,13 @@ export async function getInstallationToken(
   installationId: number
 ): Promise<AccessToken> {
   const backendUrl = getAuthBackendUrl();
-  const response = await fetch(`${backendUrl}/auth/installation/${installationId}/token`, {
+  const response = await fetch(`${backendUrl}/auth/installation-token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${sessionToken}`,
+      'X-Session-Token': sessionToken,
     },
+    body: JSON.stringify({ installation_id: installationId }),
   });
 
   if (!response.ok) {
@@ -213,6 +217,21 @@ export async function refreshTokenIfNeeded(): Promise<AccessToken | null> {
  * Logout - clear all stored credentials
  */
 export async function logout(): Promise<void> {
+  const backendUrl = getAuthBackendUrl();
+  const session = await secureStorage.getSession();
+
+  if (session?.sessionToken) {
+    await fetch(`${backendUrl}/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-Token': session.sessionToken,
+      },
+    }).catch(() => {
+      // Ignore network errors on logout
+    });
+  }
+
   await secureStorage.clearAll();
 }
 

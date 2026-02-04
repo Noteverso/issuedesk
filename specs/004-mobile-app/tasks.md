@@ -54,7 +54,7 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
   - Implements FR-007, FR-009
 - [x] [T024] [P1] [US1] Implement token refresh logic with 5-minute buffer
   - Implements FR-008
-- [ ] [T025] [P1] [US1] Add useAuth hook for authentication state access (`src/hooks/useAuth.ts`)
+- [x] [T025] [P1] [US1] Add useAuth hook for authentication state access (`src/hooks/useAuth.ts`)
 
 ---
 
@@ -81,7 +81,7 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
   - Renders colored label badge
 - [x] [T033] [P1] [US3] Create IssueListScreen with FlatList (`src/screens/issues/IssueListScreen.tsx`)
   - Implements FR-015
-- [ ] [T034] [P1] [US3] Create useIssues hook for issue data fetching (`src/hooks/useIssues.ts`)
+- [x] [T034] [P1] [US3] Create useIssues hook for issue data fetching (`src/hooks/useIssues.ts`)
   - Implements FR-015, FR-016
 - [x] [T035] [P1] [US3] Implement pull-to-refresh on issue list
   - Implements FR-016
@@ -105,7 +105,7 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
   - Implements FR-025
 - [x] [T043] [P2] [US4] Create CommentCard component (`src/components/comment/CommentCard.tsx`)
   - Shows author, timestamp, rendered markdown
-- [ ] [T044] [P2] [US4] Create useComments hook for comment fetching (`src/hooks/useComments.ts`)
+- [x] [T044] [P2] [US4] Create useComments hook for comment fetching (`src/hooks/useComments.ts`)
   - Implements FR-025
 - [x] [T045] [P2] [US4] Add external link button to open in browser
   - Implements FR-022
@@ -116,13 +116,13 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
 
 - [x] [T046] [P2] [US5] Create CreateIssueScreen with form (`src/screens/issues/CreateIssueScreen.tsx`)
   - Implements FR-020
-- [ ] [T047] [P2] [US5] Create IssueForm component with title and body inputs (`src/components/issue/IssueForm.tsx`)
+- [x] [T047] [P2] [US5] Create IssueForm component with title and body inputs (`src/components/issue/IssueForm.tsx`)
 - [x] [T048] [P2] [US5] Create label multi-select component for issue creation
   - Implements FR-020
-- [ ] [T049] [P2] [US5] Create useLabels hook for label fetching (`src/hooks/useLabels.ts`)
+- [x] [T049] [P2] [US5] Create useLabels hook for label fetching (`src/hooks/useLabels.ts`)
 - [x] [T050] [P2] [US5] Implement issue creation API call
   - Implements FR-020
-- [ ] [T051] [P2] [US5] Add discard confirmation dialog when leaving form with changes
+- [x] [T051] [P2] [US5] Add discard confirmation dialog when leaving form with changes
 - [x] [T052] [P2] [US5] Add "+" FAB button on IssueListScreen to navigate to create
 - [x] [T053] [P2] [US5] Display loading state during creation
   - Implements FR-023
@@ -136,7 +136,7 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
 - [x] [T055] [P2] [US6] Create EditIssueScreen (`src/screens/issues/EditIssueScreen.tsx`)
   - Implements FR-021
 - [x] [T056] [P2] [US6] Add Edit button to IssueDetailScreen
-- [ ] [T057] [P2] [US6] Reuse IssueForm component for editing
+- [x] [T057] [P2] [US6] Reuse IssueForm component for editing
 - [x] [T058] [P2] [US6] Implement issue update API call
   - Implements FR-021
 - [x] [T059] [P2] [US6] Add open/close state toggle on IssueDetailScreen
@@ -158,7 +158,7 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
 
 ## Phase 10: Labels (US8 - P3)
 
-- [ ] [T064] [P3] [US8] Create LabelList component (`src/components/label/LabelList.tsx`)
+- [x] [T064] [P3] [US8] Create LabelList component (`src/components/label/LabelList.tsx`)
 - [x] [T065] [P3] [US8] Create LabelsScreen (`src/screens/labels/LabelsScreen.tsx`)
   - Implements FR-028
 - [x] [T066] [P3] [US8] Display label name, color, and description
@@ -203,7 +203,7 @@ Implementation tasks for React Native/Expo mobile app. Organized into setup, fou
   - Implements FR-037
 - [x] [T079] [P3] Add retry buttons on failed operations
   - Implements FR-038
-- [ ] [T080] [P2] Handle API authorization errors and redirect to login
+- [x] [T080] [P2] Handle API authorization errors and redirect to login
   - Handles edge case: revoked installation
 
 ---

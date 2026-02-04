@@ -9,10 +9,10 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -89,6 +89,7 @@ export default function DeviceCodeScreen() {
     } catch (err) {
       pollingRef.current = false;
       setIsPolling(false);
+      console.log(err)
 
       if (err instanceof Error) {
         if (err.message === 'DEVICE_CODE_TIMEOUT' || err.message === 'DEVICE_CODE_EXPIRED') {

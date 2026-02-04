@@ -18,6 +18,8 @@ import { useNavigation, useRoute, type RouteProp } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Markdown from 'react-native-markdown-display';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { getMarkdownStyles } from '../../styles/markdown';
 import { githubClient } from '../../api/client';
 import LabelBadge from '../../components/label/LabelBadge';
 import CommentCard from '../../components/comment/CommentCard';
@@ -53,6 +55,7 @@ export default function IssueDetailScreen() {
   const navigation = useNavigation<IssueDetailScreenNavigationProp>();
   const route = useRoute<IssueDetailScreenRouteProp>();
   const { theme } = useTheme();
+  const { user } = useAuth();
 
   const { issueNumber } = route.params;
 
@@ -120,6 +123,16 @@ export default function IssueDetailScreen() {
     setShowCommentForm(false);
   };
 
+  const handleUpdateComment = async (commentId: number, body: string) => {
+    const updatedComment = await githubClient.updateComment(commentId, body);
+    setComments(comments.map((c) => (c.id === commentId ? updatedComment : c)));
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    await githubClient.deleteComment(commentId);
+    setComments(comments.filter((c) => c.id !== commentId));
+  };
+
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -135,33 +148,7 @@ export default function IssueDetailScreen() {
     });
   }, [navigation, issue]);
 
-  const markdownStyles = {
-    body: { color: theme.colors.text, fontSize: 16, lineHeight: 24 },
-    heading1: { color: theme.colors.text, fontSize: 24, fontWeight: '700' as const, marginVertical: 16 },
-    heading2: { color: theme.colors.text, fontSize: 20, fontWeight: '600' as const, marginVertical: 12 },
-    heading3: { color: theme.colors.text, fontSize: 18, fontWeight: '600' as const, marginVertical: 10 },
-    code_inline: { 
-      backgroundColor: theme.colors.backgroundTertiary, 
-      color: theme.colors.text,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 4,
-      fontFamily: 'monospace',
-    },
-    fence: { 
-      backgroundColor: theme.colors.backgroundSecondary, 
-      padding: 12, 
-      borderRadius: 8,
-      fontFamily: 'monospace',
-    },
-    link: { color: theme.colors.primary },
-    blockquote: { 
-      borderLeftWidth: 4, 
-      borderLeftColor: theme.colors.border, 
-      paddingLeft: 16,
-      marginVertical: 8,
-    },
-  };
+  const markdownStyles = getMarkdownStyles(theme.mode === 'dark');
 
   if (isLoading) {
     return (
@@ -250,7 +237,13 @@ export default function IssueDetailScreen() {
             </Text>
           ) : (
             comments.map((comment) => (
-              <CommentCard key={comment.id} comment={comment} />
+              <CommentCard 
+                key={comment.id} 
+                comment={comment} 
+                currentUserLogin={user?.username || ''}
+                onEdit={handleUpdateComment}
+                onDelete={handleDeleteComment}
+              />
             ))
           )}
 

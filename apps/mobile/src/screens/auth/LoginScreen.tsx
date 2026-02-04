@@ -9,9 +9,9 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -38,7 +38,8 @@ export default function LoginScreen() {
         verificationUri: deviceAuth.verificationUri,
       });
     } catch (err) {
-      setError('Failed to start login. Please try again.');
+      console.log(err)
+      setError('Failed to start login. Please try again');
     } finally {
       setIsLoading(false);
     }
